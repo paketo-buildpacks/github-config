@@ -1,0 +1,12 @@
+name: 'Tag'
+
+description: |
+  TODO
+
+outputs:
+  tag:
+    description: 'Tag produced from the action'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
