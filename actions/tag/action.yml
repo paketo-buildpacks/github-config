@@ -1,7 +1,7 @@
 name: 'Tag'
 
 description: |
-  TODO
+  Tags the repository with the next highest patch number given an existing tag.
 
 outputs:
   tag:
