@@ -74,7 +74,7 @@ func main() {
 
 	if resp.StatusCode != http.StatusNoContent {
 		dump, _ := httputil.DumpResponse(resp, true)
-		fail(fmt.Errorf("Error: unexpected response from dispatch request: %s", dump))
+		fail(fmt.Errorf("unexpected response from dispatch request: %s", dump))
 	}
 
 	fmt.Println("Success!")
