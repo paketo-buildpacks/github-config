@@ -63,6 +63,9 @@ func TestEntrypoint(t *testing.T) {
 					case "/repos/some-org/some-repo/dispatches":
 						w.WriteHeader(http.StatusNoContent)
 
+					case "/repos/some-org/some-other-repo/dispatches":
+						w.WriteHeader(http.StatusNoContent)
+
 					case "/repos/loop-org/loop-repo/dispatches":
 						w.Header().Set("Location", "/repos/loop-org/loop-repo/dispatches")
 						w.WriteHeader(http.StatusFound)
@@ -85,7 +88,7 @@ func TestEntrypoint(t *testing.T) {
 				command := exec.Command(
 					entrypoint,
 					"--endpoint", api.URL,
-					"--repo", "some-org/some-repo",
+					"--repos", "some-org/some-repo",
 					"--token", "some-github-token",
 					"--event", "some-event",
 					"--payload", `{"key": "value"}`,
@@ -117,13 +120,59 @@ func TestEntrypoint(t *testing.T) {
 			}`))
 			})
 
+			context("when there are multiple target repos", func() {
+				it("sends a repository_dispatch webhook to all target repos", func() {
+					command := exec.Command(
+						entrypoint,
+						"--endpoint", api.URL,
+						"--repos", "some-org/some-repo,  some-org/some-other-repo",
+						"--token", "some-github-token",
+						"--event", "some-event",
+						"--payload", `{"key": "value"}`,
+					)
+					buffer := gbytes.NewBuffer()
+
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output:\n%s\n", buffer.Contents()) })
+
+					Expect(buffer).To(gbytes.Say(`Dispatching`))
+
+					Expect(buffer).To(gbytes.Say(`  Repository: some-org/some-repo`))
+					Expect(buffer).To(gbytes.Say(`Success!`))
+
+					Expect(buffer).To(gbytes.Say(`  Repository: some-org/some-other-repo`))
+					Expect(buffer).To(gbytes.Say(`Success!`))
+
+					Expect(requests).To(HaveLen(2))
+
+					dispatchRequest := requests[0]
+					Expect(dispatchRequest.Method).To(Equal("POST"))
+					Expect(dispatchRequest.URL.Path).To(Equal("/repos/some-org/some-repo/dispatches"))
+
+					dispatchRequest = requests[1]
+					Expect(dispatchRequest.Method).To(Equal("POST"))
+					Expect(dispatchRequest.URL.Path).To(Equal("/repos/some-org/some-other-repo/dispatches"))
+
+					body, err := ioutil.ReadAll(dispatchRequest.Body)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(string(body)).To(MatchJSON(`{
+				"event_type": "some-event",
+				"client_payload": {
+					"key": "value"
+				}
+			}`))
+				})
+			})
+
 			context("failure cases", func() {
 				context("when the --event flag is missing", func() {
 					it("prints an error message and exits non-zero", func() {
 						command := exec.Command(
 							entrypoint,
 							"--endpoint", api.URL,
-							"--repo", "some-org/some-repo",
+							"--repos", "some-org/some-repo",
 							"--token", "some-github-token",
 							"--payload", "{}",
 						)
@@ -143,7 +192,7 @@ func TestEntrypoint(t *testing.T) {
 						command := exec.Command(
 							entrypoint,
 							"--endpoint", api.URL,
-							"--repo", "some-org/some-repo",
+							"--repos", "some-org/some-repo",
 							"--token", "some-github-token",
 							"--event", "some-event",
 						)
@@ -183,7 +232,7 @@ func TestEntrypoint(t *testing.T) {
 						command := exec.Command(
 							entrypoint,
 							"--endpoint", api.URL,
-							"--repo", "some-org/some-repo",
+							"--repos", "some-org/some-repo",
 							"--event", "some-event",
 							"--payload", "{}",
 						)
@@ -203,7 +252,7 @@ func TestEntrypoint(t *testing.T) {
 						command := exec.Command(
 							entrypoint,
 							"--endpoint", "%%%",
-							"--repo", "some-org/some-repo",
+							"--repos", "some-org/some-repo",
 							"--token", "some-github-token",
 							"--event", "some-event",
 							"--payload", "{}",
@@ -226,7 +275,7 @@ func TestEntrypoint(t *testing.T) {
 						command := exec.Command(
 							entrypoint,
 							"--endpoint", api.URL,
-							"--repo", "loop-org/loop-repo",
+							"--repos", "loop-org/loop-repo",
 							"--token", "some-github-token",
 							"--event", "some-event",
 							"--payload", "{}",
@@ -249,7 +298,7 @@ func TestEntrypoint(t *testing.T) {
 						command := exec.Command(
 							entrypoint,
 							"--endpoint", api.URL,
-							"--repo", "fail-org/fail-repo",
+							"--repos", "fail-org/fail-repo",
 							"--token", "some-github-token",
 							"--event", "some-event",
 							"--payload", "{}",

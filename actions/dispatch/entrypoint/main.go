@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -16,14 +17,14 @@ func main() {
 
 	var config struct {
 		Endpoint string
-		Repo     string
+		Repos    string
 		Token    string
 		Event    string
 		Payload  string
 	}
 
 	flag.StringVar(&config.Endpoint, "endpoint", "https://api.github.com", "Specifies endpoint for sending dispatch request")
-	flag.StringVar(&config.Repo, "repo", "", "Specifies repo for sending dispatch request")
+	flag.StringVar(&config.Repos, "repos", "", "Specifies comma separated list of repos for sending dispatch request")
 	flag.StringVar(&config.Token, "token", "", "Github Authorization Token")
 	flag.StringVar(&config.Event, "event", "", "event type sent with the dispatch")
 	flag.StringVar(&config.Payload, "payload", "", "payload sent with the dispatch")
@@ -37,15 +38,13 @@ func main() {
 		fail(errors.New("missing required input \"payload\""))
 	}
 
-	if config.Repo == "" {
+	if config.Repos == "" {
 		fail(errors.New("missing required input \"repo\""))
 	}
 
 	if config.Token == "" {
 		fail(errors.New("missing required input \"token\""))
 	}
-
-	fmt.Printf("  Repository: %s\n", config.Repo)
 
 	var dispatch struct {
 		EventType     string          `json:"event_type"`
@@ -60,24 +59,30 @@ func main() {
 		fail(err)
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/repos/%s/dispatches", config.Endpoint, config.Repo), bytes.NewBuffer(payloadData))
-	if err != nil {
-		fail(fmt.Errorf("failed to create dispatch request: %w", err))
+	repos := strings.Split(config.Repos, ",")
+
+	for _, r := range repos {
+		repo := strings.TrimSpace(r)
+		fmt.Printf("  Repository: %s\n", repo)
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/repos/%s/dispatches", config.Endpoint, repo), bytes.NewBuffer(payloadData))
+		if err != nil {
+			fail(fmt.Errorf("failed to create dispatch request: %w", err))
+		}
+
+		req.Header.Set("Authorization", fmt.Sprintf("token %s", config.Token))
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			fail(fmt.Errorf("failed to complete dispatch request: %w", err))
+		}
+
+		if resp.StatusCode != http.StatusNoContent {
+			dump, _ := httputil.DumpResponse(resp, true)
+			fail(fmt.Errorf("unexpected response from dispatch request: %s", dump))
+		}
+
+		fmt.Println("Success!")
 	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("token %s", config.Token))
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		fail(fmt.Errorf("failed to complete dispatch request: %w", err))
-	}
-
-	if resp.StatusCode != http.StatusNoContent {
-		dump, _ := httputil.DumpResponse(resp, true)
-		fail(fmt.Errorf("unexpected response from dispatch request: %s", dump))
-	}
-
-	fmt.Println("Success!")
 }
 
 func fail(err error) {
