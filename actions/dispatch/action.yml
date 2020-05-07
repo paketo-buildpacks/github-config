@@ -1,14 +1,14 @@
 name: 'Dispatch'
 
 description: |
-  This action can be used to send a generic repository_dispatch event to a
-  repo. This is useful when you want to send info from one repository to
-  another through an action. For example, we use this action to notify
+  This action can be used to send a generic repository_dispatch event to a set
+  of repos. This is useful when you want to send info from one repository to
+  others through an action. For example, we use this action to notify
   language-family repos when their implementation dependencies get updates.
 
 inputs:
-  repo:
-    description: 'Repository that should receive the dispatch event'
+  repos:
+    description: 'Comma-separated list of repositories that should receive the dispatch event'
     required: true
   token:
     description: 'Github Access Token used to make the request'
@@ -24,8 +24,8 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-  - "--repo"
-  - ${{ inputs.repo }}
+  - "--repos"
+  - ${{ inputs.repos }}
   - "--token"
   - ${{ inputs.token }}
   - "--event"

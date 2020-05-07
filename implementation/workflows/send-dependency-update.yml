@@ -26,7 +26,7 @@ jobs:
     - name: Send Repository Dispatch
       uses: paketo-buildpacks/github-config/actions/dispatch@master
       with:
-        repo: ${{ secrets.LANGUAGE_FAMILY_REPO }}
+        repos: ${{ secrets.LANGUAGE_FAMILY_REPO }}
         token: ${{ secrets.GITHUB_TOKEN }}
         event: dependency-update
         payload: |
