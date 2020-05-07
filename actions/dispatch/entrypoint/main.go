@@ -39,7 +39,7 @@ func main() {
 	}
 
 	if config.Repos == "" {
-		fail(errors.New("missing required input \"repo\""))
+		fail(errors.New("missing required input \"repos\""))
 	}
 
 	if config.Token == "" {
