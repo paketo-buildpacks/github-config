@@ -1,0 +1,24 @@
+name: 'Reset Release'
+
+description: |
+  This action can be used to reset a repository to a state where there are no
+  draft releases.
+  - If there is a draft release on the target repository, it will be deleted
+  - If there is NO draft release, this action is a no op.
+
+inputs:
+  repo:
+    description: 'Repository that will have draft release reset'
+    required: true
+  token:
+    description: 'Github Access Token used to make the request'
+    required: true
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--repo"
+  - ${{ inputs.repo }}
+  - "--token"
+  - ${{ inputs.token }}
