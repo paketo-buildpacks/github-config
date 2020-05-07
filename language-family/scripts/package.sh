@@ -37,7 +37,6 @@ function main {
   os::check
   repo::prepare
 
-  github::token::fetch
   tools::jam::install
   tools::yj::install
   tools::pack::install
@@ -79,7 +78,7 @@ function repo::prepare() {
 }
 
 function tools::jam::install() {
-  echo "-> Installing latest jam..."
+  echo "-> Installing v0.0.7 jam..."
 
   local os
   os="${OS}"
@@ -87,16 +86,7 @@ function tools::jam::install() {
     os="darwin"
   fi
 
-  local url
-  url="$(
-    curl "https://api.github.com/repos/cloudfoundry/packit/releases/latest" \
-      --header "Authorization: token ${GITHUB_TOKEN}" \
-      --silent \
-      --location \
-      | jq -r ".assets[] | select(.name | contains(\"${os}\")) | .browser_download_url"
-  )"
-
-  curl "${url}" \
+  curl "https://github.com/cloudfoundry/packit/releases/download/v0.0.7/jam-${os}" \
     --silent \
     --location \
     --output "${BIN_DIR}/jam"
@@ -104,18 +94,9 @@ function tools::jam::install() {
 }
 
 function tools::yj::install() {
-  echo "-> Installing latest yj..."
+  echo "-> Installing v4.0.0 yj..."
 
-  local url
-  url="$(
-    curl "https://api.github.com/repos/sclevine/yj/releases/latest" \
-      --header "Authorization: token ${GITHUB_TOKEN}" \
-      --silent \
-      --location \
-      | jq -r ".assets[] | select(.name | contains(\"${OS}\")) | .browser_download_url"
-  )"
-
-  curl "${url}" \
+  curl "https://github.com/sclevine/yj/releases/download/v4.0.0/yj-${OS}" \
     --silent \
     --location \
     --output "${BIN_DIR}/yj"
@@ -123,18 +104,9 @@ function tools::yj::install() {
 }
 
 function tools::pack::install() {
-  echo "-> Installing latest pack..."
+  echo "-> Installing v0.10.0 pack..."
 
-  local url
-  url="$(
-    curl "https://api.github.com/repos/buildpacks/pack/releases/latest" \
-      --header "Authorization: token ${GITHUB_TOKEN}" \
-      --silent \
-      --location \
-      | jq -r ".assets[] | select(.name | contains(\"${OS}\")) | .browser_download_url"
-  )"
-
-  curl "${url}" \
+  curl "https://github.com/buildpacks/pack/releases/download/v0.10.0/pack-v0.10.0-${OS}.tgz" \
     --silent \
     --location \
     --output /tmp/pack.tgz
@@ -172,20 +144,6 @@ function buildpackage::create() {
     package-buildpack "${BUILD_DIR}/buildpackage.cnb" \
       --package-config "${BUILD_DIR}/package.toml" \
       --format file
-}
-
-function github::token::fetch() {
-  if [[ -z "${GITHUB_TOKEN:-""}" ]]; then
-    echo "-> Fetching GITHUB_TOKEN..."
-
-    GITHUB_TOKEN="$(
-      lpass show Shared-CF\ Buildpacks/concourse-private.yml \
-        | grep buildpacks-github-token \
-        | cut -d ' ' -f 2
-    )"
-  fi
-
-  export GITHUB_TOKEN
 }
 
 main "${@:-}"
