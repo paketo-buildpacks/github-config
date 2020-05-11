@@ -223,7 +223,7 @@ func TestEntrypoint(t *testing.T) {
 
 						Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output:\n%s\n", buffer.Contents()) })
 
-						Expect(buffer).To(gbytes.Say(`Error: missing required input "repo"`))
+						Expect(buffer).To(gbytes.Say(`Error: missing required input "repos"`))
 					})
 				})
 
