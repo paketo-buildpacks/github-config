@@ -34,7 +34,13 @@ type Buildpack struct {
 		IncludeFiles []string     `toml:"include_files"`
 		Dependencies []Dependency `toml:"dependencies"`
 	} `toml:"metadata"`
-	Order interface{} `toml:"order"`
+	Order []struct {
+		Group []struct {
+			ID       string `toml:"id"`
+			Version  string `toml:"version"`
+			Optional bool   `toml:"optional,omitempty"`
+		} `toml:"group"`
+	} `toml:"order"`
 }
 
 func main() {
@@ -129,6 +135,14 @@ func Replace(buildpack Buildpack, dependency Dependency) Buildpack {
 
 	if !replaced {
 		buildpack.Metadata.Dependencies = append(buildpack.Metadata.Dependencies, dependency)
+	}
+
+	for i, order := range buildpack.Order {
+		for j, group := range order.Group {
+			if group.ID == dependency.ID {
+				buildpack.Order[i].Group[j].Version = dependency.Version
+			}
+		}
 	}
 
 	return buildpack

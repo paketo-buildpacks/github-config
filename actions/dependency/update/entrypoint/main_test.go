@@ -104,6 +104,7 @@ func TestEntrypoint(t *testing.T) {
   [[order.group]]
 		id = "other-dependency-id"
 		version = "other-version"
+		optional = true
 `)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -164,12 +165,13 @@ func TestEntrypoint(t *testing.T) {
 [[order]]
   [[order.group]]
 	  id = "some-dependency-id"
-		version = "some-version"
+		version = "some-updated-version"
 
 [[order]]
   [[order.group]]
 		id = "other-dependency-id"
 		version = "other-version"
+		optional = true
 `))
 		})
 
@@ -202,6 +204,7 @@ func TestEntrypoint(t *testing.T) {
   [[order.group]]
 		id = "other-dependency-id"
 		version = "other-version"
+		optional = true
 `), 0644)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -250,12 +253,13 @@ func TestEntrypoint(t *testing.T) {
 [[order]]
   [[order.group]]
 	  id = "some-dependency-id"
-		version = "some-version"
+		version = "some-updated-version"
 
 [[order]]
   [[order.group]]
 		id = "other-dependency-id"
 		version = "other-version"
+		optional = true
 `))
 			})
 		})
