@@ -1,0 +1,40 @@
+# Notifies implementation cnb repos that they have to pickup a change
+# Requirements:
+# ${{ secrets.BOT_USER_TOKEN }} : token with dispatch privileges
+
+name: Notify Implementation CNB repos
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+    - 'implementation/**'
+
+jobs:
+
+  dispatch:
+    runs-on: ubuntu-latest
+    name: Send Dispatch
+    steps:
+
+    - name: Check out
+      uses: actions/checkout@v2
+
+    - name: Targets
+      id: targets
+      run : |
+        targetlist=$(awk -vORS=, '{print}' .github/data/implementation-cnbs | sed 's#,$#\n#')
+        echo "::set-output name=targetlist::$targetlist"
+
+    - name: Send Repository Dispatch
+      uses: paketo-buildpacks/github-config/actions/dispatch@master
+      with:
+        repos: "${{ steps.targets.outputs.targetlist }}"
+        token: ${{ secrets.BOT_USER_TOKEN }}
+        event: working-dir-update
+        payload: |
+          {
+            "commit": "${{ github.sha }}",
+            "srcpath": "/implementation"
+          }
