@@ -17,5 +17,7 @@ jobs:
         go-version: 1.14
     - name: Checkout
       uses: actions/checkout@v2
+    - name: Check repo structure
+      run: ./scripts/sanity.sh
     - name: Run Unit Tests
       run: ./scripts/unit.sh
