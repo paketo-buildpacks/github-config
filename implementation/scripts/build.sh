@@ -28,7 +28,9 @@ function main() {
               echo "Success!"
             done
         popd > /dev/null || return
-    else
+    fi
+
+    if [[ -d "${BUILDPACKDIR}/cmd" ]]; then
         local name
         for src in "${BUILDPACKDIR}"/cmd/*; do
             name="$(basename "${src}")"
