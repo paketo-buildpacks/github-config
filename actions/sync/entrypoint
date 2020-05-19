@@ -1,0 +1,91 @@
+#!/usr/bin/env sh
+set -euo pipefail
+
+config_repo=
+current_repo=
+config_path=
+branch_name=
+
+validate() {
+  rc=0
+  if [ ! -d "${config_repo}/.git" ]; then
+    echo src-repo "$config_repo" is not a valid git repository; rc=1;
+  fi
+  if [ ! -d "${current_repo}/.git" ]; then
+    echo this-repo "$current_repo" is not a valid git repository; rc=1;
+  fi
+  if [ ! -d "${config_repo}${config_path}" ]; then
+    echo src-path "$config_path" is not a valid path inside src-repo; rc=1;
+  fi
+  if [ "$rc" -ne 0 ]; then
+    exit 1
+  fi
+}
+
+checkout_pr_branch() {
+  echo "checking out tmp branch..."
+
+  branch_name="github-config-$(git -C "$config_repo" rev-parse HEAD | head -c7)"
+  git -C "$current_repo" checkout -b "$branch_name"
+
+  echo "checked out branch $branch_name"
+}
+
+sync_dirs() {
+  echo "copying dirs..."
+
+  set -x
+  cd "${config_repo}${config_path}"
+    for dir in $(ls -Ap . | grep "/"); do
+      if [[ -f "${current_repo}/${dir}.syncignore" ]]; then
+        rsync -r "${dir}" "${current_repo}/${dir}" --delete \
+          --exclude=".syncignore" --exclude-from="${current_repo}/${dir}.syncignore"
+      else
+        rsync -r "${dir}" "${current_repo}/${dir}" --delete
+      fi
+    done
+  cd -
+}
+
+commit_and_push() {
+  cd "${current_repo}"
+    git config user.email "paketobuildpacks@paketo.io"
+    git config user.name "paketo-bot"
+    git commit --all --message "Update shared github-config"
+    git remote add origin-ssh "git@github.com:${GITHUB_REPOSITORY}.git"
+
+    eval "$(ssh-agent)"
+    echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> /etc/ssh/ssh_config
+
+    echo "${ssh_key}" | ssh-add -
+
+    git push origin-ssh "$branch_name"
+  cd -
+}
+
+open_pr() {
+  curl "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls" \
+    -H "Authorization: token ${GITHUB_TOKEN}" \
+    -X POST \
+    --data '{
+      "head":"'"$branch_name"'",
+      "base": "master",
+      "title": "Update shared github-config",
+      "body": ""
+    }'
+}
+
+main() {
+  config_repo="${GITHUB_WORKSPACE}/$1"
+  current_repo="${GITHUB_WORKSPACE}/$2"
+  config_path="$3"
+  ssh_key="$4"
+
+  validate
+  checkout_pr_branch
+  sync_dirs
+  commit_and_push
+  open_pr
+}
+
+main "${@:-}"

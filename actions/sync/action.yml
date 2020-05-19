@@ -1,0 +1,29 @@
+name: 'Sync'
+
+description: |
+  Copies a fixed path from the source repo to the root of the repo
+  that uses this action, then sends a PR against the repo's master
+inputs:
+  config-repo:
+    description: 'Path to checked out repo with shared files'
+    required: true
+  current-repo:
+    description: 'Path to this repo checkout out'
+    required: true
+  config-path:
+    description: 'Path inside config repo that maps to the current repo'
+    required: true
+  ssh-private-key:
+    description: 'Private SSH key to push to the current repo'
+    required: true
+
+outputs: {}
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - ${{ inputs.config-repo }}
+  - ${{ inputs.current-repo}}
+  - ${{ inputs.config-path }}
+  - ${{ inputs.ssh-private-key }}

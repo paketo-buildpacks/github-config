@@ -1,82 +1,35 @@
-# Receives notification from github-config repo and creates PR
-# Requirements:
-# ${{ secrets.DEPLOY_KEY_PRIVATE}}: Private key of a deploy key pair
-# with write access that you have added to your repo
-# Future TODO: Mv reusable logic to an action when writing lang-fam receiver
-
-name: Create PR from github-config notification
+name: Sync
 
 on:
   repository_dispatch:
     types: working-dir-update
 
 jobs:
-  update:
+  build:
+    name: Sync
     runs-on: ubuntu-latest
-    name: Update github config
     steps:
 
-    - name: parse inputs
-      id: read-inputs
-      run: |
-        echo "::set-output name=commit::$(jq -r .client_payload.commit ${{ github.event_path }})"
-        echo "::set-output name=srcpath::$(jq -r .client_payload.srcpath ${{ github.event_path }})"
-
-    # checkout github-config @$commit
-    - name: Checkout github-config repo
+    # checkout paketo github-config as src-repo
+    - name: Checkout paketo github-config repo
       uses: actions/checkout@v2
       with:
         repository: paketo-buildpacks/github-config
-        ref: "${{ steps.read-inputs.outputs.commit }}"
-        path: src-repo
+        path: config-repo
 
     # checkout this repo
     - name: Checkout
       uses: actions/checkout@v2
       with:
-        path: dst-repo
+        path: current-repo
 
-    - name: Checkout PR Branch
-      id: pr-branch
-      run: |
-        pushd src-repo
-          BRANCH_NAME="github-config-$(git rev-parse HEAD | head -c7)"
-        popd
-        pushd dst-repo
-          git checkout -b "$BRANCH_NAME"
-          echo "::set-output name=branch::$BRANCH_NAME"
-        popd
-
-    - name: Copy all dirs
-      run: |
-        pushd "src-repo${{ steps.read-inputs.outputs.srcpath }}"
-          for dir in $(ls -Apq . | grep "/"); do
-            cp -ar "$dir" "${{ github.workspace }}/dst-repo"
-          done
-        popd
-
-    - name: Commit and Push
+    - name: Run the sync action
+      uses: paketo-buildpacks/config-repo/actions/sync@master
       env:
-        SSH_KEY: ${{ secrets.DEPLOY_KEY_PRIVATE }}
-      run: |
-        pushd dst-repo
-          git config user.email "paketobuildpacks@paketo.io"
-          git config user.name "paketo-bot"
-          git commit --all --message "Update shared github-config"
-          git remote add origin-ssh git@github.com:${{ github.repository }}
-          eval "$(ssh-agent)"
-          echo "$SSH_KEY" | ssh-add -
-          git push origin-ssh "${{ steps.pr-branch.outputs.branch }}"
-        popd
-
-    - name: Open Pull Request
-      run: |
-        curl "https://api.github.com/repos/${{ github.repository }}/pulls" \
-          -H "Authorization: token ${{ github.token }}" \
-          -X POST \
-          --data '{
-            "head": "${{ steps.pr-branch.outputs.branch }}",
-            "base": "master",
-            "title": "Update shared github-config",
-            "body": ""
-          }'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        config-repo: config-repo
+        current-repo: current-repo
+        config-path: "/implementation"
+        ssh-private-key: ${{ secrets.DEPLOY_KEY_PRIVATE }}
+      id: do-sync
