@@ -51,7 +51,8 @@ commit_and_push() {
   cd "${current_repo}"
     git config user.email "paketobuildpacks@paketo.io"
     git config user.name "paketo-bot"
-    git commit --all --message "Update shared github-config"
+    git add --all .
+    git commit --message "Update shared github-config"
     git remote add origin-ssh "git@github.com:${GITHUB_REPOSITORY}.git"
 
     eval "$(ssh-agent)"
