@@ -1,4 +1,5 @@
-paketo-buildpacks/nodejs
-paketo-buildpacks/go
-paketo-buildpacks/php
 paketo-buildpacks/dotnet-core
+paketo-buildpacks/go
+paketo-buildpacks/nodejs
+paketo-buildpacks/php
+paketo-community/ruby
