@@ -1,0 +1,52 @@
+name: 'Create Release'
+
+description: |
+  Creates a release at the given commitish with the given tag. Uploads any
+  assets included. Publishes the release dependent on the state of the "draft"
+  flag.
+
+inputs:
+  repo:
+    description: 'Repository that will have draft release reset'
+    required: true
+  token:
+    description: 'Github Access Token used to make the request'
+    required: true
+  tag_name:
+    description: 'The name of the tag'
+    required: true
+  target_commitish:
+    description: 'The commitish value that determines where the tag is created from'
+    default: 'master'
+  name:
+    description: 'The name of the release'
+    required: true
+  body:
+    description: 'Text describing the contents of the release'
+    required: true
+  draft:
+    description: 'When set to true, creates a draft release'
+    default: 'false'
+  assets:
+    description: 'A JSON-encoded list of assets'
+    default: '[]'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--repo"
+  - ${{ inputs.repo }}
+  - "--token"
+  - ${{ inputs.token }}
+  - "--tag-name"
+  - ${{ inputs.tag_name }}
+  - "--target-commitish"
+  - ${{ inputs.target_commitish }}
+  - "--name"
+  - ${{ inputs.name }}
+  - "--body"
+  - ${{ inputs.body }}
+  - "--assets"
+  - ${{ inputs.assets }}
+  - "--draft=${{ inputs.draft }}"
