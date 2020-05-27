@@ -17,7 +17,7 @@ type Release struct {
 	TagName         string `json:"tag_name"`
 	TargetCommitish string `json:"target_commitish"`
 	Name            string `json:"name"`
-	Body            string `json:"body"`
+	Body            string `json:"body,omitempty"`
 	Draft           bool   `json:"draft"`
 }
 
@@ -60,10 +60,6 @@ func main() {
 
 	if config.Release.Name == "" {
 		fail(errors.New(`missing required input "name"`))
-	}
-
-	if config.Release.Body == "" {
-		fail(errors.New(`missing required input "body"`))
 	}
 
 	var assets []struct {
