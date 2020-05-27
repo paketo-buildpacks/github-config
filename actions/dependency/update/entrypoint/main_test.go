@@ -14,7 +14,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 
-	. "github.com/cloudfoundry/packit/matchers"
+	. "github.com/paketo-buildpacks/packit/matchers"
 	. "github.com/onsi/gomega"
 )
 
