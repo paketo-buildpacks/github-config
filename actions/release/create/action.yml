@@ -23,7 +23,7 @@ inputs:
     required: true
   body:
     description: 'Text describing the contents of the release'
-    required: true
+    default: ''
   draft:
     description: 'When set to true, creates a draft release'
     default: 'false'

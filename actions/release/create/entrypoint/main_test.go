@@ -225,6 +225,54 @@ func TestEntrypoint(t *testing.T) {
 			})
 		})
 
+		context("when the body field is omitted", func() {
+			it("creates a release without a body", func() {
+				command := exec.Command(
+					entrypoint,
+					"--endpoint", api.URL,
+					"--repo", "some-org/some-repo",
+					"--token", "some-github-token",
+					"--tag-name", "some-tag",
+					"--target-commitish", "some-commitish",
+					"--name", "some-name",
+				)
+
+				buffer := gbytes.NewBuffer()
+
+				session, err := gexec.Start(command, buffer, buffer)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+
+				Expect(requests).To(HaveLen(2))
+
+				Expect(requests[0].Method).To(Equal("POST"))
+				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-repo/releases"))
+
+				content, err := ioutil.ReadAll(requests[0].Body)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(content)).To(MatchJSON(`{
+					"tag_name": "some-tag",
+					"target_commitish": "some-commitish",
+					"name": "some-name",
+					"draft": true
+				}`))
+
+				Expect(requests[1].Method).To(Equal("PATCH"))
+				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-repo/releases/1"))
+
+				content, err = ioutil.ReadAll(requests[1].Body)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(content)).To(MatchJSON(`{
+				"draft": false
+			}`))
+
+				Expect(buffer).To(gbytes.Say(`Creating release`))
+				Expect(buffer).To(gbytes.Say(`  Repository: some-org/some-repo`))
+				Expect(buffer).To(gbytes.Say(`Release is published, exiting.`))
+			})
+		})
+
 		context("when there are assets for the release", func() {
 			var tmpDir string
 
@@ -434,29 +482,6 @@ func TestEntrypoint(t *testing.T) {
 					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
 
 					Expect(buffer).To(gbytes.Say(`Error: missing required input "name"`))
-				})
-			})
-
-			context("when missing the body flag", func() {
-				it("prints an error and exits non-zero", func() {
-					command := exec.Command(
-						entrypoint,
-						"--endpoint", api.URL,
-						"--repo", "some-org/some-repo",
-						"--token", "some-github-token",
-						"--tag-name", "some-tag",
-						"--target-commitish", "some-commitish",
-						"--name", "some-name",
-					)
-
-					buffer := gbytes.NewBuffer()
-
-					session, err := gexec.Start(command, buffer, buffer)
-					Expect(err).NotTo(HaveOccurred())
-
-					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
-
-					Expect(buffer).To(gbytes.Say(`Error: missing required input "body"`))
 				})
 			})
 
