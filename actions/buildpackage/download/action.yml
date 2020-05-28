@@ -1,0 +1,14 @@
+name: 'Download'
+
+description: |
+  Downloads a buildpackage from a release.
+
+outputs:
+  buildpackage:
+    description: Location of the downloaded buildpackage relative to the $GITHUB_WORKSPACE.
+  tag:
+    description: Tag name of the release the buildpackage belongs to.
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
