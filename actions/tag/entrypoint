@@ -1,10 +1,10 @@
 #!/bin/sh
 
-# requres run: git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+# requires run: git fetch --depth=1 origin +refs/tags/*:refs/tags/*
 # before executing this script
 
 main() {
-  previous="$(git describe --tags "$(git rev-list --tags --max-count=1)")"
+  previous="$(git describe --tags "$(git rev-list --tags --max-count=1)" || echo "v0.0.0")"
   tag="$(printf "%s" "$previous" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')"
 
   echo "::set-output name=tag::${tag#v}"
