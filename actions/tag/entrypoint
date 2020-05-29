@@ -4,10 +4,13 @@
 # before executing this script
 
 main() {
+  if git describe --exact-match --tags HEAD > /dev/null 2>&1; then
+    echo "error: HEAD has already been tagged"
+    exit 1
+  fi
   previous="$(git describe --tags "$(git rev-list --tags --max-count=1)" || echo "v0.0.0")"
   tag="$(printf "%s" "$previous" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')"
 
   echo "::set-output name=tag::${tag#v}"
 }
-
 main "${@:-}"
