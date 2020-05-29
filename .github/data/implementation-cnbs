@@ -18,3 +18,8 @@ paketo-buildpacks/yarn-install
 paketo-community/bundle-install
 paketo-community/bundler
 paketo-community/mri
+paketo-community/puma
+paketo-community/python-runtime
+paketo-community/rackup
+paketo-community/staticfile
+paketo-community/unicorn
