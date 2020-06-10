@@ -3,3 +3,4 @@ paketo-buildpacks/go
 paketo-buildpacks/nodejs
 paketo-buildpacks/php
 paketo-community/ruby
+paketo-community/python
