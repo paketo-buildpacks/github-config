@@ -24,3 +24,6 @@ paketo-community/rackup
 paketo-community/staticfile
 paketo-community/thin
 paketo-community/unicorn
+paketo-community/pipenv
+paketo-community/pip
+paketo-community/conda
