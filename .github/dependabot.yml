@@ -25,3 +25,7 @@ updates:
     directory: "/actions/release/reset-draft/entrypoint"
     schedule:
       interval: "daily"
+  - package-ecosystem: "gomod"
+    directory: "/actions/release/notes/language-family/entrypoint"
+    schedule:
+      interval: "daily"
