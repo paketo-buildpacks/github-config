@@ -6,3 +6,8 @@ description: |
 runs:
   using: 'docker'
   image: 'Dockerfile'
+
+outputs:
+  release_body:
+  tag:
+    description: Generated detailed release notes for the language family

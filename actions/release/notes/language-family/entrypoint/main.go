@@ -50,7 +50,6 @@ func Parse(buildpackTOMLPath string) ([]ImplementationBP, error) {
 
 	buildpacks := []ImplementationBP{}
 	for _, dependency := range config.Metadata.Dependencies {
-
 		buildpacks = append(buildpacks, ImplementationBP{
 
 			ID:      dependency.ID,
@@ -63,15 +62,15 @@ func Parse(buildpackTOMLPath string) ([]ImplementationBP, error) {
 }
 
 func CreateReleaseBody(dependencies []ImplementationBP) (string, error) {
-
 	var outputs []string
 
 	outputs = append(outputs, "This buildpack contains the following dependencies")
+
 	for _, dependency := range dependencies {
 		var output bytes.Buffer
 		tarballPath, err := Download(dependency.URI)
 		if err != nil {
-			return "", fmt.Errorf("Error: failed to download tarball: %w", err)
+			return "", fmt.Errorf("error: failed to download tarball: %w", err)
 		}
 
 		jamCommand := exec.Command("jam", "summarize", "--buildpack", tarballPath)
@@ -80,13 +79,11 @@ func CreateReleaseBody(dependencies []ImplementationBP) (string, error) {
 		err = jamCommand.Run()
 
 		if err != nil {
-			return "", fmt.Errorf("Error: failed to run 'jam summarize': %w", err)
-
+			return "", fmt.Errorf("error: failed to run 'jam summarize': %w", err)
 		}
 
 		outputs = append(outputs, fmt.Sprintf("#### %s version %s", dependency.ID, dependency.Version))
 		outputs = append(outputs, output.String())
-
 	}
 
 	return strings.Join(outputs, "\n"), nil
@@ -102,6 +99,7 @@ func Download(url string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to download asset: %w", err)
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("failed to download asset: unexpected response %s", resp.Status)

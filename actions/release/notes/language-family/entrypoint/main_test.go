@@ -29,12 +29,12 @@ var entrypoint string
 
 func TestEntrypoint(t *testing.T) {
 	var Expect = NewWithT(t).Expect
-	RegisterTestingT(t)
 
+	RegisterTestingT(t)
 	SetDefaultEventuallyTimeout(5 * time.Second)
 
 	var err error
-	entrypoint, err = gexec.Build("github.com/paketo-buildpacks/github-config/actions/release/create-lang-fam-release-body/entrypoint")
+	entrypoint, err = gexec.Build("github.com/paketo-buildpacks/github-config/actions/release/notes/language-family/entrypoint")
 	Expect(err).NotTo(HaveOccurred())
 
 	spec.Run(t, "create", func(t *testing.T, context spec.G, it spec.S) {
@@ -303,7 +303,7 @@ func TestEntrypoint(t *testing.T) {
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output:\n%s\n", buffer.Contents()) })
-					Expect(buffer).To(gbytes.Say(`Error: failed to download tarball:`))
+					Expect(buffer).To(gbytes.Say(`error: failed to download tarball:`))
 
 				})
 			})
@@ -403,7 +403,7 @@ func TestEntrypoint(t *testing.T) {
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output:\n%s\n", buffer.Contents()) })
-					Expect(buffer).To(gbytes.Say(`Error: failed to run 'jam summarize'`))
+					Expect(buffer).To(gbytes.Say(`error: failed to run 'jam summarize'`))
 				})
 			})
 		})
