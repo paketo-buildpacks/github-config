@@ -16,6 +16,9 @@ inputs:
   ssh-private-key:
     description: 'Private SSH key to push to the current repo'
     required: true
+  current-path:
+    description: 'Path inside the current repo to copy into'
+    default: ''
 
 outputs: {}
 
@@ -27,3 +30,4 @@ runs:
   - ${{ inputs.current-repo}}
   - ${{ inputs.config-path }}
   - ${{ inputs.ssh-private-key }}
+  - ${{ inputs.current-path }}
