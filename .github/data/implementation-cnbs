@@ -27,3 +27,4 @@ paketo-community/unicorn
 paketo-community/pipenv
 paketo-community/pip
 paketo-community/conda
+paketo-community/bootstrapper
