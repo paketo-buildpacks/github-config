@@ -3,6 +3,7 @@ set -euo pipefail
 
 config_repo=
 current_repo=
+current_path=
 config_path=
 branch_name=
 
@@ -37,11 +38,12 @@ sync_dirs() {
   set -x
   cd "${config_repo}${config_path}"
     for dir in $(ls -Ap . | grep "/"); do
-      if [[ -f "${current_repo}/${dir}.syncignore" ]]; then
-        rsync -r "${dir}" "${current_repo}/${dir}" --delete \
-          --exclude=".syncignore" --exclude-from="${current_repo}/${dir}.syncignore"
+      local exclude_list=""
+      if [[ -f "${current_repo}${current_path}/${dir}.syncignore" ]]; then
+        rsync -r "${dir}" "${current_repo}${current_path}/${dir}" --delete \
+          --exclude=".syncignore" --exclude-from="${current_repo}${current_path}/${dir}.syncignore"
       else
-        rsync -r "${dir}" "${current_repo}/${dir}" --delete
+        rsync -r "${dir}" "${current_repo}${current_path}/${dir}" --delete
       fi
     done
   cd -
@@ -81,6 +83,7 @@ main() {
   current_repo="${GITHUB_WORKSPACE}/$2"
   config_path="$3"
   ssh_key="$4"
+  current_path="$5"
 
   validate
   checkout_pr_branch
