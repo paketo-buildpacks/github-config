@@ -39,11 +39,11 @@ sync_dirs() {
   cd "${config_repo}${config_path}"
     for dir in $(ls -Ap . | grep "/"); do
       local exclude_list=""
-      if [[ -f "${current_repo}${current_path}/${dir}.syncignore" ]]; then
-        rsync -r "${dir}" "${current_repo}${current_path}/${dir}" --delete \
-          --exclude=".syncignore" --exclude-from="${current_repo}${current_path}/${dir}.syncignore"
+      if [[ -f "${current_repo}/${current_path}/${dir}.syncignore" ]]; then
+        rsync -r "${dir}" "${current_repo}/${current_path}/${dir}" --delete \
+          --exclude=".syncignore" --exclude-from="${current_repo}/${current_path}/${dir}.syncignore"
       else
-        rsync -r "${dir}" "${current_repo}${current_path}/${dir}" --delete
+        rsync -r "${dir}" "${current_repo}/${current_path}/${dir}" --delete
       fi
     done
   cd -
