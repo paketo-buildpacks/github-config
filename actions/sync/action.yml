@@ -26,8 +26,13 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
+  - --config-repo
   - ${{ inputs.config-repo }}
+  - --current-repo
   - ${{ inputs.current-repo}}
+  - --config-path
   - ${{ inputs.config-path }}
+  - --ssh-private-key
   - ${{ inputs.ssh-private-key }}
+  - --current-path
   - ${{ inputs.current-path }}
