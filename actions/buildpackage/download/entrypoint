@@ -7,10 +7,12 @@ download_url=
 tag=
 
 main() {
-  download_url="$(jq -r '.release.assets[] | select(.name | endswith(".cnb")) | .browser_download_url' "${GITHUB_EVENT_PATH}")"
+  download_url="$(jq -r '.release.assets[] | select(.name | endswith(".cnb")) | .url' "${GITHUB_EVENT_PATH}")"
   tag="$(jq -r '.release.tag_name' "${GITHUB_EVENT_PATH}")"
 
   curl "${download_url}" \
+    --header "Authorization: token ${GITHUB_TOKEN}" \
+    --header "Accept: application/octet-stream" \
     --silent \
     --location \
     --output "${GITHUB_WORKSPACE}/buildpackage.cnb"
