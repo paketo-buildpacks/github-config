@@ -172,11 +172,13 @@ func TestEntrypoint(t *testing.T) {
 					"assets": [
 						{
 						  "url": "%s/assets/other-asset.cnb",
-							"name": "other-asset.cnb"
+							"name": "other-asset.cnb",
+							"browser_download_url": "browser/other-asset.cnb"
 						},
 						{
 						  "url": "%s/assets/some-asset.tgz",
-							"name": "some-asset.tgz"
+							"name": "some-asset.tgz",
+							"browser_download_url": "browser/some-asset.tgz"
 						}
 					],
 					"name": "Release v1.2.3",
@@ -227,7 +229,7 @@ func TestEntrypoint(t *testing.T) {
 			Expect(buffer).To(gbytes.Say(fmt.Sprintf(`::set-output name=source::%s/some-org/some-repo/archive/some-tag-name.tar.gz`, api.URL)))
 			Expect(buffer).To(gbytes.Say(`::set-output name=source_sha256::7cb3e37a8c71a287586d099b9c310df90eac69d7f99c0042af4ce67ebc504c22`))
 			Expect(buffer).To(gbytes.Say(`::set-output name=stacks::\["some-stack","other-stack"\]`))
-			Expect(buffer).To(gbytes.Say(fmt.Sprintf(`::set-output name=uri::%s/assets/some-asset.tgz`, api.URL)))
+			Expect(buffer).To(gbytes.Say(`::set-output name=uri::browser/some-asset.tgz`))
 			Expect(buffer).To(gbytes.Say(`::set-output name=version::some-version`))
 
 			Expect(requests).To(HaveLen(2))
@@ -320,7 +322,8 @@ func TestEntrypoint(t *testing.T) {
 							"assets": [
 								{
 									"url": "%s/assets/loop-asset.tgz",
-									"name": "loop-asset.tgz"
+									"name": "loop-asset.tgz",
+									"browser_download_url": "browser/loop-asset.tgz"
 								}
 							],
 							"name": "Release v1.2.3",
@@ -359,7 +362,8 @@ func TestEntrypoint(t *testing.T) {
 							"assets": [
 								{
 									"url": "%s/assets/missing-asset.tgz",
-									"name": "missing-asset.tgz"
+									"name": "missing-asset.tgz",
+									"browser_download_url": "browser/missing-asset.tgz"
 								}
 							],
 							"name": "Release v1.2.3",
@@ -398,7 +402,8 @@ func TestEntrypoint(t *testing.T) {
 							"assets": [
 								{
 									"url": "%s/assets/malformed-asset.tgz",
-									"name": "malformed-asset.tgz"
+									"name": "malformed-asset.tgz",
+									"browser_download_url": "browser/malformed-asset.tgz"
 								}
 							],
 							"name": "Release v1.2.3",
@@ -437,7 +442,8 @@ func TestEntrypoint(t *testing.T) {
 							"assets": [
 								{
 									"url": "%s/assets/malformed-toml-asset.tgz",
-									"name": "malformed-toml-asset.tgz"
+									"name": "malformed-toml-asset.tgz",
+									"browser_download_url": "browser/malformed-toml-asset.tgz"
 								}
 							],
 							"name": "Release v1.2.3",

@@ -51,15 +51,16 @@ func main() {
 	var (
 		outputs Outputs
 		err     error
+		shaURI  string
 	)
 
-	outputs.URI, outputs.Source, err = ParseReleaseEvent(config.GithubURI)
+	shaURI, outputs.URI, outputs.Source, err = ParseReleaseEvent(config.GithubURI)
 	if err != nil {
 		fail(err)
 	}
 
 	var buildpack Buildpack
-	outputs.SHA256, outputs.SourceSHA256, buildpack, err = DownloadAssets(outputs.URI, outputs.Source, config.GithubToken)
+	outputs.SHA256, outputs.SourceSHA256, buildpack, err = DownloadAssets(shaURI, outputs.Source, config.GithubToken)
 	if err != nil {
 		fail(err)
 	}
@@ -79,12 +80,12 @@ func main() {
 	}
 }
 
-func ParseReleaseEvent(githubURL string) (string, string, error) {
+func ParseReleaseEvent(githubURL string) (string, string, string, error) {
 	fmt.Println("Parsing release event")
 
 	file, err := os.Open(os.Getenv("GITHUB_EVENT_PATH"))
 	if err != nil {
-		return "", "", fmt.Errorf("failed to read $GITHUB_EVENT_PATH: %w", err)
+		return "", "", "", fmt.Errorf("failed to read $GITHUB_EVENT_PATH: %w", err)
 	}
 	var event struct {
 		Repository struct {
@@ -92,8 +93,9 @@ func ParseReleaseEvent(githubURL string) (string, string, error) {
 		} `json:"repository"`
 		Release struct {
 			Assets []struct {
-				URL  string `json:"url"`
-				Name string `json:"name"`
+				URL                string `json:"url"`
+				BrowserDownloadURL string `json:"browser_download_url"`
+				Name               string `json:"name"`
 			} `json:"assets"`
 			Name    string `json:"name"`
 			TagName string `json:"tag_name"`
@@ -101,7 +103,7 @@ func ParseReleaseEvent(githubURL string) (string, string, error) {
 	}
 	err = json.NewDecoder(file).Decode(&event)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to decode $GITHUB_EVENT_PATH: %w", err)
+		return "", "", "", fmt.Errorf("failed to decode $GITHUB_EVENT_PATH: %w", err)
 	}
 
 	fmt.Printf("  Repository: %q\n", event.Repository.FullName)
@@ -110,14 +112,16 @@ func ParseReleaseEvent(githubURL string) (string, string, error) {
 
 	// get first .tgz or tar.gz asset
 	var releaseURL string
+	var browserURL string
 	for _, asset := range event.Release.Assets {
 		if strings.HasSuffix(asset.Name, ".tgz") {
 			releaseURL = asset.URL
+			browserURL = asset.BrowserDownloadURL
 			break
 		}
 	}
 	sourceURL := fmt.Sprintf("%s/%s/archive/%s.tar.gz", githubURL, event.Repository.FullName, event.Release.TagName)
-	return releaseURL, sourceURL, nil
+	return releaseURL, browserURL, sourceURL, nil
 }
 
 func DownloadAssets(releaseURL, sourceURL, token string) (string, string, Buildpack, error) {
