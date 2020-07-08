@@ -7,6 +7,10 @@ description: |
   The action will read that event payload, looking for assets and source code
   locations. With those details, the action fetches the details for a
   dependency update, including all of the outputs seen below.
+inputs:
+  token:
+    description: 'Github Access Token used to make the request'
+    required: true
 
 outputs:
   id:
@@ -27,3 +31,6 @@ outputs:
 runs:
   using: 'docker'
   image: 'Dockerfile'
+  args:
+  - "--github-token"
+  - ${{ inputs.token }}

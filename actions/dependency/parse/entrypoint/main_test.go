@@ -53,6 +53,11 @@ func TestEntrypoint(t *testing.T) {
 
 				requests = append(requests, receivedRequest)
 
+				if req.Header.Get("Authorization") != "token some-github-token" {
+					w.WriteHeader(http.StatusForbidden)
+					return
+				}
+
 				switch req.URL.Path {
 				case "/assets/some-asset.tgz":
 					buf := bytes.NewBuffer(nil)
@@ -166,7 +171,12 @@ func TestEntrypoint(t *testing.T) {
 				"release": {
 					"assets": [
 						{
-							"browser_download_url": "%s/assets/some-asset.tgz"
+						  "url": "%s/assets/other-asset.cnb",
+							"name": "other-asset.cnb"
+						},
+						{
+						  "url": "%s/assets/some-asset.tgz",
+							"name": "some-asset.tgz"
 						}
 					],
 					"name": "Release v1.2.3",
@@ -175,7 +185,7 @@ func TestEntrypoint(t *testing.T) {
 				"repository": {
 					"full_name": "some-org/some-repo"
 				}
-			}`, api.URL))
+			}`, api.URL, api.URL))
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(file.Close()).To(Succeed())
@@ -190,7 +200,11 @@ func TestEntrypoint(t *testing.T) {
 		})
 
 		it("outputs the dependency details of a release", func() {
-			command := exec.Command(entrypoint, "--github-uri", api.URL)
+			command := exec.Command(
+				entrypoint,
+				"--github-uri", api.URL,
+				"--github-token", "some-github-token",
+			)
 			command.Env = append(command.Env, fmt.Sprintf("GITHUB_EVENT_PATH=%s", eventPath))
 			buffer := gbytes.NewBuffer()
 
@@ -221,10 +235,13 @@ func TestEntrypoint(t *testing.T) {
 			assetDownloadRequest := requests[0]
 			Expect(assetDownloadRequest.Method).To(Equal("GET"))
 			Expect(assetDownloadRequest.URL.Path).To(Equal("/assets/some-asset.tgz"))
+			Expect(assetDownloadRequest.Header.Get("Accept")).To(Equal("application/octet-stream"))
+			Expect(assetDownloadRequest.Header.Get("Authorization")).To(Equal("token some-github-token"))
 
 			sourceDownloadRequest := requests[1]
 			Expect(sourceDownloadRequest.Method).To(Equal("GET"))
 			Expect(sourceDownloadRequest.URL.Path).To(Equal("/some-org/some-repo/archive/some-tag-name.tar.gz"))
+			Expect(assetDownloadRequest.Header.Get("Authorization")).To(Equal("token some-github-token"))
 		})
 
 		context("failure cases", func() {
@@ -234,7 +251,11 @@ func TestEntrypoint(t *testing.T) {
 				})
 
 				it("prints an error message and exits non-zero", func() {
-					command := exec.Command(entrypoint, "--github-uri", api.URL)
+					command := exec.Command(
+						entrypoint,
+						"--github-uri", api.URL,
+						"--github-token", "some-github-token",
+					)
 					command.Env = append(command.Env, fmt.Sprintf("GITHUB_EVENT_PATH=%s", eventPath))
 					buffer := gbytes.NewBuffer()
 
@@ -254,7 +275,11 @@ func TestEntrypoint(t *testing.T) {
 				})
 
 				it("prints an error message and exits non-zero", func() {
-					command := exec.Command(entrypoint, "--github-uri", api.URL)
+					command := exec.Command(
+						entrypoint,
+						"--github-uri", api.URL,
+						"--github-token", "some-github-token",
+					)
 					command.Env = append(command.Env, fmt.Sprintf("GITHUB_EVENT_PATH=%s", eventPath))
 					buffer := gbytes.NewBuffer()
 
@@ -270,7 +295,11 @@ func TestEntrypoint(t *testing.T) {
 
 			context("when the download request cannot be created", func() {
 				it("prints an error message and exits non-zero", func() {
-					command := exec.Command(entrypoint, "--github-uri", "%%%")
+					command := exec.Command(
+						entrypoint,
+						"--github-uri", "%%%",
+						"--github-token", "some-github-token",
+					)
 					command.Env = append(command.Env, fmt.Sprintf("GITHUB_EVENT_PATH=%s", eventPath))
 					buffer := gbytes.NewBuffer()
 
@@ -290,7 +319,8 @@ func TestEntrypoint(t *testing.T) {
 						"release": {
 							"assets": [
 								{
-									"browser_download_url": "%s/assets/loop-asset.tgz"
+									"url": "%s/assets/loop-asset.tgz",
+									"name": "loop-asset.tgz"
 								}
 							],
 							"name": "Release v1.2.3",
@@ -304,7 +334,11 @@ func TestEntrypoint(t *testing.T) {
 				})
 
 				it("prints an error message and exits non-zero", func() {
-					command := exec.Command(entrypoint, "--github-uri", api.URL)
+					command := exec.Command(
+						entrypoint,
+						"--github-uri", api.URL,
+						"--github-token", "some-github-token",
+					)
 					command.Env = append(command.Env, fmt.Sprintf("GITHUB_EVENT_PATH=%s", eventPath))
 					buffer := gbytes.NewBuffer()
 
@@ -324,7 +358,8 @@ func TestEntrypoint(t *testing.T) {
 						"release": {
 							"assets": [
 								{
-									"browser_download_url": "%s/assets/missing-asset.tgz"
+									"url": "%s/assets/missing-asset.tgz",
+									"name": "missing-asset.tgz"
 								}
 							],
 							"name": "Release v1.2.3",
@@ -338,7 +373,11 @@ func TestEntrypoint(t *testing.T) {
 				})
 
 				it("prints an error message and exits non-zero", func() {
-					command := exec.Command(entrypoint, "--github-uri", api.URL)
+					command := exec.Command(
+						entrypoint,
+						"--github-uri", api.URL,
+						"--github-token", "some-github-token",
+					)
 					command.Env = append(command.Env, fmt.Sprintf("GITHUB_EVENT_PATH=%s", eventPath))
 					buffer := gbytes.NewBuffer()
 
@@ -358,7 +397,8 @@ func TestEntrypoint(t *testing.T) {
 						"release": {
 							"assets": [
 								{
-									"browser_download_url": "%s/assets/malformed-asset.tgz"
+									"url": "%s/assets/malformed-asset.tgz",
+									"name": "malformed-asset.tgz"
 								}
 							],
 							"name": "Release v1.2.3",
@@ -372,7 +412,11 @@ func TestEntrypoint(t *testing.T) {
 				})
 
 				it("prints an error message and exits non-zero", func() {
-					command := exec.Command(entrypoint, "--github-uri", api.URL)
+					command := exec.Command(
+						entrypoint,
+						"--github-uri", api.URL,
+						"--github-token", "some-github-token",
+					)
 					command.Env = append(command.Env, fmt.Sprintf("GITHUB_EVENT_PATH=%s", eventPath))
 					buffer := gbytes.NewBuffer()
 
@@ -392,7 +436,8 @@ func TestEntrypoint(t *testing.T) {
 						"release": {
 							"assets": [
 								{
-									"browser_download_url": "%s/assets/malformed-toml-asset.tgz"
+									"url": "%s/assets/malformed-toml-asset.tgz",
+									"name": "malformed-toml-asset.tgz"
 								}
 							],
 							"name": "Release v1.2.3",
@@ -406,7 +451,11 @@ func TestEntrypoint(t *testing.T) {
 				})
 
 				it("prints an error message and exits non-zero", func() {
-					command := exec.Command(entrypoint, "--github-uri", api.URL)
+					command := exec.Command(
+						entrypoint,
+						"--github-uri", api.URL,
+						"--github-token", "some-github-token",
+					)
 					command.Env = append(command.Env, fmt.Sprintf("GITHUB_EVENT_PATH=%s", eventPath))
 					buffer := gbytes.NewBuffer()
 

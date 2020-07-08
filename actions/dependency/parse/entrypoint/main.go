@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -39,10 +40,12 @@ type Buildpack struct {
 
 func main() {
 	var config struct {
-		GithubURI string
+		GithubURI   string
+		GithubToken string
 	}
 
 	flag.StringVar(&config.GithubURI, "github-uri", "https://github.com", "Specifies Github base URI")
+	flag.StringVar(&config.GithubToken, "github-token", "", "Github token for authorization")
 	flag.Parse()
 
 	var (
@@ -56,7 +59,7 @@ func main() {
 	}
 
 	var buildpack Buildpack
-	outputs.SHA256, outputs.SourceSHA256, buildpack, err = DownloadAssets(outputs.URI, outputs.Source)
+	outputs.SHA256, outputs.SourceSHA256, buildpack, err = DownloadAssets(outputs.URI, outputs.Source, config.GithubToken)
 	if err != nil {
 		fail(err)
 	}
@@ -89,7 +92,8 @@ func ParseReleaseEvent(githubURL string) (string, string, error) {
 		} `json:"repository"`
 		Release struct {
 			Assets []struct {
-				BrowserDownloadURL string `json:"browser_download_url"`
+				URL  string `json:"url"`
+				Name string `json:"name"`
 			} `json:"assets"`
 			Name    string `json:"name"`
 			TagName string `json:"tag_name"`
@@ -104,16 +108,23 @@ func ParseReleaseEvent(githubURL string) (string, string, error) {
 	fmt.Printf("  Release:    %q\n", event.Release.Name)
 	fmt.Printf("  Tag:        %q\n", event.Release.TagName)
 
-	releaseURL := event.Release.Assets[0].BrowserDownloadURL
+	// get first .tgz or tar.gz asset
+	var releaseURL string
+	for _, asset := range event.Release.Assets {
+		if strings.HasSuffix(asset.Name, ".tgz") {
+			releaseURL = asset.URL
+			break
+		}
+	}
 	sourceURL := fmt.Sprintf("%s/%s/archive/%s.tar.gz", githubURL, event.Repository.FullName, event.Release.TagName)
 	return releaseURL, sourceURL, nil
 }
 
-func DownloadAssets(releaseURL, sourceURL string) (string, string, Buildpack, error) {
+func DownloadAssets(releaseURL, sourceURL, token string) (string, string, Buildpack, error) {
 	fmt.Println("Downloading assets")
 
 	fmt.Printf("  Release: %q\n", releaseURL)
-	body, err := Download(releaseURL)
+	body, err := Download(releaseURL, token)
 	if err != nil {
 		return "", "", Buildpack{}, err
 	}
@@ -151,7 +162,7 @@ func DownloadAssets(releaseURL, sourceURL string) (string, string, Buildpack, er
 	}
 
 	fmt.Printf("  Source:  %q\n", sourceURL)
-	sourceSHA256, err := DownloadAndSum(sourceURL)
+	sourceSHA256, err := DownloadAndSum(sourceURL, token)
 	if err != nil {
 		return "", "", Buildpack{}, err
 	}
@@ -159,8 +170,8 @@ func DownloadAssets(releaseURL, sourceURL string) (string, string, Buildpack, er
 	return sha256, sourceSHA256, buildpack, nil
 }
 
-func DownloadAndSum(url string) (string, error) {
-	body, err := Download(url)
+func DownloadAndSum(url, token string) (string, error) {
+	body, err := Download(url, token)
 	if err != nil {
 		return "", fmt.Errorf("failed to download asset: %w", err)
 	}
@@ -169,11 +180,14 @@ func DownloadAndSum(url string) (string, error) {
 	return Sum(body)
 }
 
-func Download(url string) (io.ReadCloser, error) {
+func Download(url, token string) (io.ReadCloser, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download asset: %w", err)
 	}
+
+	req.Header.Set("Accept", "application/octet-stream")
+	req.Header.Set("Authorization", fmt.Sprintf("token %s", token))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
