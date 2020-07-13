@@ -7,7 +7,7 @@ paketo-buildpacks/dotnet-core-runtime
 paketo-buildpacks/dotnet-core-sdk
 paketo-buildpacks/go-build
 paketo-buildpacks/go-dist
-paketo-buildpacks/go-mod
+paketo-buildpacks/go-mod-vendor
 paketo-buildpacks/httpd
 paketo-buildpacks/icu
 paketo-buildpacks/nginx
