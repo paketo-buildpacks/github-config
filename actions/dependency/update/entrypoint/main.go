@@ -205,7 +205,8 @@ func Replace(buildpack Buildpack, packageFile PackageFile, dependency Dependency
 	} else {
 		for index, dep := range packageFile.Dependencies {
 			stripRegPrefix := strings.TrimPrefix(dep.Image, "gcr.io/")
-			if strings.HasPrefix(stripRegPrefix, dependency.ID) {
+			depID := strings.Split(stripRegPrefix, ":")[0]
+			if depID == dependency.ID {
 				packageFile.Dependencies[index].Image = "gcr.io/" + dependency.ID + ":" + dependency.Version
 				replaced = true
 			}
