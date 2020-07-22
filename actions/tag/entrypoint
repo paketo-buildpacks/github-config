@@ -4,12 +4,37 @@
 # before executing this script
 
 main() {
+  local current_version
+
+  while [ "${#}" != 0 ]; do
+    case "${1}" in
+      --current-version)
+        current_version="${2}"
+        shift 2
+        ;;
+
+      "")
+        current_version=""
+        shift
+        ;;
+
+      *)
+        echo "unknown argument \"${1}\""
+        exit 1
+    esac
+  done
+
   if git describe --exact-match --tags HEAD > /dev/null 2>&1; then
     echo "error: HEAD has already been tagged"
     exit 1
   fi
-  previous="$(git describe --tags "$(git rev-list --tags --max-count=1)" || echo "v0.0.0")"
-  tag="$(printf "%s" "$previous" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')"
+
+  if [ -n "${current_version}" ]; then
+    tag="${current_version}"
+  else
+    previous="$(git describe --tags "$(git rev-list --tags --max-count=1)" || echo "v0.0.0")"
+    tag="$(printf "%s" "$previous" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')"
+  fi
 
   echo "::set-output name=tag::${tag#v}"
 }

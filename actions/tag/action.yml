@@ -3,6 +3,10 @@ name: 'Tag'
 description: |
   Tags the repository with the next highest patch number given an existing tag.
 
+inputs:
+  current_version:
+    description: 'If set will override script and use this version as the tag'
+
 outputs:
   tag:
     description: 'Tag produced from the action'
@@ -10,3 +14,6 @@ outputs:
 runs:
   using: 'docker'
   image: 'Dockerfile'
+  args:
+  - --current-version
+  - ${{ inputs.current_version }}
