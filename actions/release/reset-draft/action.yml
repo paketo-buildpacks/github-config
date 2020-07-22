@@ -14,6 +14,10 @@ inputs:
     description: 'Github Access Token used to make the request'
     required: true
 
+outputs:
+  current_version:
+    description: The version of the current draft release
+
 runs:
   using: 'docker'
   image: 'Dockerfile'
