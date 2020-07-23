@@ -61,7 +61,8 @@ func TestEntrypoint(t *testing.T) {
 					fmt.Fprintln(w, `[
 						{
 							"draft": true,
-							"id": 2
+							"id": 2,
+							"tag_name": "some-version"
 						}
 					]`)
 
@@ -141,7 +142,7 @@ func TestEntrypoint(t *testing.T) {
 		})
 
 		context("when a draft release does exists", func() {
-			it("deletes the draft release", func() {
+			it("deletes the draft release and outputs its version", func() {
 				command := exec.Command(
 					entrypoint,
 					"--endpoint", api.URL,
@@ -165,6 +166,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(buffer).To(gbytes.Say(`Fetching latest releases`))
 				Expect(buffer).To(gbytes.Say(`  Repository: some-org/draft-repo`))
 				Expect(buffer).To(gbytes.Say(`Latest release is draft, deleting.`))
+				Expect(buffer).To(gbytes.Say(`::set-output name=current_version::some-version`))
 				Expect(buffer).To(gbytes.Say(`Success`))
 			})
 		})

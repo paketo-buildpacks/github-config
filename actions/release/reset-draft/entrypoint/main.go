@@ -50,8 +50,9 @@ func main() {
 	}
 
 	var releases []struct {
-		ID    int  `json:"id"`
-		Draft bool `json:"draft"`
+		ID      int    `json:"id"`
+		Draft   bool   `json:"draft"`
+		TagName string `json:"tag_name"`
 	}
 	err = json.NewDecoder(resp.Body).Decode(&releases)
 	if err != nil {
@@ -92,6 +93,7 @@ func main() {
 		fail(fmt.Errorf("unexpected response from delete draft release request: %s", dump))
 	}
 
+	fmt.Printf("::set-output name=current_version::%s\n", releases[0].TagName)
 	fmt.Println("Success!")
 }
 
