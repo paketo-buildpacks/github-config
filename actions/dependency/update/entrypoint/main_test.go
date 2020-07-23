@@ -78,7 +78,7 @@ func TestEntrypoint(t *testing.T) {
   include_files = ["buildpack.toml"]
 
 	[[metadata.dependencies]]
-	  id = "some-registry/other-dependency-id"
+	  id = "some-registry/some-dependency-id-2"
 		sha256 = "other-sha256"
 		source = "other-source"
 		source_sha256 = "other-source-sha256"
@@ -102,7 +102,7 @@ func TestEntrypoint(t *testing.T) {
 
 [[order]]
   [[order.group]]
-		id = "some-registry/other-dependency-id"
+		id = "some-registry/some-dependency-id-2"
 		version = "other-version"
 		optional = true
 `)
@@ -146,7 +146,7 @@ func TestEntrypoint(t *testing.T) {
   include_files = ["buildpack.toml"]
 
 	[[metadata.dependencies]]
-	  id = "some-registry/other-dependency-id"
+	  id = "some-registry/some-dependency-id-2"
 		sha256 = "other-sha256"
 		source = "other-source"
 		source_sha256 = "other-source-sha256"
@@ -170,7 +170,7 @@ func TestEntrypoint(t *testing.T) {
 
 [[order]]
   [[order.group]]
-		id = "some-registry/other-dependency-id"
+		id = "some-registry/some-dependency-id-2"
 		version = "other-version"
 		optional = true
 `))
@@ -188,7 +188,7 @@ func TestEntrypoint(t *testing.T) {
   include_files = ["buildpack.toml"]
 
 	[[metadata.dependencies]]
-	  id = "some-registry/other-dependency-id"
+	  id = "some-registry/some-dependency-id-2"
 		sha256 = "other-sha256"
 		source = "other-source"
 		source_sha256 = "other-source-sha256"
@@ -203,7 +203,7 @@ func TestEntrypoint(t *testing.T) {
 
 [[order]]
   [[order.group]]
-		id = "some-registry/other-dependency-id"
+		id = "some-registry/some-dependency-id-2"
 		version = "other-version"
 		optional = true
 `), 0644)
@@ -234,7 +234,7 @@ func TestEntrypoint(t *testing.T) {
   include_files = ["buildpack.toml"]
 
 	[[metadata.dependencies]]
-	  id = "some-registry/other-dependency-id"
+	  id = "some-registry/some-dependency-id-2"
 		sha256 = "other-sha256"
 		source = "other-source"
 		source_sha256 = "other-source-sha256"
@@ -258,7 +258,7 @@ func TestEntrypoint(t *testing.T) {
 
 [[order]]
   [[order.group]]
-		id = "some-registry/other-dependency-id"
+		id = "some-registry/some-dependency-id-2"
 		version = "other-version"
 		optional = true
 `))
@@ -284,7 +284,7 @@ func TestEntrypoint(t *testing.T) {
 
 [[order]]
   [[order.group]]
-		id = "some-registry/other-dependency-id"
+		id = "some-registry/some-dependency-id-2"
 		version = "other-version"
 		optional = true
 `), 0644)
@@ -298,7 +298,7 @@ uri = "build/buildpack.tgz"
 image = "gcr.io/some-registry/some-dependency-id:some-version"
 
 [[dependencies]]
-image = "gcr.io/some-registry/other-dependency-id:other-version"
+image = "gcr.io/some-registry/some-dependency-id-2:other-version"
 `), 0644)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -339,7 +339,7 @@ image = "gcr.io/some-registry/other-dependency-id:other-version"
 
 [[order]]
   [[order.group]]
-    id = "some-registry/other-dependency-id"
+		id = "some-registry/some-dependency-id-2"
     version = "other-version"
     optional = true
 `))
@@ -354,7 +354,7 @@ image = "gcr.io/some-registry/other-dependency-id:other-version"
   image = "gcr.io/some-registry/some-dependency-id:some-updated-version"
 
 [[dependencies]]
-  image = "gcr.io/some-registry/other-dependency-id:other-version"
+  image = "gcr.io/some-registry/some-dependency-id-2:other-version"
 `))
 			})
 		})
