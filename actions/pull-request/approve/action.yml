@@ -1,0 +1,31 @@
+name: 'Conditionally Auto-Approve PR'
+
+description: |
+  Conditionally auto-approves PRs based on a set of rules
+
+inputs:
+  user:
+    description: 'User account to use when approving'
+    required: true
+  token:
+    description: 'Token used to authenticate user account'
+    required: true
+  number:
+    description: 'PR number'
+    required: true
+  author:
+    description: 'PR author'
+    required: true
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--user"
+  - ${{ inputs.user }}
+  - "--token"
+  - ${{ inputs.token }}
+  - "--number"
+  - ${{ inputs.number }}
+  - "--author"
+  - ${{ inputs.author }}
