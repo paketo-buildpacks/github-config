@@ -1,0 +1,94 @@
+#!/bin/bash
+
+set -eu
+set -o pipefail
+
+function main() {
+  local user token number author
+
+  while [ "${#}" != 0 ]; do
+    case "${1}" in
+      --user)
+        user="${2}"
+        shift 2
+        ;;
+
+      --token)
+        token="${2}"
+        shift 2
+        ;;
+
+      --number)
+        number="${2}"
+        shift 2
+        ;;
+
+      --author)
+        author="${2}"
+        shift 2
+        ;;
+
+      "")
+        shift
+        ;;
+
+      *)
+        echo "unknown argument \"${1}\""
+        exit 1
+    esac
+  done
+
+  if rules::check "${author}"; then
+    review::approve "${user}" "${token}" "${number}"
+  fi
+}
+
+function rules::check() {
+  local author
+  author="${1}"
+
+  echo "Checking rules:"
+
+  if rules::author::dependabot "${author}"; then
+    return 0
+  fi
+
+  echo "fail: no rules passed"
+  return 1
+}
+
+function rules::author::dependabot() {
+  local author
+  author="${1}"
+
+  if [[ "${author}" == "dependabot[bot]" ]]; then
+    echo "  pass: author is dependabot[bot]"
+    return 0
+  fi
+
+  echo "  fail: author is not dependabot[bot]"
+  return 1
+}
+
+function review::approve() {
+  local user token number
+  user="${1}"
+  token="${2}"
+  number="${3}"
+
+  echo "Approving PR ${number}"
+
+  mkdir -p "${HOME}/.config/gh"
+  cat <<-EOF > "${HOME}/.config/gh/hosts.yml"
+---
+github.com:
+  user: ${user}
+  oauth_token: ${token}
+EOF
+
+  pushd "${GITHUB_WORKSPACE}" > /dev/null || true
+    gh pr review "${number}" --approve
+  popd > /dev/null || true
+}
+
+main "${@:-}"
