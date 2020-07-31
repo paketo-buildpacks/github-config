@@ -77,12 +77,12 @@ branch_protection() {
 	bad 'Enforce all restrictions for admins - not enabled'
     fi
 
-    force_pushes=$(echo "$json" | jq .allow_force_pushes.enabled)
+    force_pushes=$(jq .allow_force_pushes.enabled <<< "$json")
     if [ "$force_pushes" != "false" ]; then
 	bad "Allow force pushes to $branch - enabled"
     fi
 
-    deletions=$(echo "$json" | jq .allow_deletions.enabled)
+    deletions=$(jq .allow_deletions.enabled <<< "$json")
     if [ "$deletions" != "false" ]; then
 	bad "Allow users to delete $branch - enabled"
     fi
