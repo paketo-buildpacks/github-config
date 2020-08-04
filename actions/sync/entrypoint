@@ -164,7 +164,7 @@ function open_pr() {
     -X POST \
     --data '{
       "head": "'"${branch}"'",
-      "base": "master",
+      "base": "main",
       "title": "Update shared github-config"
     }'
 }
