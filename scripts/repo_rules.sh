@@ -32,7 +32,7 @@ bad() {
 
 # Branch Protection Rules
 branch_protection() {
-    branch=master
+    branch=main
     json=$(curl -s -X GET https://api.github.com/repos/"$user"/"$repo"/branches/"$branch"/protection \
     -H 'Accept: application/vnd.github.luke-cage-preview+json' \
     -H "Authorization: token ${GITHUB_TOKEN}")
