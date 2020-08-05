@@ -10,11 +10,13 @@ function main() {
   repos="$(
     cat "${ROOTDIR}/.github/data/implementation-cnbs"
     cat "${ROOTDIR}/.github/data/language-family-cnbs"
-    cat <<-EOF
-      paketo-buildpacks/packit
-      paketo-buildpacks/occam
+    cat <<-EOF | xargs -n1
       paketo-buildpacks/github-config
+      paketo-buildpacks/occam
+      paketo-buildpacks/packit
       paketo-buildpacks/paketo-website
+      paketo-buildpacks/rfcs
+      paketo-buildpacks/samples
 		EOF
   )"
 
@@ -39,7 +41,7 @@ function clone_or_pull() {
     echo "${repo} already cloned, updating"
 
     git -C "${path}" checkout main
-    git -C "${path}" pull --rebase
+    git -C "${path}" pull --rebase --autostash
   fi
 
   echo
