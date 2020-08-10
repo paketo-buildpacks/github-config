@@ -1,23 +1,30 @@
 #!/usr/bin/env bash
-# Use to bootstrap cnbs with shared files
-set -euo pipefail
 
-if [  $# -ne 2 ]; then
-    echo "usage: $0 <dst-cnb-dir> <implementation|language-family>"; exit 1;
-fi
+set -eu
+set -o pipefail
 
-target="$1"
-type="$2"
+readonly ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$DIR"/sanity.sh
+# shellcheck source=SCRIPTDIR/sanity.sh
+source "${ROOT_DIR}/scripts/sanity.sh"
 
-check_sanity
+function main() {
+  if [  $# -ne 2 ]; then
+      echo "usage: $0 <dst-cnb-dir> <implementation|language-family>"; exit 1;
+  fi
 
-[ -d "$target" ] || { echo "$target" dir not found; exit  1; }
+  target="$1"
+  type="$2"
 
-if [ "$type" != "implementation" ] && [ "$type" != "language-family" ]; then
-    echo Invalid cnb type; exit 1
-fi
+  sanity::check "${ROOT_DIR}"
 
-cp -pR "${DIR}/../${type}/." "$target"
+  [ -d "$target" ] || { echo "$target" dir not found; exit  1; }
+
+  if [ "$type" != "implementation" ] && [ "$type" != "language-family" ]; then
+      echo Invalid cnb type; exit 1
+  fi
+
+  cp -pR "${ROOT_DIR}/${type}/." "$target"
+}
+
+main "${@:-}"

@@ -6,23 +6,37 @@ set -e
 set -u
 set -o pipefail
 
-readonly ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+function sanity::check() {
+  local dir
+  dir="${1}"
 
-function check_sanity() {
-  # Rule 1 - all children of implemenation/ & language-family/ must be directories
+  sanity::check::rule::directories "${dir}"
+  sanity::check::rule::repo_names "${dir}"
+}
+
+# Rule: all children of implemenation/ & language-family/ must be directories
+function sanity::check::rule::directories() {
+  local dir
+  dir="${1}"
+
   for cnbdir in 'implementation' 'language-family' ; do
-    if [[ ! -d "${ROOTDIR}"/"${cnbdir}" ]]; then
+    if [[ ! -d "${dir}"/"${cnbdir}" ]]; then
       echo "${cnbdir} dir not found"
       exit  1
     fi
 
-    if [[ "$(ls -Apq "${ROOTDIR}/${cnbdir}" | grep -v /)" ]]; then
+    if [[ -n "$(find "${dir}/${cnbdir}" \! -type d -depth 1)" ]]; then
       echo "All files in ${cnbdir}/ must be directories. Exiting."
       exit 1
     fi
   done
+}
 
-  # Rule 2 - Data files must be single line records of repo names
+# Rule: Data files must be single line records of repo names
+function sanity::check::rule::repo_names() {
+  local dir
+  dir="${1}"
+
   for datafile in 'implementation-cnbs' 'language-family-cnbs' ; do
     lnum=1
     while read -r line; do
@@ -32,8 +46,10 @@ function check_sanity() {
       fi
 
       lnum=$((lnum+1))
-    done < "${ROOTDIR}/.github/data/${datafile}"
+    done < "${dir}/.github/data/${datafile}"
   done
 }
 
-check_sanity "${@:-}"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  sanity::check "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" "${@:-}"
+fi
