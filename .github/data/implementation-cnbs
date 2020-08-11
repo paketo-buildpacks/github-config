@@ -27,6 +27,7 @@ paketo-community/pipenv
 paketo-community/puma
 paketo-community/python-runtime
 paketo-community/rackup
+paketo-community/rake
 paketo-community/staticfile
 paketo-community/thin
 paketo-community/unicorn
