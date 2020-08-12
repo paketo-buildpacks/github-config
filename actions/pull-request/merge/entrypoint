@@ -33,7 +33,7 @@ function main() {
     esac
   done
 
-  pr::merge "${token}" "${number}"
+  pr::merge "${user}" "${token}" "${number}"
 }
 
 function pr::merge() {
@@ -53,7 +53,7 @@ github.com:
 EOF
 
   pushd "${GITHUB_WORKSPACE}" > /dev/null || true
-    gh pr merge "${number}" --rebase
+    gh pr merge "${number}" --rebase --delete-branch=false
   popd > /dev/null || true
 }
 
