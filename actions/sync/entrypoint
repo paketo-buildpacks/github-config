@@ -80,7 +80,7 @@ function checkout_pr_branch() {
 
   git -C "${current_repo}" fetch origin
 
-  if git -C "${current_repo}" branch -vv -a | grep "${branch}"; then
+  if git -C "${current_repo}" branch -a | grep "${branch}"; then
     git -C "${current_repo}" checkout -b "${branch}" "origin/${branch}"
 
     git -C "${current_repo}" pull -r
@@ -164,7 +164,7 @@ function open_pr() {
     -X POST \
     --data '{
       "head": "'"${branch}"'",
-      "base": "master",
+      "base": "main",
       "title": "Update shared github-config"
     }'
 }

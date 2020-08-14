@@ -53,6 +53,10 @@ function rules::check() {
     return 0
   fi
 
+  if rules::author::paketobot "${author}"; then
+    return 0
+  fi
+
   echo "fail: no rules passed"
   return 1
 }
@@ -67,6 +71,19 @@ function rules::author::dependabot() {
   fi
 
   echo "  fail: author is not dependabot[bot]"
+  return 1
+}
+
+function rules::author::paketobot() {
+  local author
+  author="${1}"
+
+  if [[ "${author}" == "paketo-bot" ]]; then
+    echo "  pass: author is paketo-bot"
+    return 0
+  fi
+
+  echo "  fail: author is not paketo-bot"
   return 1
 }
 

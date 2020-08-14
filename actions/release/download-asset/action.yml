@@ -1,0 +1,26 @@
+name: 'Download'
+
+description: |
+  Downloads a buildpackage from a release.
+
+inputs:
+  url:
+    description: URL of the asset to download.
+    required: true
+  output:
+    description: Filepath location of the downloaded asset.
+    required: true
+  token:
+    description: GitHub token used to make the request.
+    required: true
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--url"
+  - ${{ inputs.url }}
+  - "--output"
+  - ${{ inputs.output }}
+  - "--token"
+  - ${{ inputs.token }}

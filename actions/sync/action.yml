@@ -2,7 +2,7 @@ name: 'Sync'
 
 description: |
   Copies a fixed path from the source repo to the root of the repo
-  that uses this action, then sends a PR against the repo's master
+  that uses this action, then sends a PR against the repo's main branch
 inputs:
   config-repo:
     description: 'Path to checked out repo with shared files'

@@ -7,7 +7,7 @@ name: Notify Language Family CNB repos
 on:
   push:
     branches:
-      - master
+      - main
     paths:
     - 'language-family/**'
 
@@ -28,7 +28,7 @@ jobs:
         echo "::set-output name=targetlist::$targetlist"
 
     - name: Send Repository Dispatch
-      uses: paketo-buildpacks/github-config/actions/dispatch@master
+      uses: paketo-buildpacks/github-config/actions/dispatch@main
       with:
         repos: "${{ steps.targets.outputs.targetlist }}"
         token: ${{ secrets.BOT_USER_TOKEN }}
