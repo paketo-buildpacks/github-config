@@ -12,6 +12,7 @@ paketo-buildpacks/httpd
 paketo-buildpacks/icu
 paketo-buildpacks/nginx
 paketo-buildpacks/node-engine
+paketo-buildpacks/node-start
 paketo-buildpacks/npm
 paketo-buildpacks/php-composer
 paketo-buildpacks/php-dist
