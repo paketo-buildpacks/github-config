@@ -1,17 +1,49 @@
 #!/usr/bin/env bash
 
-# Checks if the contents of implementation/ and language-family/ follow rules
-
-set -e
-set -u
+set -eu
 set -o pipefail
+
+readonly PROGDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=SCRIPTDIR/.util/print.sh
+source "${PROGDIR}/.util/print.sh"
 
 function sanity::check() {
   local dir
   dir="${1}"
+  shift 1
+
+  while [[ "${#}" != 0 ]]; do
+    case "${1}" in
+      --help|-h)
+        shift 1
+        usage
+        exit 0
+        ;;
+
+      "")
+        # skip if the argument is empty
+        shift 1
+        ;;
+
+      *)
+        util::print::error "unknown argument \"${1}\""
+    esac
+  done
 
   sanity::check::rule::directories "${dir}"
   sanity::check::rule::repo_names "${dir}"
+}
+
+function usage() {
+  cat <<-USAGE
+sanity.sh [OPTIONS]
+
+Checks if the contents of implementation/ and language-family/ follow rules.
+
+OPTIONS
+  --help  -h  prints the command usage
+USAGE
 }
 
 # Rule: all children of implemenation/ & language-family/ must be directories

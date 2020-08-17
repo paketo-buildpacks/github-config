@@ -5,7 +5,43 @@ set -o pipefail
 
 readonly ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
+# shellcheck source=SCRIPTDIR/.util/print.sh
+source "${ROOTDIR}/scripts/.util/print.sh"
+
 function main() {
+  while [[ "${#}" != 0 ]]; do
+    case "${1}" in
+      --help|-h)
+        shift 1
+        usage
+        exit 0
+        ;;
+
+      "")
+        # skip if the argument is empty
+        shift 1
+        ;;
+
+      *)
+        util::print::error "unknown argument \"${1}\""
+    esac
+  done
+
+  clone_all
+}
+
+function usage() {
+  cat <<-USAGE
+clone-all-repos.sh [OPTIONS]
+
+Clones all project repositories into a set of organization-scopes workspace directories.
+
+OPTIONS
+  --help  -h  prints the command usage
+USAGE
+}
+
+function clone_all() {
   local repos line
   repos="$(
     cat "${ROOTDIR}/.github/data/implementation-cnbs"
