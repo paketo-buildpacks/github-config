@@ -1,94 +1,260 @@
 #!/usr/bin/env bash
-# Script to validate repo rules for paketo cnbs
-# usage e.g.
-# GITHUB_TOKEN=$(cat /path/to/github_token) repo_rules.sh paketo-buildpacks/php-dist
-# Pass second argument --verbose to print the api output json
-# You can get a personal token from github.com/settings. Token just requires repo perm
 
-set -e
-set -u
+set -eu
 set -o pipefail
 
-if [  $# -lt 1 ] || [  -z "${GITHUB_TOKEN:-}" ]; then
-    echo "usage: GITHUB_TOKEN=<token> $0 <org>/<repo> [--verbose]"; exit 1;
-fi
+readonly PROGDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if ! [[ "$1" =~ [a-z-]+/[a-z-]+ ]]; then
-    echo Provide a valid argument of syntax "<org>/<repo>"
-    exit 1
-fi
+# shellcheck source=SCRIPTDIR/.util/print.sh
+source "${PROGDIR}/.util/print.sh"
 
-user=${1%%/*}
-repo=${1##*/}
-green="\\0033[0;32m"
-red="\\0033[0;31m"
-reset="\\0033[0;39m"
-ret=0
+function main() {
+  local repo token branch verbose
+  while [[ "${#}" != 0 ]]; do
+    case "${1}" in
+      --repo)
+        repo="${2}"
+        shift 2
+        ;;
 
-bad() {
-    echo -e "- $red""$1""$reset"
-    ret=1
+      --token)
+        token="${2}"
+        shift 2
+        ;;
+
+      --branch)
+        branch="${2}"
+        shift 2
+        ;;
+
+      --verbose)
+        verbose=true
+        shift 1
+        ;;
+
+      --help|-h)
+        shift 1
+        usage
+        exit 0
+        ;;
+
+      "")
+        # skip if the argument is empty
+        shift 1
+        ;;
+
+      *)
+        util::print::error "unknown argument \"${1}\""
+    esac
+  done
+
+  if [[ -z "${repo:-}" ]]; then
+    usage
+    echo
+    util::print::error "--repo is a required flag"
+  fi
+
+  if [[ -z "${token:-}" ]]; then
+    usage
+    echo
+    util::print::error "--token is a required flag"
+  fi
+
+  if [[ -z "${branch:-}" ]]; then
+    branch="main"
+  fi
+
+  if [[ ! "${repo}" =~ [a-z-]+/[a-z-]+ ]]; then
+    util::print::error "--repo argument must match <org>/<name> format"
+  fi
+
+  if rules "${token}" "${repo}" "${branch}" "${verbose}"; then
+    util::print::success "Valid"
+  else
+    util::print::error "Invalid"
+  fi
 }
 
-# Branch Protection Rules
-branch_protection() {
-    branch=main
-    json=$(curl -s -X GET https://api.github.com/repos/"$user"/"$repo"/branches/"$branch"/protection \
-    -H 'Accept: application/vnd.github.luke-cage-preview+json' \
-    -H "Authorization: token ${GITHUB_TOKEN}")
+function usage() {
+  cat <<-USAGE
+repo_rules.sh --repo <repo> --token <token> [OPTIONS]
 
-    if [ "$#" -eq 2 ] && [ "$2" == "--verbose" ]; then
-	echo "$json"
-    fi
+Validates branch protection rules for a GitHub repository.
 
-    apiurl=$(jq .url <<< "$json")
-    if [ -z "$apiurl" ] || [ "$apiurl" == "null" ]; then
-	bad "No branch protection rules defined for $branch (or you do not have permission)"
-	exit 1
-    fi
-
-    status_checks=$(jq .required_status_checks.strict <<< "$json")
-    if [ "$status_checks" != "true" ]; then
-	bad 'Merging: Require status checks to pass before merge - not enabled'
-    fi
-
-    status_checks_int=$(jq '.required_status_checks.contexts | index("Integration Tests")' <<< "$json")
-    if [ -z "$status_checks_int" ] || [ "$status_checks_int" == "null" ]; then
-	bad 'Merging: Required status checks do not contain Integration Tests'
-    fi
-
-    pr_review_count=$(jq .required_pull_request_reviews.required_approving_review_count <<< "$json")
-    if [ "$pr_review_count" != "1" ]; then
-	bad 'Merging: Required approving reviews is not 1'
-    fi
-
-    codeowner_review=$(jq .required_pull_request_reviews.require_code_owner_reviews <<< "$json")
-    if [ "$codeowner_review" != "true" ]; then
-	bad 'Merging: Require review from a codeowner - not enabled'
-    fi
-
-    linear_history=$(jq .required_linear_history.enabled <<< "$json")
-    if [ "$linear_history" != "true" ]; then
-	bad 'Require linear history - not enabled'
-    fi
-
-    enforce_admins=$(jq .enforce_admins.enabled <<< "$json")
-    if [ "$enforce_admins" != "true" ]; then
-	bad 'Enforce all restrictions for admins - not enabled'
-    fi
-
-    force_pushes=$(jq .allow_force_pushes.enabled <<< "$json")
-    if [ "$force_pushes" != "false" ]; then
-	bad "Allow force pushes to $branch - enabled"
-    fi
-
-    deletions=$(jq .allow_deletions.enabled <<< "$json")
-    if [ "$deletions" != "false" ]; then
-	bad "Allow users to delete $branch - enabled"
-    fi
+OPTIONS
+  --branch <branch>  branch to check for protection rules (default: main)
+  --help  -h         prints the command usage
+  --repo <repo>      name of the GitHub repository to check in the form <org>/<name>
+  --token <token>    GitHub token used to check the repository
+USAGE
 }
 
-branch_protection "$@"
+function rules() {
+  local token repo branch verbose json
+  token="${1}"
+  repo="${2}"
+  branch="${3}"
+  verbose="${4}"
 
-[ "$ret" -eq 0 ] && echo -e "$green"Valid"$reset"
-exit $ret
+  json="$(
+    curl "https://api.github.com/repos/${repo}/branches/${branch}/protection" \
+      --silent \
+      --request GET \
+      --header "Accept: application/vnd.github.luke-cage-preview+json" \
+      --header "Authorization: token ${token}"
+  )"
+
+  if [[ -n "${verbose}" ]]; then
+    echo "${json}" | jq -r .
+  fi
+
+  local valid
+  valid=0
+
+  if ! rules::present "$(jq -r .url <<< "${json}")" "${branch}"; then
+    valid=1
+  fi
+
+  if ! rules::reviews::count "$(jq .required_pull_request_reviews.required_approving_review_count <<< "${json}")"; then
+    valid=1
+  fi
+
+  if ! rules::reviews::stale::dismiss "$(jq .required_pull_request_reviews.dismiss_stale_reviews <<< "${json}")"; then
+    valid=1
+  fi
+
+  if ! rules::reviews::codeowner "$(jq .required_pull_request_reviews.require_code_owner_reviews <<< "${json}")"; then
+    valid=1
+  fi
+
+  if ! rules::checks::strict "$(jq .required_status_checks.strict <<< "${json}")"; then
+    valid=1
+  fi
+
+  if ! rules::checks::integration "$(jq '.required_status_checks.contexts | index("Integration Tests")' <<< "${json}")"; then
+    valid=1
+  fi
+
+  if ! rules::history::linear "$(jq .required_linear_history.enabled <<< "${json}")"; then
+    valid=1
+  fi
+
+  if ! rules::administrators::include "$(jq .enforce_admins.enabled <<< "${json}")"; then
+    valid=1
+  fi
+
+  if ! rules::push::force::deny "$(jq .allow_force_pushes.enabled <<< "${json}")" "${branch}"; then
+    valid=1
+  fi
+
+  if ! rules::branch::delete::deny "$(jq .allow_deletions.enabled <<< "${json}")"; then
+    valid=1
+  fi
+
+  util::print::break
+
+  return ${valid}
+}
+
+function rules::present() {
+  local url branch
+  url="${1}"
+  branch="${2}"
+
+  if [[ -z "${url}" || "${url}" == "null" ]]; then
+    util::print::error "No branch protection rules defined for ${branch} (or you do not have permission)"
+  fi
+}
+
+function rules::reviews::count() {
+  local pr_review_count
+  pr_review_count="${1}"
+
+  if [[ "${pr_review_count}" != "1" ]]; then
+    util::print::yellow 'Merging: Required approving reviews is not 1'
+    return 1
+  fi
+}
+
+function rules::reviews::stale::dismiss() {
+  local dismiss
+  dismiss="${1}"
+
+  if [[ "${dismiss}" != "true" ]]; then
+    util::print::yellow 'Merging: Dismiss stale pull request approvals when new commits are pushed - not enabled'
+    return 1
+  fi
+}
+
+function rules::reviews::codeowner() {
+  local codeowner_review
+  codeowner_review="${1}"
+
+  if [[ "${codeowner_review}" != "true" ]]; then
+    util::print::yellow 'Merging: Require review from a codeowner - not enabled'
+    return 1
+  fi
+}
+
+function rules::checks::strict() {
+  local status_checks
+  status_checks="${1}"
+
+  if [[ "${status_checks}" != "true" ]]; then
+    util::print::yellow 'Merging: Require status checks to pass before merge - not enabled'
+    return 1
+  fi
+}
+
+function rules::checks::integration() {
+  local status_checks_int
+  status_checks_int="${1}"
+
+  if [[ -z "${status_checks_int}" || "${status_checks_int}" == "null" ]]; then
+    util::print::yellow 'Merging: Required status checks do not contain Integration Tests'
+    return 1
+  fi
+}
+
+function rules::history::linear() {
+  local linear_history
+  linear_history="${1}"
+
+  if [[ "${linear_history}" != "true" ]]; then
+    util::print::yellow 'Require linear history - not enabled'
+    return 1
+  fi
+}
+
+function rules::administrators::include() {
+  local enforce_admins
+  enforce_admins="${1}"
+
+  if [[ "${enforce_admins}" != "true" ]]; then
+    util::print::yellow 'Enforce all restrictions for admins - not enabled'
+    return 1
+  fi
+}
+
+function rules::push::force::deny() {
+  local force_pushes branch
+  force_pushes="${1}"
+  branch="${2}"
+
+  if [[ "$force_pushes" != "false" ]]; then
+    util::print::yellow "Allow force pushes to ${branch} - enabled"
+    return 1
+  fi
+}
+
+function rules::branch::delete::deny() {
+  local deletions
+  deletions="${1}"
+
+  if [[ "$deletions" != "false" ]]; then
+    util::print::yellow "Allow users to delete $branch - enabled"
+    return 1
+  fi
+}
+
+main "${@:-}"
