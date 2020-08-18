@@ -14,10 +14,14 @@ paketo-buildpacks/nginx
 paketo-buildpacks/node-engine
 paketo-buildpacks/node-start
 paketo-buildpacks/npm
+paketo-buildpacks/npm-start
 paketo-buildpacks/php-composer
 paketo-buildpacks/php-dist
 paketo-buildpacks/php-web
+paketo-buildpacks/tini
+paketo-buildpacks/yarn
 paketo-buildpacks/yarn-install
+paketo-buildpacks/yarn-start
 paketo-community/bootstrapper
 paketo-community/bundle-install
 paketo-community/bundler
