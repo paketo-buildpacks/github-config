@@ -86,6 +86,7 @@ OPTIONS
   --help  -h         prints the command usage
   --repo <repo>      name of the GitHub repository to check in the form <org>/<name>
   --token <token>    GitHub token used to check the repository
+  --verbose          Print the JSON returned from the API
 USAGE
 }
 
