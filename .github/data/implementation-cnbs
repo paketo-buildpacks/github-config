@@ -27,6 +27,7 @@ paketo-community/bundle-install
 paketo-community/bundler
 paketo-community/conda
 paketo-community/mri
+paketo-community/passenger
 paketo-community/pip
 paketo-community/pipenv
 paketo-community/puma
