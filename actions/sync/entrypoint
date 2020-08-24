@@ -45,8 +45,12 @@ function main() {
   validate "${config_repo}" "${current_repo}" "${config_path}"
   checkout_pr_branch "${current_repo}" "${branch}"
   sync_dirs "${config_repo}" "${current_repo}" "${config_path}" "${current_path}"
-  commit_and_push "${current_repo}" "${ssh_private_key}" "${branch}" "${config_repo}"
-  open_pr "${branch}"
+  if [ "$(check_for_updates "${current_repo}")" = 0 ]; then
+    echo "nothing to sync"
+  else
+    commit_and_push "${current_repo}" "${ssh_private_key}" "${branch}" "${config_repo}"
+    open_pr "${branch}"
+  fi
 }
 
 function validate() {
@@ -115,6 +119,17 @@ function sync_dirs() {
     done
   popd > /dev/null
 }
+
+function check_for_updates() {
+  local current_repo num_changes
+  current_repo="${1}"
+
+  pushd "${current_repo}" > /dev/null
+    num_changes=$( git status --porcelain=v1 2>/dev/null | wc -l)
+    echo $num_changes
+  popd > /dev/null
+}
+
 
 function commit_and_push() {
   local current_repo ssh_private_key branch config_repo sha
