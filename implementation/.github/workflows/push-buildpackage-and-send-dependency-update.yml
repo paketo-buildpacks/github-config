@@ -37,6 +37,11 @@ jobs:
     - name: Check out
       uses: actions/checkout@v2
 
+    # This workflow notifies language families on release of impl cnbs
+    # Requires the following:
+    # - secret PAKETO_BOT_GITHUB_TOKEN -> token with permissions to send dispatch to language family repos
+    # - file .github/language-family-membership listing target <org>/<repo> per line
+
     - name: List enrolled language families
       id: language-families
       run : |
