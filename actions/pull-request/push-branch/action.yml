@@ -1,0 +1,16 @@
+name: 'Push branch'
+
+description: |
+  Push a git branch to the remote "origin"
+
+inputs:
+  branch:
+    description: 'Name of the branch to push'
+    required: true
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--branch"
+  - ${{ inputs.branch }}

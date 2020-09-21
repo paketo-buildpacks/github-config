@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -eu
+set -o pipefail
+
+function main() {
+  local branch
+  while [ "${#}" != 0 ]; do
+    case "${1}" in
+      --branch)
+        branch="${2}"
+        shift 2
+        ;;
+
+      "")
+        shift
+        ;;
+
+      *)
+        echo "unknown argument \"${1}\""
+        exit 1
+    esac
+  done
+
+  git push origin "${branch}"
+}
+
+main "${@:-}"
