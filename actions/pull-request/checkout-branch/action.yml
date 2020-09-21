@@ -1,0 +1,17 @@
+name: 'Checkout branch'
+
+description: |
+  Checkout a branch. If the branch doesn't exist on the
+  remote, create and check it out.
+
+inputs:
+  branch:
+    description: 'Name of the branch to checkout'
+    required: true
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--branch"
+  - ${{ inputs.branch }}
