@@ -29,8 +29,13 @@ function main() {
 
   git config --global user.email "paketobuildpacks@paketo.io"
   git config --global user.name "paketo-bot"
-  git add --all "${pathspec}"
-  git commit --message "${message}"
+
+  if git diff -- "${pathspec}"; then
+    git add --all "${pathspec}"
+    git commit --message "${message}"
+    echo "::set-output name=commit_sha::$(git rev-parse HEAD)"
+    exit 0
+  fi
 }
 
 main "${@:-}"
