@@ -26,7 +26,6 @@ function main() {
   if git branch -a | grep "${branch}"; then
     git checkout -b "${branch}" "origin/${branch}"
     git pull -r
-    chown -R runner:docker .
   else
     git checkout -b "${branch}"
   fi
