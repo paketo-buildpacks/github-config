@@ -13,6 +13,10 @@ inputs:
     description: 'Git pathspec to stage'
     required: true
 
+outputs:
+  commit_sha:
+    description: 'The sha of the commit'
+
 runs:
   using: 'docker'
   image: 'Dockerfile'
