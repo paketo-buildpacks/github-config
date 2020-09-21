@@ -1,0 +1,31 @@
+name: 'Open Pull Request'
+
+description: |
+  Opens a Pull Request
+
+inputs:
+  token:
+    description: 'Token used to authenticate user account'
+    required: true
+  title:
+    description: 'Title given to the PR'
+    required: true
+  body:
+    description: 'Body of the PR'
+    default: ''
+  branch:
+    description: 'Branch to PR'
+    required: true
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--token"
+  - ${{ inputs.token }}
+  - "--title"
+  - ${{ inputs.title }}
+  - "--body"
+  - ${{ inputs.body }}
+  - "--branch"
+  - ${{ inputs.branch }}
