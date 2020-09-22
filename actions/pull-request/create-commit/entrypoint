@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -eu
+set -o pipefail
+
+function main() {
+  local message pathspec
+  while [ "${#}" != 0 ]; do
+    case "${1}" in
+      --message)
+        message="${2}"
+        shift 2
+        ;;
+
+      --pathspec)
+        pathspec="${2}"
+        shift 2
+        ;;
+
+      "")
+        shift
+        ;;
+
+      *)
+        echo "unknown argument \"${1}\""
+        exit 1
+    esac
+  done
+
+  git config --global user.email "paketobuildpacks@paketo.io"
+  git config --global user.name "paketo-bot"
+
+  if [[ -n "$(git status --short -- "${pathspec}")" ]]; then
+    git add --all "${pathspec}"
+    git commit --message "${message}"
+    echo "::set-output name=commit_sha::$(git rev-parse HEAD)"
+    exit 0
+  fi
+}
+
+main "${@:-}"

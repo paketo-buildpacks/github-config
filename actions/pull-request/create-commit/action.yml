@@ -1,0 +1,27 @@
+name: 'Create commit'
+
+description: |
+  Stages the given pathspec and creates a git commit with the given message.
+  This action will fail if there are no changes or if pathspec doesn't exist/is
+  invalid.
+
+inputs:
+  message:
+    description: 'Commit message'
+    required: true
+  pathspec:
+    description: 'Git pathspec to stage'
+    required: true
+
+outputs:
+  commit_sha:
+    description: 'The sha of the commit'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--message"
+  - ${{ inputs.message }}
+  - "--pathspec"
+  - ${{ inputs.pathspec }}
