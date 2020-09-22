@@ -199,10 +199,11 @@ func (b *BuilderInfo) setTomlOutput(variable string) error {
 	// not support multiline strings:
 	// https://github.community/t5/GitHub-Actions/set-output-Truncates-Multiline-Strings/m-p/38372#M3322
 	out := buf.String()
+	out = strings.TrimSpace(out)
 	out = strings.ReplaceAll(out, "%", "%25")
 	out = strings.ReplaceAll(out, "\n", "%0A")
 	out = strings.ReplaceAll(out, "\r", "%0D")
-	fmt.Printf("::set-output name=%s::%s\n", variable, out)
+	fmt.Printf("::set-output name=%s::%s", variable, out)
 
 	return nil
 }
