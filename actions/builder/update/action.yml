@@ -12,23 +12,8 @@ description: |
 # buildpack image. When this assumption is not valid anymore, this action will
 # require to implement an {id, image} mapping.
 inputs:
-  stack:
-    description: 'ID of the stack to use for the builder'
-    required: true
-  build-image:
-    description: 'Build Image'
-    required: true
-  run-image:
-    description: 'Run Image'
-    required: true
-  run-image-mirrors:
-    description: 'Comma separated list of Run Image Mirrors'
-    required: true
-  stack-image-tag:
-    description: 'Specific image tag for build image, run image, and run image mirrors'
-    required: true
-  order-file:
-    description: 'Path to the order.toml file'
+  builder-file:
+    description: 'Path to the builder.toml file'
     required: true
   registry-server:
     description: 'Registry server uri for images in order.toml (.e.g. gcr.io)'
@@ -42,17 +27,7 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-  - "--order-file"
-  - ${{ inputs.order-file }}
+  - "--builder-file"
+  - ${{ inputs.builder-file }}
   - "--registry-server"
   - ${{ inputs.registry-server }}
-  - "--stack"
-  - ${{ inputs.stack }}
-  - "--build-image"
-  - ${{ inputs.build-image }}
-  - "--run-image"
-  - ${{ inputs.run-image }}
-  - "--run-image-mirrors"
-  - ${{ inputs.run-image-mirrors }}
-  - "--stack-image-tag"
-  - ${{ inputs.stack-image-tag }}
