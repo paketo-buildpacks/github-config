@@ -1,11 +1,9 @@
 name: 'Generate Builder.toml'
 
 description: |
-  This action generates a builder.toml[1] given an order.toml, stack id and
-  stack images. All buildpack images, lifecycle-image and build-image are
-  tagged with their exact latest versions in the generated builder.toml, but
-  the run-image and run-image-mirrors are tagged with the provided
-  stack-image-tag
+  This action generates an updated builder.toml[1].  All buildpack images,
+  lifecycle-image and build-image in the generated builder.toml are tagged with
+  their exact latest versions available on the registry.
   [1] https://buildpacks.io/docs/reference/config/builder-config
 
 # It is assumed that ${registry-server}/<buildpack-id> gives the name of the

@@ -275,7 +275,7 @@ run-image-mirrors = ["gcr.io/another-repo/mirror-run:some-stack-image-tag"]
 				})
 			})
 
-			context("invalid path to order.toml", func() {
+			context("invalid path to builder.toml", func() {
 				it("should fail with an appropriate error message", func() {
 					command := exec.Command(
 						entrypoint,
