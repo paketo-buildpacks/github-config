@@ -1,4 +1,3 @@
-paketo-buildpacks/bootstrapper
 paketo-buildpacks/bundle-install
 paketo-buildpacks/bundler
 paketo-buildpacks/dep
@@ -32,6 +31,7 @@ paketo-buildpacks/unicorn
 paketo-buildpacks/yarn
 paketo-buildpacks/yarn-install
 paketo-buildpacks/yarn-start
+paketo-community/bootstrapper
 paketo-community/conda
 paketo-community/pip
 paketo-community/pipenv
