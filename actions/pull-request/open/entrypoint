@@ -48,12 +48,20 @@ function pr::open() {
   body="${3}"
   branch="${4}"
   org="$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f1)"
-  count="$(
+
+  response="$(
     curl "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?head=${org}:${branch}" \
       -H "Authorization: token ${token}" \
-      --silent \
-      | jq -r 'length'
+      --silent
   )"
+
+  if [[ "${response}" == *"message"* ]];then
+    echo "Github API request failed with the following message:"
+    echo "${response}"
+    exit 1
+  fi
+
+  count="$(echo "${response}" | jq -r 'length')"
 
   if [[ "${count}" != "0" ]]; then
     echo "PR already exists, updated with new commit."
