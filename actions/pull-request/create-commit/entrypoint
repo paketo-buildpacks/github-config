@@ -27,7 +27,7 @@ function main() {
     esac
   done
 
-  git config --global user.email "paketobuildpacks@paketo.io"
+  git config --global user.email "paketobuildpacks@gmail.com"
   git config --global user.name "paketo-bot"
 
   if [[ -n "$(git status --short -- "${pathspec}")" ]]; then
