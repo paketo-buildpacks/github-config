@@ -42,33 +42,22 @@ function main() {
 }
 
 function pr::open() {
-  local token title body branch org
+  local token title body branch
   token="${1}"
   title="${2}"
   body="${3}"
   branch="${4}"
-  org="$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f1)"
 
-  response="$(
-    curl "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?head=${org}:${branch}" \
-      -H "Authorization: token ${token}" \
-      --silent
-  )"
+  echo "${token}" | gh auth login --with-token
 
-  if [[ "${response}" == *"message"* ]];then
-    echo "Github API request failed with the following message:"
-    echo "${response}"
-    exit 1
-  fi
-
-  count="$(echo "${response}" | jq -r 'length')"
+  count="$(gh pr list --repo "${GITHUB_REPOSITORY}" \
+    | awk -v branch="${branch}" '{ if ($(NF-1) == branch) { print }}' \
+    | wc -l)"
 
   if [[ "${count}" != "0" ]]; then
     echo "PR already exists, updated with new commit."
     exit 0
   fi
-
-  echo "${token}" | gh auth login --with-token
 
   echo "Opening Pull Request"
 
