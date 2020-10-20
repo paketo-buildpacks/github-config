@@ -3,8 +3,8 @@ paketo-buildpacks/bundler
 paketo-buildpacks/dep
 paketo-buildpacks/dep-ensure
 paketo-buildpacks/dotnet-core-aspnet
-paketo-buildpacks/dotnet-core-build
-paketo-buildpacks/dotnet-core-conf
+paketo-buildpacks/dotnet-publish
+paketo-buildpacks/dotnet-execute
 paketo-buildpacks/dotnet-core-runtime
 paketo-buildpacks/dotnet-core-sdk
 paketo-buildpacks/go-build
