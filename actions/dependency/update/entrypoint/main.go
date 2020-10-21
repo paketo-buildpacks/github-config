@@ -32,7 +32,7 @@ type Buildpack struct {
 	API       string      `toml:"api"`
 	Buildpack interface{} `toml:"buildpack"`
 	Metadata  struct {
-		IncludeFiles []string     `toml:"include_files"`
+		IncludeFiles []string     `toml:"include-files"`
 		Dependencies []Dependency `toml:"dependencies"`
 	} `toml:"metadata"`
 	Order []struct {
