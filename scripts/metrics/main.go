@@ -49,12 +49,8 @@ type PullRequest struct {
 	} `json:"_links"`
 }
 
-func (p *PullRequest) CalculateMinutesToMerge() int64 {
+func (p *PullRequest) CalculateMinutesToMerge() (int64, error) {
 	client := &http.Client{}
-	if p.MergedAt == "" {
-		return -1
-	}
-
 	request, _ := http.NewRequest("GET", p.Links.Commits.CommitsURL, nil)
 	request.Header.Add("Authorization", fmt.Sprintf("token %s", os.Getenv("PAKETO_GITHUB_TOKEN")))
 
@@ -80,7 +76,7 @@ func (p *PullRequest) CalculateMinutesToMerge() int64 {
 		}
 	}
 	fmt.Printf("Commit with message %s at %s.\n", lastCommit.CommitData.Message, lastCommit.CommitData.Committer.Date)
-	return 10
+	return 10, nil
 }
 
 type Commit struct {
@@ -119,10 +115,11 @@ func main() {
 			pullRequests := repo.GetClosedPullRequests(org)
 
 			for _, pullRequest := range pullRequests {
-				mergeTime := pullRequest.CalculateMinutesToMerge()
-				if mergeTime > 0 {
-					mergeTimes = append(mergeTimes, mergeTime)
+				if pullRequest.MergedAt == "" {
+					continue
 				}
+				mergeTime, _ := pullRequest.CalculateMinutesToMerge()
+				mergeTimes = append(mergeTimes, mergeTime)
 			}
 
 		}
