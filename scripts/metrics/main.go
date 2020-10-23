@@ -4,10 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
+	"time"
+
+	"github.com/aclements/go-moremath/stats"
 )
+
+const dateLayout string = "2006-01-02T15:04:05Z"
 
 type Repository struct {
 	Name string `json:"name"`
@@ -17,7 +24,7 @@ type Repository struct {
 func (r *Repository) GetClosedPullRequests(org string) []PullRequest {
 
 	client := &http.Client{}
-	request, _ := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls?per_page=2&state=closed", org, r.Name), nil)
+	request, _ := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls?per_page=200&state=closed", org, r.Name), nil)
 	request.Header.Add("Authorization", fmt.Sprintf("token %s", os.Getenv("PAKETO_GITHUB_TOKEN")))
 
 	response, err := client.Do(request)
@@ -39,6 +46,8 @@ type PullRequestUser struct {
 }
 
 type PullRequest struct {
+	Title     string          `json:"title"`
+	Number    int64           `json:"number"`
 	MergedAt  string          `json:"merged_at,omitempty"`
 	CreatedAt string          `json:"created_at"`
 	User      PullRequestUser `json:"user"`
@@ -49,7 +58,10 @@ type PullRequest struct {
 	} `json:"_links"`
 }
 
-func (p *PullRequest) CalculateMinutesToMerge() (int64, error) {
+func (p *PullRequest) CalculateMinutesToMerge() (float64, error) {
+	if p.MergedAt == "" {
+		panic("this pull request was never merged")
+	}
 	client := &http.Client{}
 	request, _ := http.NewRequest("GET", p.Links.Commits.CommitsURL, nil)
 	request.Header.Add("Authorization", fmt.Sprintf("token %s", os.Getenv("PAKETO_GITHUB_TOKEN")))
@@ -66,8 +78,12 @@ func (p *PullRequest) CalculateMinutesToMerge() (int64, error) {
 		panic(err)
 	}
 
-	// TODO: sort commits by date the the later commits at the beginning
-	// sort.....
+	sort.Slice(pullRequestCommits, func(i, j int) bool {
+		iTime, _ := time.Parse(dateLayout, pullRequestCommits[i].CommitData.Committer.Date)
+		jTime, _ := time.Parse(dateLayout, pullRequestCommits[j].CommitData.Committer.Date)
+		return iTime.After(jTime)
+	})
+
 	var lastCommit Commit
 	for _, commit := range pullRequestCommits {
 		if !strings.Contains(commit.CommitData.Message, "Merge branch 'main'") {
@@ -75,8 +91,9 @@ func (p *PullRequest) CalculateMinutesToMerge() (int64, error) {
 			break
 		}
 	}
-	fmt.Printf("Commit with message %s at %s.\n", lastCommit.CommitData.Message, lastCommit.CommitData.Committer.Date)
-	return 10, nil
+	lastCommitTime, _ := time.Parse(dateLayout, lastCommit.CommitData.Committer.Date)
+	mergedAtTime, _ := time.Parse(dateLayout, p.MergedAt)
+	return math.Round(mergedAtTime.Sub(lastCommitTime).Minutes()), nil
 }
 
 type Commit struct {
@@ -90,11 +107,11 @@ type Commit struct {
 }
 
 func main() {
-	var mergeTimes []int64
+	var mergeTimes []float64
 	orgs := []string{"paketo-buildpacks", "paketo-community"}
 	client := &http.Client{}
 
-	for _, org := range orgs[0:1] {
+	for _, org := range orgs {
 
 		request, _ := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/orgs/%s/repos?per_page=100", org), nil)
 		request.Header.Add("Authorization", fmt.Sprintf("token %s", os.Getenv("PAKETO_GITHUB_TOKEN")))
@@ -111,19 +128,33 @@ func main() {
 			panic(err)
 		}
 
-		for _, repo := range repos[0:10] {
+		for _, repo := range repos {
 			pullRequests := repo.GetClosedPullRequests(org)
 
 			for _, pullRequest := range pullRequests {
 				if pullRequest.MergedAt == "" {
 					continue
 				}
+				mergedAtTime, _ := time.Parse(dateLayout, pullRequest.MergedAt)
+				if mergedAtTime.Before(time.Now().Add(-time.Hour * 30 * 24)) {
+					continue
+				}
+				if strings.Contains(pullRequest.User.Login, "bot") {
+					continue
+				}
+				if strings.Contains(pullRequest.User.Login, "nebhale") {
+					continue
+				}
+				if strings.Contains(pullRequest.Title, "rfc") {
+					continue
+				}
 				mergeTime, _ := pullRequest.CalculateMinutesToMerge()
 				mergeTimes = append(mergeTimes, mergeTime)
+				fmt.Printf("Pull request by %s\nOrg: %s   Repo: %s   ID: %d\ntook %f minutes to merge.\n", pullRequest.User.Login, org, repo.Name, pullRequest.Number, mergeTime)
 			}
-
 		}
 	}
-	fmt.Println(mergeTimes)
+	mergeTimesSample := stats.Sample{Xs: mergeTimes}
+	fmt.Printf("Merge Times (in minutes) \n\nAverage: %f\nMedian %f\n95th Percentile: %f\n", mergeTimesSample.Mean(), mergeTimesSample.Quantile(0.5), mergeTimesSample.Quantile(0.95))
 
 }
