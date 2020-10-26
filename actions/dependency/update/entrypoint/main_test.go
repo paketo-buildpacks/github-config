@@ -75,7 +75,7 @@ func TestEntrypoint(t *testing.T) {
 	version = "some-buildpack-version"
 
 [metadata]
-  include_files = ["buildpack.toml"]
+  include-files = ["buildpack.toml"]
 
 	[[metadata.dependencies]]
 	  id = "some-registry/some-dependency-id-2"
@@ -143,7 +143,7 @@ func TestEntrypoint(t *testing.T) {
 	version = "some-buildpack-version"
 
 [metadata]
-  include_files = ["buildpack.toml"]
+  include-files = ["buildpack.toml"]
 
 	[[metadata.dependencies]]
 	  id = "some-registry/some-dependency-id-2"
@@ -185,7 +185,7 @@ func TestEntrypoint(t *testing.T) {
 	version = "some-buildpack-version"
 
 [metadata]
-  include_files = ["buildpack.toml"]
+  include-files = ["buildpack.toml"]
 
 	[[metadata.dependencies]]
 	  id = "some-registry/some-dependency-id-2"
@@ -231,7 +231,7 @@ func TestEntrypoint(t *testing.T) {
 	version = "some-buildpack-version"
 
 [metadata]
-  include_files = ["buildpack.toml"]
+  include-files = ["buildpack.toml"]
 
 	[[metadata.dependencies]]
 	  id = "some-registry/some-dependency-id-2"
@@ -275,7 +275,7 @@ func TestEntrypoint(t *testing.T) {
 	version = "some-buildpack-version"
 
 [metadata]
-  include_files = ["buildpack.toml"]
+  include-files = ["buildpack.toml"]
 
 [[order]]
   [[order.group]]
@@ -330,7 +330,7 @@ image = "gcr.io/some-registry/some-dependency-id-2:other-version"
   version = "some-buildpack-version"
 
 [metadata]
-  include_files = ["buildpack.toml"]
+  include-files = ["buildpack.toml"]
 
 [[order]]
   [[order.group]]
