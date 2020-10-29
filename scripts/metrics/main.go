@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aclements/go-moremath/stats"
@@ -19,8 +21,11 @@ const dateLayout string = "2006-01-02T15:04:05Z"
 var orgs = []string{"paketo-buildpacks", "paketo-community"}
 
 type Repository struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
+	Name  string `json:"name"`
+	URL   string `json:"url"`
+	Owner struct {
+		Login string `json:"login"`
+	} `json:"owner"`
 }
 
 type PullRequestUser struct {
@@ -52,17 +57,81 @@ type Commit struct {
 
 func main() {
 	var mergeTimes []float64
+	start := time.Now()
 
-	for _, org := range orgs {
-		repos := getOrgRepos(org)
-
-		for _, repo := range repos {
-			mergeTimes = append(mergeTimes, getRepoMergeTimes(org, repo)...)
-		}
+	if os.Getenv("PAKETO_GITHUB_TOKEN") == "" {
+		fmt.Println("Please set PAKETO_GITHUB_TOKEN\nExiting.")
+		return
 	}
 
+	numWorkers := 2
+	if os.Getenv("NUM_WORKERS") != "" {
+		numWorkers, _ = strconv.Atoi(os.Getenv("NUM_WORKERS"))
+	}
+
+	in := getOrgReposChan(orgs)
+
+	fmt.Printf("Running with %d workers...\nUse NUM_WORKERS to set.\n\n", numWorkers)
+	var workers []<-chan float64
+	for i := 0; i < numWorkers; i++ {
+		workers = append(workers, worker(i, in))
+	}
+
+	for time := range merge(workers...) {
+		mergeTimes = append(mergeTimes, time)
+	}
 	mergeTimesSample := stats.Sample{Xs: mergeTimes}
-	fmt.Printf("\nMerge Time Stats\n    Average: %f hours\n    Median %f hours\n    95th Percentile: %f hours\n", (mergeTimesSample.Mean() / 60), (mergeTimesSample.Quantile(0.5) / 60), (mergeTimesSample.Quantile(0.95) / 60))
+	fmt.Printf("\nMerge Time Stats\nFor %d pull requests\n    Average: %f hours\n    Median %f hours\n    95th Percentile: %f hours\n", len(mergeTimesSample.Xs), (mergeTimesSample.Mean() / 60), (mergeTimesSample.Quantile(0.5) / 60), (mergeTimesSample.Quantile(0.95) / 60))
+
+	duration := time.Since(start)
+	fmt.Printf("Execution took %f seconds.\n", duration.Seconds())
+}
+
+func worker(id int, input <-chan Repository) chan float64 {
+	output := make(chan float64)
+
+	go func() {
+		for repo := range input {
+			time.Sleep(time.Millisecond * 200)
+			getRepoMergeTimes(repo, output)
+		}
+		close(output)
+	}()
+	return output
+}
+
+func merge(ws ...<-chan float64) chan float64 {
+	var wg sync.WaitGroup
+	output := make(chan float64)
+
+	getTimes := func(c <-chan float64) {
+		for time := range c {
+			output <- time
+		}
+		wg.Done()
+	}
+	wg.Add(len(ws))
+	for _, w := range ws {
+		go getTimes(w)
+	}
+	go func() {
+		wg.Wait()
+		close(output)
+	}()
+	return output
+}
+
+func getOrgReposChan(orgs []string) chan Repository {
+	output := make(chan Repository)
+	go func() {
+		for _, org := range orgs {
+			for _, repo := range getOrgRepos(org) {
+				output <- repo
+			}
+		}
+		close(output)
+	}()
+	return output
 }
 
 func getOrgRepos(org string) []Repository {
@@ -79,14 +148,13 @@ func getOrgRepos(org string) []Repository {
 	repos := []Repository{}
 	err = json.Unmarshal(body, &repos)
 	if err != nil {
-		panic(err)
+		panic(string(body))
 	}
 	return repos
 }
 
-func getRepoMergeTimes(org string, repo Repository) []float64 {
-	mergeTimes := []float64{}
-	pullRequests := getClosedPullRequests(org, repo)
+func getRepoMergeTimes(repo Repository, output chan float64) {
+	pullRequests := getClosedPullRequests(repo)
 	for _, pullRequest := range pullRequests {
 		if pullRequest.MergedAt == "" {
 			continue
@@ -105,15 +173,15 @@ func getRepoMergeTimes(org string, repo Repository) []float64 {
 			continue
 		}
 		mergeTime := calculateMinutesToMerge(pullRequest)
-		fmt.Printf("Pull request %s/%s #%d by %s\ntook %f minutes to merge.\n", org, repo.Name, pullRequest.Number, pullRequest.User.Login, mergeTime)
-		mergeTimes = append(mergeTimes, mergeTime)
+		fmt.Printf("Pull request %s/%s #%d by %s\ntook %f minutes to merge.\n", repo.Owner.Login, repo.Name, pullRequest.Number, pullRequest.User.Login, mergeTime)
+		output <- mergeTime
 	}
-	return mergeTimes
 }
 
-func getClosedPullRequests(org string, repo Repository) []PullRequest {
+func getClosedPullRequests(repo Repository) []PullRequest {
 	client := &http.Client{}
-	request, _ := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls?per_page=200&state=closed", org, repo.Name), nil)
+	requestURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls?per_page=200&state=closed", repo.Owner.Login, repo.Name)
+	request, _ := http.NewRequest("GET", requestURL, nil)
 	request.Header.Add("Authorization", fmt.Sprintf("token %s", os.Getenv("PAKETO_GITHUB_TOKEN")))
 
 	response, err := client.Do(request)
@@ -124,9 +192,11 @@ func getClosedPullRequests(org string, repo Repository) []PullRequest {
 	body, _ := ioutil.ReadAll(response.Body)
 	pullRequests := []PullRequest{}
 	err = json.Unmarshal(body, &pullRequests)
+
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("Request: %s\nResponse: %s\n", requestURL, string(body)))
 	}
+
 	return pullRequests
 }
 
@@ -145,9 +215,10 @@ func calculateMinutesToMerge(pullRequest PullRequest) float64 {
 
 	body, _ := ioutil.ReadAll(response.Body)
 	pullRequestCommits := []Commit{}
+
 	err = json.Unmarshal(body, &pullRequestCommits)
 	if err != nil {
-		panic(err)
+		panic(string(body))
 	}
 
 	sort.Slice(pullRequestCommits, func(i, j int) bool {
