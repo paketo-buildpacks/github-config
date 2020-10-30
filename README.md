@@ -23,7 +23,6 @@ This will copy the relevant config files to your CNB. Git commit and Push your C
 Now, to wire up your CNB repo to receive relevant updates as a pull requests:
 * Append your repo name to the relevant file [here](.github/data)
 * Configure deploy-keys, secrets as required in workflow
-* To auto-merge these PRs, turn on [mergify](https://github.com/marketplace/mergify) for your cnb repo
 
 Submit your change to this repo as a PR. You should be all set when the PR is merged.
 
