@@ -18,9 +18,9 @@ type Repository struct {
 	} `json:"owner"`
 }
 
-func GetOrgRepos(org string) []Repository {
+func GetOrgRepos(org string, serverURI string) []Repository {
 	client := &http.Client{}
-	request, _ := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/orgs/%s/repos?per_page=100", org), nil)
+	request, _ := http.NewRequest("GET", fmt.Sprintf("%s/orgs/%s/repos?per_page=100", serverURI, org), nil)
 	request.Header.Add("Authorization", fmt.Sprintf("token %s", os.Getenv("PAKETO_GITHUB_TOKEN")))
 
 	response, err := client.Do(request)
@@ -37,8 +37,8 @@ func GetOrgRepos(org string) []Repository {
 	return repos
 }
 
-func GetRepoMergeTimes(repo Repository, output chan float64) {
-	pullRequests := getClosedPullRequests(repo)
+func GetRepoMergeTimes(repo Repository, serverURI string, output chan float64) {
+	pullRequests := getClosedPullRequests(repo, serverURI)
 	for _, pullRequest := range pullRequests {
 		if pullRequest.MergedAt == "" {
 			continue
@@ -56,15 +56,15 @@ func GetRepoMergeTimes(repo Repository, output chan float64) {
 		if strings.Contains(pullRequest.Title, "rfc") {
 			continue
 		}
-		mergeTime := calculateMinutesToMerge(pullRequest)
+		mergeTime := calculateMinutesToMerge(pullRequest, serverURI)
 		fmt.Printf("Pull request %s/%s #%d by %s\ntook %f minutes to merge.\n", repo.Owner.Login, repo.Name, pullRequest.Number, pullRequest.User.Login, mergeTime)
 		output <- mergeTime
 	}
 }
 
-func getClosedPullRequests(repo Repository) []PullRequest {
+func getClosedPullRequests(repo Repository, serverURI string) []PullRequest {
 	client := &http.Client{}
-	requestURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls?per_page=200&state=closed", repo.Owner.Login, repo.Name)
+	requestURL := fmt.Sprintf("%s/repos/%s/%s/pulls?per_page=200&state=closed", serverURI, repo.Owner.Login, repo.Name)
 	request, _ := http.NewRequest("GET", requestURL, nil)
 	request.Header.Add("Authorization", fmt.Sprintf("token %s", os.Getenv("PAKETO_GITHUB_TOKEN")))
 

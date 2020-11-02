@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -11,13 +12,15 @@ import (
 	"github.com/paketo-buildpacks/github-config/scripts/metrics/internal"
 )
 
-const dateLayout string = "2006-01-02T15:04:05Z"
-
 var orgs = []string{"paketo-buildpacks", "paketo-community"}
 
 func main() {
 	var mergeTimes []float64
+	var githubServer string
 	start := time.Now()
+
+	flag.StringVar(&githubServer, "server", "https://api.github.com", "base URL for the github API")
+	flag.Parse()
 
 	if os.Getenv("PAKETO_GITHUB_TOKEN") == "" {
 		fmt.Println("Please set PAKETO_GITHUB_TOKEN\nExiting.")
@@ -29,12 +32,12 @@ func main() {
 		numWorkers, _ = strconv.Atoi(os.Getenv("NUM_WORKERS"))
 	}
 
-	in := getOrgReposChan(orgs)
+	in := getOrgReposChan(orgs, githubServer)
 
 	fmt.Printf("Running with %d workers...\nUse NUM_WORKERS to set.\n\n", numWorkers)
 	var workers []<-chan float64
 	for i := 0; i < numWorkers; i++ {
-		workers = append(workers, worker(i, in))
+		workers = append(workers, worker(i, githubServer, in))
 	}
 
 	for time := range merge(workers...) {
@@ -47,13 +50,13 @@ func main() {
 	fmt.Printf("Execution took %f seconds.\n", duration.Seconds())
 }
 
-func worker(id int, input <-chan internal.Repository) chan float64 {
+func worker(id int, serverURI string, input <-chan internal.Repository) chan float64 {
 	output := make(chan float64)
 
 	go func() {
 		for repo := range input {
 			time.Sleep(time.Millisecond * 200)
-			internal.GetRepoMergeTimes(repo, output)
+			internal.GetRepoMergeTimes(repo, serverURI, output)
 		}
 		close(output)
 	}()
@@ -81,11 +84,11 @@ func merge(ws ...<-chan float64) chan float64 {
 	return output
 }
 
-func getOrgReposChan(orgs []string) chan internal.Repository {
+func getOrgReposChan(orgs []string, serverURI string) chan internal.Repository {
 	output := make(chan internal.Repository)
 	go func() {
 		for _, org := range orgs {
-			for _, repo := range internal.GetOrgRepos(org) {
+			for _, repo := range internal.GetOrgRepos(org, serverURI) {
 				output <- repo
 			}
 		}

@@ -40,7 +40,27 @@ func testPullRequest(t *testing.T, context spec.G, it spec.S) {
 
 		})
 		context("the most recent commit is NOT a merge commit", func() {
+			it.Before(func() {
+				firstCommit := Commit{}
+				firstCommit.CommitData.Message = "first-commit-message"
+				firstCommit.CommitData.Committer.Date = "2000-10-31T00:00:00Z"
 
+				secondCommit := Commit{}
+				secondCommit.CommitData.Message = "second-commit-message"
+				secondCommit.CommitData.Committer.Date = "2000-10-31T01:00:00Z"
+
+				thirdCommit := Commit{}
+				thirdCommit.CommitData.Message = "third-commit-message"
+				thirdCommit.CommitData.Committer.Date = "2000-10-31T02:00:00Z"
+
+				commits = []Commit{firstCommit, thirdCommit, secondCommit}
+			})
+
+			it("returns the latest non-merge commit", func() {
+				lastCommit := GetLastCommit(commits)
+				Expect(lastCommit.CommitData.Message).To(ContainSubstring("third-commit-message"))
+				Expect(lastCommit.CommitData.Committer.Date).To(Equal("2000-10-31T02:00:00Z"))
+			})
 		})
 	})
 }
