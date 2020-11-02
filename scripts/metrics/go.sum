@@ -528,6 +528,7 @@ github.com/opencontainers/go-digest v1.0.0-rc1 h1:WzifXhOVOEOuFYOJAW6aQqW0TooG2i
 github.com/opencontainers/go-digest v1.0.0-rc1/go.mod h1:cMLVZDEM3+U2I4VmLI6N8jQYUd2OVphdqWwCJHrFt2s=
 github.com/opencontainers/image-spec v1.0.1/go.mod h1:BtxoFyWECRxE4U/7sNtV5W15zMzWCbyJoFRP3s7yZA0=
 github.com/paketo-buildpacks/github-config v0.0.0-20201029211026-57b9ef8ef448 h1:A3fojnlPctdRHvb8NArST/dypGxNO+cqaDLEY1xagHo=
+github.com/paketo-buildpacks/github-config v0.0.0-20201030194231-a094cd4baae7 h1:jS4lBiqx9eSer9gDvaPEDClh10grAuROBYZeZ9D93As=
 github.com/paketo-buildpacks/github-config/actions/builder/update/entrypoint v0.0.0-20201029211026-57b9ef8ef448 h1:6cPU5jjiS2ba7/QuiR/LQwF7Ai+cZAX7aH8OgrSfzec=
 github.com/paketo-buildpacks/github-config/actions/builder/update/entrypoint v0.0.0-20201029211026-57b9ef8ef448/go.mod h1:0G3ZvKqp5TA4iS1ymXehKjmEejGDrSRSUg0av24SGys=
 github.com/paketo-buildpacks/occam v0.0.18/go.mod h1:+QD+nyd/F1Ky+MmyxslDWio4cJCRiGXFVShVbteHr7U=

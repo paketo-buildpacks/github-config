@@ -41,10 +41,12 @@ type Commit struct {
 	} `json:"commit"`
 }
 
-func getPullRequestCommits(pullRequest PullRequest) []Commit {
+func getPullRequestCommits(pullRequest PullRequest, serverURI string) []Commit {
 
 	client := &http.Client{}
-	request, _ := http.NewRequest("GET", pullRequest.Links.Commits.CommitsURL, nil)
+	commitsURL := strings.ReplaceAll(pullRequest.Links.Commits.CommitsURL, "https://api.github.com", serverURI)
+	fmt.Printf("getting commits from %s", commitsURL)
+	request, _ := http.NewRequest("GET", commitsURL, nil)
 	request.Header.Add("Authorization", fmt.Sprintf("token %s", os.Getenv("PAKETO_GITHUB_TOKEN")))
 
 	response, err := client.Do(request)
@@ -77,12 +79,12 @@ func GetLastCommit(commits []Commit) Commit {
 	panic("no last commit")
 }
 
-func calculateMinutesToMerge(pullRequest PullRequest) float64 {
+func calculateMinutesToMerge(pullRequest PullRequest, serverURI string) float64 {
 	if pullRequest.MergedAt == "" {
 		panic("this pull request was never merged")
 	}
 
-	pullRequestCommits := getPullRequestCommits(pullRequest)
+	pullRequestCommits := getPullRequestCommits(pullRequest, serverURI)
 	lastCommit := GetLastCommit(pullRequestCommits)
 
 	lastCommitTime, _ := time.Parse(dateLayout, lastCommit.CommitData.Committer.Date)
