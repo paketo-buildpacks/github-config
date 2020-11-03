@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -42,11 +43,19 @@ type Commit struct {
 }
 
 func getPullRequestCommits(pullRequest PullRequest, serverURI string) []Commit {
+	commitsURL, err := url.Parse(pullRequest.Links.Commits.CommitsURL)
+	if err != nil {
+		panic(err)
+	}
 
 	client := &http.Client{}
-	commitsURL := strings.ReplaceAll(pullRequest.Links.Commits.CommitsURL, "https://api.github.com", serverURI)
-	fmt.Printf("getting commits from %s", commitsURL)
-	request, _ := http.NewRequest("GET", commitsURL, nil)
+	uri := &url.URL{
+		Scheme: "http",
+		Host:   serverURI,
+		Path:   commitsURL.Path,
+	}
+	fmt.Printf("getting commits from %s\n", uri)
+	request, _ := http.NewRequest("GET", uri.String(), nil)
 	request.Header.Add("Authorization", fmt.Sprintf("token %s", os.Getenv("PAKETO_GITHUB_TOKEN")))
 
 	response, err := client.Do(request)
@@ -59,12 +68,16 @@ func getPullRequestCommits(pullRequest PullRequest, serverURI string) []Commit {
 
 	err = json.Unmarshal(body, &pullRequestCommits)
 	if err != nil {
-		panic(string(body))
+		panic(fmt.Sprintf("failed to unmarshal\n%s\nwith error: %s", string(body), err))
 	}
 	return pullRequestCommits
 }
 
 func GetLastCommit(commits []Commit) Commit {
+	if len(commits) == 0 {
+		panic("PR has no commits")
+	}
+
 	sort.Slice(commits, func(i, j int) bool {
 		iTime, _ := time.Parse(dateLayout, commits[i].CommitData.Committer.Date)
 		jTime, _ := time.Parse(dateLayout, commits[j].CommitData.Committer.Date)
@@ -87,7 +100,10 @@ func calculateMinutesToMerge(pullRequest PullRequest, serverURI string) float64 
 	pullRequestCommits := getPullRequestCommits(pullRequest, serverURI)
 	lastCommit := GetLastCommit(pullRequestCommits)
 
-	lastCommitTime, _ := time.Parse(dateLayout, lastCommit.CommitData.Committer.Date)
+	lastCommitTime, err := time.Parse(dateLayout, lastCommit.CommitData.Committer.Date)
+	if err != nil {
+		panic(err)
+	}
 	mergedAtTime, _ := time.Parse(dateLayout, pullRequest.MergedAt)
 
 	mergeTime := math.Round(mergedAtTime.Sub(lastCommitTime).Minutes())
