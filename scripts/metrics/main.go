@@ -88,7 +88,8 @@ func getOrgReposChan(orgs []string, serverURI string) chan internal.Repository {
 	output := make(chan internal.Repository)
 	go func() {
 		for _, org := range orgs {
-			for _, repo := range internal.GetOrgRepos(org, serverURI) {
+			reposChan := internal.GetOrgRepos(org, serverURI)
+			for _, repo := range reposChan {
 				output <- repo
 			}
 		}
