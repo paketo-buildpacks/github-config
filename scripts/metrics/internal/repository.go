@@ -22,7 +22,7 @@ type Repository struct {
 func GetOrgRepos(org string, serverURI string) []Repository {
 	client := &http.Client{}
 	uri := &url.URL{
-		Scheme:   "http",
+		Scheme:   "https",
 		Host:     serverURI,
 		Path:     fmt.Sprintf("/orgs/%s/repos", org),
 		RawQuery: "per_page=100",
@@ -78,7 +78,7 @@ func GetRepoMergeTimes(repo Repository, serverURI string, output chan float64) {
 func getClosedPullRequests(repo Repository, serverURI string) []PullRequest {
 	client := &http.Client{}
 	uri := &url.URL{
-		Scheme:   "http",
+		Scheme:   "https",
 		Host:     serverURI,
 		Path:     fmt.Sprintf("/repos/%s/%s/pulls", repo.Owner.Login, repo.Name),
 		RawQuery: "per_page=200&state=closed",

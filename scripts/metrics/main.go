@@ -19,7 +19,7 @@ func main() {
 	var githubServer string
 	start := time.Now()
 
-	flag.StringVar(&githubServer, "server", "https://api.github.com", "base URL for the github API")
+	flag.StringVar(&githubServer, "server", "api.github.com", "base URL for the github API")
 	flag.Parse()
 
 	if os.Getenv("PAKETO_GITHUB_TOKEN") == "" {
@@ -55,7 +55,7 @@ func worker(id int, serverURI string, input <-chan internal.Repository) chan flo
 
 	go func() {
 		for repo := range input {
-			time.Sleep(time.Millisecond * 200)
+			// time.Sleep(time.Millisecond * 200)
 			internal.GetRepoMergeTimes(repo, serverURI, output)
 		}
 		close(output)

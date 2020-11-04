@@ -50,11 +50,11 @@ func getPullRequestCommits(pullRequest PullRequest, serverURI string) []Commit {
 
 	client := &http.Client{}
 	uri := &url.URL{
-		Scheme: "http",
+		Scheme: "https",
 		Host:   serverURI,
 		Path:   commitsURL.Path,
 	}
-	fmt.Printf("getting commits from %s\n", uri)
+
 	request, _ := http.NewRequest("GET", uri.String(), nil)
 	request.Header.Add("Authorization", fmt.Sprintf("token %s", os.Getenv("PAKETO_GITHUB_TOKEN")))
 
