@@ -32,6 +32,7 @@ paketo-buildpacks/yarn
 paketo-buildpacks/yarn-install
 paketo-buildpacks/yarn-start
 paketo-community/bootstrapper
+paketo-community/build-plan
 paketo-community/conda
 paketo-community/pip
 paketo-community/pipenv
