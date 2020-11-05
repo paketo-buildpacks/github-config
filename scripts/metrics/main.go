@@ -19,7 +19,7 @@ func main() {
 	var githubServer string
 	start := time.Now()
 
-	flag.StringVar(&githubServer, "server", "api.github.com", "base URL for the github API")
+	flag.StringVar(&githubServer, "server", "https://api.github.com", "base URL for the github API")
 	flag.Parse()
 
 	if os.Getenv("PAKETO_GITHUB_TOKEN") == "" {
