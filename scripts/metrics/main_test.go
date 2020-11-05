@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"os/exec"
 	"testing"
@@ -101,7 +100,7 @@ func TestMergeTimeCalculator(t *testing.T) {
 		)
 
 		it.Before(func() {
-			mockGithubServer = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			mockGithubServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				if req.Method == http.MethodHead {
 					http.Error(w, "NotFound", http.StatusNotFound)
 					return
@@ -136,9 +135,6 @@ func TestMergeTimeCalculator(t *testing.T) {
 				}
 			}))
 
-			uri, err := url.Parse(mockGithubServer.URL)
-			Expect(err).NotTo(HaveOccurred())
-			mockGithubServerURI = uri.Host
 		})
 
 		it.After(func() {
@@ -150,7 +146,8 @@ func TestMergeTimeCalculator(t *testing.T) {
 				os.Setenv("PAKETO_GITHUB_TOKEN", "some-token")
 			})
 			it("correctly calculates median merge time of closed PRs from the past 30 days", func() {
-				command := exec.Command(mergeTimeCalculator, "--server", mockGithubServerURI)
+				command := exec.Command(mergeTimeCalculator, "--server", mockGithubServer.URL)
+				fmt.Println(mockGithubServerURI)
 				buffer := gbytes.NewBuffer()
 				session, err := gexec.Start(command, buffer, buffer)
 
