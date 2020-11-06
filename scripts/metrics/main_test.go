@@ -181,16 +181,197 @@ func TestMergeTimeCalculator(t *testing.T) {
 				session, err := gexec.Start(command, buffer, buffer)
 
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session).Should(gexec.Exit(0), func() string { return string(buffer.Contents()) })
+				Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
 
 				out := string(buffer.Contents())
 
-				Expect(out).To(ContainLines(
-					`Please set PAKETO_GITHUB_TOKEN`,
-					`Exiting.`,
+				Expect(out).To(ContainLines(`Please set PAKETO_GITHUB_TOKEN`))
+			})
+		})
+
+		it.After(func() {
+			os.Setenv("PAKETO_GITHUB_TOKEN", "abcdefg")
+		})
+
+		context("given there is an issue getting repos from an org", func() {
+			it.Before(func() {
+				mockGithubServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					if req.Method == http.MethodHead {
+						http.Error(w, "NotFound", http.StatusNotFound)
+						return
+					}
+
+					switch req.URL.Path {
+					case "/orgs/paketo-buildpacks/repos":
+						fmt.Fprintf(w, "unknown path: %s\n", req.URL.Path)
+
+					case "/orgs/paketo-community/repos":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, paketoCommunityRepoResponse)
+
+					case "/repos/paketo-buildpacks/example-repo/pulls":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, paketoBuildpacksClosedPRsResponse)
+
+					case "/repos/paketo-community/other-example-repo/pulls":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, paketoCommunityClosedPRsResponse)
+
+					case "/repos/paketo-buildpacks/example-repo/pulls/1/commits":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, closedPR1CommitsResponse)
+
+					case "/repos/paketo-community/other-example-repo/pulls/2/commits":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, closedPR2CommitsResponse)
+					default:
+						t.Fatal(fmt.Sprintf("unknown path: %s", req.URL.Path))
+					}
+				}))
+
+				os.Setenv("PAKETO_GITHUB_TOKEN", "abcdefg")
+			})
+
+			it.After(func() {
+				mockGithubServer.Close()
+			})
+
+			it("exits with the appropriate error", func() {
+
+				command := exec.Command(mergeTimeCalculator, "--server", mockGithubServer.URL)
+				fmt.Println(command)
+				buffer := gbytes.NewBuffer()
+				session, err := gexec.Start(command, buffer, buffer)
+
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
+
+				out := string(buffer.Contents())
+
+				Expect(out).To(ContainSubstring("failed to calculate merge times: failed to get repositories:"))
+				Expect(out).NotTo(ContainLines(
+					`Pull request paketo-community/other-example-repo #2 by other-example-contributor`,
+					`took 15.000000 minutes to merge.`,
 				))
 			})
 		})
 
+		context("given there is an issue getting pull requests from a repo", func() {
+			it.Before(func() {
+				mockGithubServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					if req.Method == http.MethodHead {
+						http.Error(w, "NotFound", http.StatusNotFound)
+						return
+					}
+
+					switch req.URL.Path {
+					case "/orgs/paketo-buildpacks/repos":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, paketoBuildpacksRepoResponse)
+
+					case "/orgs/paketo-community/repos":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, paketoCommunityRepoResponse)
+
+					case "/repos/paketo-buildpacks/example-repo/pulls":
+						fmt.Fprintf(w, "unknown path: %s\n", req.URL.Path)
+
+					case "/repos/paketo-community/other-example-repo/pulls":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, paketoCommunityClosedPRsResponse)
+
+					case "/repos/paketo-buildpacks/example-repo/pulls/1/commits":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, closedPR1CommitsResponse)
+
+					case "/repos/paketo-community/other-example-repo/pulls/2/commits":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, closedPR2CommitsResponse)
+					default:
+						t.Fatal(fmt.Sprintf("unknown path: %s", req.URL.Path))
+					}
+				}))
+
+				os.Setenv("PAKETO_GITHUB_TOKEN", "abcdefg")
+			})
+
+			it.After(func() {
+				mockGithubServer.Close()
+			})
+
+			it("exits with the appropriate error", func() {
+
+				command := exec.Command(mergeTimeCalculator, "--server", mockGithubServer.URL)
+				fmt.Println(command)
+				buffer := gbytes.NewBuffer()
+				session, err := gexec.Start(command, buffer, buffer)
+
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
+
+				out := string(buffer.Contents())
+
+				Expect(out).To(ContainSubstring("failed to calculate merge times: failed to get closed pull requests:"))
+			})
+		})
+
+		context("given there is an issue getting commits from a pull request", func() {
+			it.Before(func() {
+				mockGithubServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					if req.Method == http.MethodHead {
+						http.Error(w, "NotFound", http.StatusNotFound)
+						return
+					}
+
+					switch req.URL.Path {
+					case "/orgs/paketo-buildpacks/repos":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, paketoBuildpacksRepoResponse)
+
+					case "/orgs/paketo-community/repos":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, paketoCommunityRepoResponse)
+
+					case "/repos/paketo-buildpacks/example-repo/pulls":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, paketoBuildpacksClosedPRsResponse)
+
+					case "/repos/paketo-community/other-example-repo/pulls":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, paketoCommunityClosedPRsResponse)
+
+					case "/repos/paketo-buildpacks/example-repo/pulls/1/commits":
+						fmt.Fprintf(w, "unknown path: %s\n", req.URL.Path)
+
+					case "/repos/paketo-community/other-example-repo/pulls/2/commits":
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprintln(w, closedPR2CommitsResponse)
+					default:
+						t.Fatal(fmt.Sprintf("unknown path: %s", req.URL.Path))
+					}
+				}))
+
+				os.Setenv("PAKETO_GITHUB_TOKEN", "abcdefg")
+			})
+
+			it.After(func() {
+				mockGithubServer.Close()
+			})
+
+			it("exits with the appropriate error", func() {
+
+				command := exec.Command(mergeTimeCalculator, "--server", mockGithubServer.URL)
+				fmt.Println(command)
+				buffer := gbytes.NewBuffer()
+				session, err := gexec.Start(command, buffer, buffer)
+
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
+
+				out := string(buffer.Contents())
+
+				Expect(out).To(ContainSubstring("failed to calculate merge times: failed to compute merge time for a pull request: could not get commits from closed pull request:"))
+			})
+		})
 	})
 }

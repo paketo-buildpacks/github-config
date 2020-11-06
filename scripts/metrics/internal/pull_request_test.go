@@ -1,6 +1,7 @@
 package internal_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/sclevine/spec"
@@ -33,7 +34,8 @@ func testPullRequest(t *testing.T, context spec.G, it spec.S) {
 			})
 
 			it("returns the latest non-merge commit", func() {
-				lastCommit := GetLastCommit(commits)
+				lastCommit, err := GetLastCommit(commits)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(lastCommit.CommitData.Message).To(ContainSubstring("second-commit-message"))
 				Expect(lastCommit.CommitData.Committer.Date).To(Equal("2000-10-31T01:00:00Z"))
 			})
@@ -57,9 +59,41 @@ func testPullRequest(t *testing.T, context spec.G, it spec.S) {
 			})
 
 			it("returns the latest non-merge commit", func() {
-				lastCommit := GetLastCommit(commits)
+				lastCommit, err := GetLastCommit(commits)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(lastCommit.CommitData.Message).To(ContainSubstring("third-commit-message"))
 				Expect(lastCommit.CommitData.Committer.Date).To(Equal("2000-10-31T02:00:00Z"))
+			})
+		})
+
+		context("failure cases", func() {
+			context("there are no commits on the PR", func() {
+				it.Before(func() {
+					commits = []Commit{}
+				})
+
+				it("fails with the appropriate error", func() {
+
+					_, err := GetLastCommit(commits)
+
+					Expect(err).To(MatchError(fmt.Errorf("PR has no commits")))
+				})
+			})
+
+			context("there are no non-merge commits on the PR", func() {
+				it.Before(func() {
+					mergeCommit := Commit{}
+					mergeCommit.CommitData.Message = "Merge branch 'main' into branch 'other-branch'"
+					mergeCommit.CommitData.Committer.Date = "2000-10-31T02:00:00Z"
+					commits = []Commit{mergeCommit}
+
+				})
+				it("fails with the appropriate error", func() {
+
+					_, err := GetLastCommit(commits)
+
+					Expect(err).To(MatchError(fmt.Errorf("PR has no last commit")))
+				})
 			})
 		})
 	})
