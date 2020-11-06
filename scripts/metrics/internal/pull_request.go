@@ -15,6 +15,11 @@ import (
 
 const dateLayout string = "2006-01-02T15:04:05Z"
 
+type MergeTimeContainer struct {
+	MergeTime float64
+	Error     error
+}
+
 type PullRequestUser struct {
 	Login string `json:"login"`
 }
@@ -42,26 +47,29 @@ type Commit struct {
 	} `json:"commit"`
 }
 
-func getPullRequestCommits(pullRequest PullRequest, serverURI string) []Commit {
+func getPullRequestCommits(pullRequest PullRequest, serverURI string) ([]Commit, error) {
 	commitsURL, err := url.Parse(pullRequest.Links.Commits.CommitsURL)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to parse commits URL: %s", err)
 	}
 
 	client := &http.Client{}
 	uri, err := url.Parse(serverURI)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to parse server URL: %s", err)
 	}
 
 	uri.Path = commitsURL.Path
 
-	request, _ := http.NewRequest("GET", uri.String(), nil)
+	request, err := http.NewRequest("GET", uri.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create http GET request for commits: %s", err)
+	}
 	request.Header.Add("Authorization", fmt.Sprintf("token %s", os.Getenv("PAKETO_GITHUB_TOKEN")))
 
 	response, err := client.Do(request)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to make http GET request for commits: %s", err)
 	}
 
 	body, _ := ioutil.ReadAll(response.Body)
@@ -69,14 +77,14 @@ func getPullRequestCommits(pullRequest PullRequest, serverURI string) []Commit {
 
 	err = json.Unmarshal(body, &pullRequestCommits)
 	if err != nil {
-		panic(fmt.Sprintf("failed to unmarshal\n%s\nwith error: %s", string(body), err))
+		return nil, fmt.Errorf("failed to unmarshal %s\n from API endpoint %s: %s", string(body), uri.String(), err)
 	}
-	return pullRequestCommits
+	return pullRequestCommits, nil
 }
 
-func GetLastCommit(commits []Commit) Commit {
+func GetLastCommit(commits []Commit) (Commit, error) {
 	if len(commits) == 0 {
-		panic("PR has no commits")
+		return Commit{}, fmt.Errorf("PR has no commits")
 	}
 
 	sort.Slice(commits, func(i, j int) bool {
@@ -87,26 +95,36 @@ func GetLastCommit(commits []Commit) Commit {
 
 	for _, commit := range commits {
 		if !strings.Contains(commit.CommitData.Message, "Merge branch 'main'") {
-			return commit
+			return commit, nil
 		}
 	}
-	panic("no last commit")
+	return Commit{}, fmt.Errorf("PR has no last commit")
 }
 
-func calculateMinutesToMerge(pullRequest PullRequest, serverURI string) float64 {
+func calculateMinutesToMerge(pullRequest PullRequest, serverURI string) (float64, error) {
 	if pullRequest.MergedAt == "" {
-		panic("this pull request was never merged")
+		return -1, fmt.Errorf("this pull request was never merged")
 	}
 
-	pullRequestCommits := getPullRequestCommits(pullRequest, serverURI)
-	lastCommit := GetLastCommit(pullRequestCommits)
+	pullRequestCommits, err := getPullRequestCommits(pullRequest, serverURI)
+	if err != nil {
+		return -1, fmt.Errorf("could not get commits from closed pull request: %s", err)
+	}
+	lastCommit, err := GetLastCommit(pullRequestCommits)
+	if err != nil {
+		return -1, fmt.Errorf("failed to get last commit from PR: %s", err)
+	}
 
 	lastCommitTime, err := time.Parse(dateLayout, lastCommit.CommitData.Committer.Date)
 	if err != nil {
-		panic(err)
+		return -1, fmt.Errorf("could not parse PR last commit time %s: %s", lastCommitTime, err)
 	}
-	mergedAtTime, _ := time.Parse(dateLayout, pullRequest.MergedAt)
+
+	mergedAtTime, err := time.Parse(dateLayout, pullRequest.MergedAt)
+	if err != nil {
+		return -1, fmt.Errorf("could not parse PR merge time %s: %s", mergedAtTime, err)
+	}
 
 	mergeTime := math.Round(mergedAtTime.Sub(lastCommitTime).Minutes())
-	return mergeTime
+	return mergeTime, nil
 }
