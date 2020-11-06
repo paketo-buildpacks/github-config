@@ -41,8 +41,8 @@ github.com/onsi/ginkgo v1.12.1/go.mod h1:zj2OWP4+oCPe1qIXoGWkgMRwljMUYCdkwsT2108
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
 github.com/onsi/gomega v1.10.3 h1:gph6h/qe9GSUw1NhH1gp+qb+h8rXD8Cy60Z32Qw3ELA=
 github.com/onsi/gomega v1.10.3/go.mod h1:V9xEwhxec5O8UDM77eCW8vLymOMltsqPVYWrpDsH8xc=
-github.com/paketo-buildpacks/packit v0.3.0 h1:JnlqRkhrtpyut5BcKND/OoVB7FclicIBoWljWLQmVxQ=
-github.com/paketo-buildpacks/packit v0.3.0/go.mod h1:BQ38pCFZjrtPnJBVbH7X0DEoLyob9YKjrx0+3hlFaRY=
+github.com/paketo-buildpacks/packit v0.3.1 h1:LpyxVH4OewGduN1lZWx8X/u1TdWltEC+oslHMffpeII=
+github.com/paketo-buildpacks/packit v0.3.1/go.mod h1:BQ38pCFZjrtPnJBVbH7X0DEoLyob9YKjrx0+3hlFaRY=
 github.com/sclevine/spec v1.4.0 h1:z/Q9idDcay5m5irkZ28M7PtQM4aOISzOpj4bUPkDee8=
 github.com/sclevine/spec v1.4.0/go.mod h1:LvpgJaFyvQzRvc1kaDs0bulYwzC70PbiYjC4QnFHkOM=
 github.com/ulikunitz/xz v0.5.8/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
