@@ -14,6 +14,11 @@ source "${PROGDIR}/.util/print.sh"
 function main() {
   while [[ "${#}" != 0 ]]; do
     case "${1}" in
+      --dump|-d)
+        dumpfile="${2}"
+        shift 2
+        ;;
+
       --help|-h)
         shift 1
         usage
@@ -46,7 +51,8 @@ integration.sh [OPTIONS]
 Runs the integration test suite.
 
 OPTIONS
-  --help  -h  prints the command usage
+  --help        -h        prints the command usage
+  --dump <file> -d <file> dumps test environment info into file
 USAGE
 }
 
@@ -93,6 +99,11 @@ function images::pull() {
 
   util::print::title "Pulling lifecycle image..."
   docker pull "${lifecycle_image}"
+
+  if [[ -n "${dumpfile:-}" ]]; then
+    util::tools::tests::dump "${dumpfile}" "${builder}" "${run_image}" \
+      "${lifecycle_image}"
+  fi
 }
 
 function tests::run() {

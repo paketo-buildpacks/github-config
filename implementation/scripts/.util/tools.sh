@@ -133,6 +133,16 @@ function util::tools::packager::install () {
     fi
 }
 
+function util::tools::image::reference() {
+  local image digest
+  image="${1}"
+  digest="$(
+    docker inspect --format='{{index .RepoDigests 0}}' "${image}" \
+      | cut -d '@' -f 2
+  )"
+  echo "${image}@${digest}"
+}
+
 function util::tools::tests::checkfocus() {
   testout="${1}"
   if grep -q 'Focused: [1-9]' "${testout}"; then
@@ -141,4 +151,22 @@ function util::tools::tests::checkfocus() {
     util::print::success "** GO Test Succeeded **" 197
   fi
   rm "${testout}"
+}
+
+function util::tools::tests::dump() {
+  local output_file builder run lifecycle json
+  output_file="${1}"
+  builder="$(util::tools::image::reference "${2}")"
+  run="$(util::tools::image::reference "${3}")"
+  lifecycle="$(util::tools::image::reference "${4}")"
+
+  json="$(
+    jq -n \
+      --arg builder "${builder}" \
+      --arg run "${run}" \
+      --arg lifecycle "${lifecycle}" \
+      --arg pack_version "$(pack --version)" \
+      '{builder: $builder, run: $run, lifecycle: $lifecycle, pack: $pack_version}' \
+  )"
+  echo "${json}" > "${output_file}"
 }
