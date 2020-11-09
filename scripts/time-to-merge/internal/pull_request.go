@@ -88,8 +88,8 @@ func GetLastCommit(commits []Commit) (Commit, error) {
 	}
 
 	sort.Slice(commits, func(i, j int) bool {
-		iTime, _ := time.Parse(dateLayout, commits[i].CommitData.Committer.Date)
-		jTime, _ := time.Parse(dateLayout, commits[j].CommitData.Committer.Date)
+		iTime, _ := time.Parse(time.RFC3339, commits[i].CommitData.Committer.Date)
+		jTime, _ := time.Parse(time.RFC3339, commits[j].CommitData.Committer.Date)
 		return iTime.After(jTime)
 	})
 
@@ -115,12 +115,12 @@ func calculateMinutesToMerge(pullRequest PullRequest, serverURI string) (float64
 		return -1, fmt.Errorf("failed to get last commit from PR: %s", err)
 	}
 
-	lastCommitTime, err := time.Parse(dateLayout, lastCommit.CommitData.Committer.Date)
+	lastCommitTime, err := time.Parse(time.RFC3339, lastCommit.CommitData.Committer.Date)
 	if err != nil {
 		return -1, fmt.Errorf("could not parse PR last commit time %s: %s", lastCommitTime, err)
 	}
 
-	mergedAtTime, err := time.Parse(dateLayout, pullRequest.MergedAt)
+	mergedAtTime, err := time.Parse(time.RFC3339, pullRequest.MergedAt)
 	if err != nil {
 		return -1, fmt.Errorf("could not parse PR merge time %s: %s", mergedAtTime, err)
 	}

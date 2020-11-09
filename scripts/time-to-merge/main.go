@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/aclements/go-moremath/stats"
-	"github.com/paketo-buildpacks/github-config/scripts/metrics/internal"
+	"github.com/paketo-buildpacks/github-config/scripts/time-to-merge/internal"
 )
 
 var orgs = []string{"paketo-buildpacks", "paketo-community"}
