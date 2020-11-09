@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -16,90 +17,86 @@ import (
 	"github.com/sclevine/spec"
 )
 
-const paketoBuildpacksRepoResponse string = `[{
-"name" : "example-repo",
+const repoResponseBase string = `[{
+"name" : "%s",
 "url" : "example-URL",
 "owner" : {
-		"login" : "paketo-buildpacks"
+		"login" : "%s"
 	}
 }]`
 
-const paketoCommunityRepoResponse string = `[{
-"name" : "other-example-repo",
-"url" : "example-URL",
-"owner" : {
-		"login" : "paketo-community"
-	}
-}]`
-
-const paketoBuildpacksClosedPRsResponse string = `[{
+const closedPRsResponseBase string = `[{
 "title" : "pr-1",
 "number" : 1,
-"merged_at" : "2020-10-31T01:00:00Z",
+"merged_at" : "%s",
 "created_at" : "some-garbage",
 "user" : {
-	"login" : "example-contributor"
+	"login" : "%s"
 	},
 "_links" : {
 	"commits" : {
-			"href" : "https://api.server.com/repos/paketo-buildpacks/example-repo/pulls/1/commits"
+			"href" : "https://api.server.com/repos/%s/%s/pulls/1/commits"
 		}
 	}
 }]`
 
-const paketoCommunityClosedPRsResponse string = `[{
-"title" : "pr-2",
-"number" : 2,
-"merged_at" : "2020-10-31T01:00:00Z",
-"created_at" : "some-garbage",
-"user" : {
-	"login" : "other-example-contributor"
-	},
-"_links" : {
-	"commits" : {
-			"href" : "https://api.server.com/repos/paketo-community/other-example-repo/pulls/2/commits"
-		}
-	}
-}]`
-
-const closedPR1CommitsResponse string = `[{
+const closedPRCommitsResponseBase string = `[{
   "commit": {
     "committer": {
-      "name": "example-committer",
+      "name": "%s",
       "email": "noreply@github.com",
-      "date": "2020-10-31T00:00:00Z"
+      "date": "%s"
     },
     "message": "example-commit-message"
-  }
-}]`
-
-const closedPR2CommitsResponse string = `[{
-  "commit": {
-    "committer": {
-      "name": "other-example-committer",
-      "email": "noreply@github.com",
-			"date": "2020-10-31T00:45:00Z"
-    },
-    "message": "other-example-commit-message"
   }
 }]`
 
 func TestMergeTimeCalculator(t *testing.T) {
 	var Expect = NewWithT(t).Expect
 
-	mergeTimeCalculator, err := gexec.Build("github.com/paketo-buildpacks/github-config/scripts/metrics")
+	mergeTimeCalculator, err := gexec.Build("github.com/paketo-buildpacks/github-config/scripts/time-to-merge")
 	Expect(err).NotTo(HaveOccurred())
 
-	spec.Run(t, "scripts/metrics/metrics", func(t *testing.T, context spec.G, it spec.S) {
+	spec.Run(t, "scripts/time-to-merge", func(t *testing.T, context spec.G, it spec.S) {
 		var (
 			Expect     = NewWithT(t).Expect
 			Eventually = NewWithT(t).Eventually
 
 			mockGithubServer    *httptest.Server
 			mockGithubServerURI string
+
+			paketoCommunityRepoResponse  string
+			paketoBuildpacksRepoResponse string
+
+			paketoBuildpacksClosedPRsResponse string
+			paketoCommunityClosedPRsResponse  string
+
+			paketoBuildpacksCommitsResponse string
+			paketoCommunityCommitsResponse  string
 		)
 
 		it.Before(func() {
+			paketoBuildpacksRepoResponse = fmt.Sprintf(repoResponseBase, "example-repo", "paketo-buildpacks")
+			paketoCommunityRepoResponse = fmt.Sprintf(repoResponseBase, "other-example-repo", "paketo-community")
+
+			paketoBuildpacksClosedPRsResponse = fmt.Sprintf(closedPRsResponseBase,
+				time.Now().UTC().Format(time.RFC3339),
+				"example-contributor",
+				"paketo-buildpacks",
+				"example-repo")
+			paketoCommunityClosedPRsResponse = fmt.Sprintf(closedPRsResponseBase,
+				time.Now().UTC().Format(time.RFC3339),
+				"other-example-contributor",
+				"paketo-community",
+				"other-example-repo")
+
+			paketoBuildpacksCommitsResponse = fmt.Sprintf(closedPRCommitsResponseBase,
+				"example-committer",
+				time.Now().UTC().Add(-1*time.Hour).Format(time.RFC3339))
+			paketoCommunityCommitsResponse = fmt.Sprintf(closedPRCommitsResponseBase,
+				"other-example-committer",
+				time.Now().UTC().Add(-15*time.Minute).Format(time.RFC3339))
+
 			mockGithubServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				if req.Method == http.MethodHead {
 					http.Error(w, "NotFound", http.StatusNotFound)
@@ -125,11 +122,11 @@ func TestMergeTimeCalculator(t *testing.T) {
 
 				case "/repos/paketo-buildpacks/example-repo/pulls/1/commits":
 					w.WriteHeader(http.StatusOK)
-					fmt.Fprintln(w, closedPR1CommitsResponse)
+					fmt.Fprintln(w, paketoBuildpacksCommitsResponse)
 
-				case "/repos/paketo-community/other-example-repo/pulls/2/commits":
+				case "/repos/paketo-community/other-example-repo/pulls/1/commits":
 					w.WriteHeader(http.StatusOK)
-					fmt.Fprintln(w, closedPR2CommitsResponse)
+					fmt.Fprintln(w, paketoCommunityCommitsResponse)
 				default:
 					t.Fatal(fmt.Sprintf("unknown path: %s", req.URL.Path))
 				}
@@ -162,7 +159,7 @@ func TestMergeTimeCalculator(t *testing.T) {
 				))
 
 				Expect(out).To(ContainLines(
-					`Pull request paketo-community/other-example-repo #2 by other-example-contributor`,
+					`Pull request paketo-community/other-example-repo #1 by other-example-contributor`,
 					`took 15.000000 minutes to merge.`,
 				))
 			})
@@ -219,11 +216,11 @@ func TestMergeTimeCalculator(t *testing.T) {
 
 					case "/repos/paketo-buildpacks/example-repo/pulls/1/commits":
 						w.WriteHeader(http.StatusOK)
-						fmt.Fprintln(w, closedPR1CommitsResponse)
+						fmt.Fprintln(w, paketoBuildpacksCommitsResponse)
 
 					case "/repos/paketo-community/other-example-repo/pulls/2/commits":
 						w.WriteHeader(http.StatusOK)
-						fmt.Fprintln(w, closedPR2CommitsResponse)
+						fmt.Fprintln(w, paketoCommunityCommitsResponse)
 					default:
 						t.Fatal(fmt.Sprintf("unknown path: %s", req.URL.Path))
 					}
@@ -282,11 +279,11 @@ func TestMergeTimeCalculator(t *testing.T) {
 
 					case "/repos/paketo-buildpacks/example-repo/pulls/1/commits":
 						w.WriteHeader(http.StatusOK)
-						fmt.Fprintln(w, closedPR1CommitsResponse)
+						fmt.Fprintln(w, paketoBuildpacksCommitsResponse)
 
 					case "/repos/paketo-community/other-example-repo/pulls/2/commits":
 						w.WriteHeader(http.StatusOK)
-						fmt.Fprintln(w, closedPR2CommitsResponse)
+						fmt.Fprintln(w, paketoCommunityCommitsResponse)
 					default:
 						t.Fatal(fmt.Sprintf("unknown path: %s", req.URL.Path))
 					}
@@ -345,7 +342,7 @@ func TestMergeTimeCalculator(t *testing.T) {
 
 					case "/repos/paketo-community/other-example-repo/pulls/2/commits":
 						w.WriteHeader(http.StatusOK)
-						fmt.Fprintln(w, closedPR2CommitsResponse)
+						fmt.Fprintln(w, paketoCommunityCommitsResponse)
 					default:
 						t.Fatal(fmt.Sprintf("unknown path: %s", req.URL.Path))
 					}

@@ -8,8 +8,7 @@ import (
 )
 
 func TestInternal(t *testing.T) {
-	suite := spec.New("scripts/metrics", spec.Report(report.Terminal{}))
+	suite := spec.New("scripts/time-to-merge/internal", spec.Report(report.Terminal{}))
 	suite("PullRequest", testPullRequest)
-	// suite("Repository", testRepository)
 	suite.Run(t)
 }
