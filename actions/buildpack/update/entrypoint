@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -eu
+set -o pipefail
+
+function main() {
+  jam update-buildpack \
+    --buildpack-file "${PWD}/buildpack.toml" \
+    --package-file "${PWD}/package.toml"
+}
+
+main "${@:-}"
