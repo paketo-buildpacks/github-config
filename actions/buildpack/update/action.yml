@@ -1,0 +1,8 @@
+name: 'Update buildpack.toml with new dependencies'
+
+description: |
+  This action updates the buildpack.toml with any new dependency versions.
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
