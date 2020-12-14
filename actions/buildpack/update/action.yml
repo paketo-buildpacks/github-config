@@ -4,5 +4,36 @@ description: |
   This action updates the buildpack.toml with any new dependency versions.
 
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
+  using: 'composite'
+  steps:
+
+  - name: Choose Jam Version
+    id: version
+    shell: bash
+    run: |
+      #!/usr/bin/env bash
+      set -eu
+      echo "::set-output name=version::0.4.2"
+
+  - name: Install Jam
+    shell: bash
+    run: |
+      #!/usr/bin/env bash
+      set -eu
+      mkdir -p "${HOME}"/bin
+      echo "PATH=${HOME}/bin:${PATH}" >> "${GITHUB_ENV}"
+      mkdir -p "${HOME}/bin"
+      curl "https://github.com/paketo-buildpacks/packit/releases/download/v${{ steps.version.outputs.version }}/jam-linux" \
+        --silent \
+        --location \
+        --output "${HOME}/bin/jam"
+      chmod +x "${HOME}/bin/jam"
+
+  - name: Update Buildpack
+    shell: bash
+    run: |
+      #!/usr/bin/env bash
+      set -eu
+      jam update-buildpack \
+        --buildpack-file "${PWD}/buildpack.toml" \
+        --package-file "${PWD}/package.toml"
