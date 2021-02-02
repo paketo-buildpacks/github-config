@@ -1,0 +1,63 @@
+#!/bin/bash
+set -eu
+set -o pipefail
+
+function main() {
+  local token repo number
+
+  while [ "${#}" != 0 ]; do
+    case "${1}" in
+      --token)
+        token="${2}"
+        shift 2
+        ;;
+
+      --repo)
+        repo="${2}"
+        shift 2
+        ;;
+
+      --number)
+        number="${2}"
+        shift 2
+        ;;
+
+      "")
+        shift
+        ;;
+
+      *)
+        echo "unknown argument \"${1}\""
+        exit 1
+    esac
+  done
+
+  if rules::has_human_commits "${token}" "${repo}" "${number}"; then
+    echo "::set-output name=human_commits::true"
+    exit 0
+  fi
+    echo "::set-output name=human_commits::false"
+}
+
+function rules::has_human_commits() {
+  local token repo number
+  token=${1}
+  repo=${2}
+  number=${3}
+
+  authors=$(curl "https://api.github.com/repos/${repo}/pulls/${number}/commits" \
+  --silent \
+  --location \
+  --header "Authorization: token ${token}" \
+  | jq -r '.[] | .author.login, .committer.login')
+
+  for author in $authors; do
+    if [[ $author != "paketo-bot" && ${author} != "web-flow" && ${author} != "dependabot[bot]" ]]; then
+      echo "human committer: " ${author}
+      return 0
+    fi
+  done
+  return 1
+}
+
+main "${@:-}"

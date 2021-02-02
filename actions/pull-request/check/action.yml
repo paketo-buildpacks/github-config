@@ -1,0 +1,26 @@
+name: 'Check PR'
+
+description: |
+  Checks whether PRs have been modified by human user accounts.
+
+inputs:
+  token:
+    description: 'Token used to authenticate user account'
+    required: true
+  repo:
+    description: 'Github repository'
+    required: true
+  number:
+    description: 'PR number'
+    required: true
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--token"
+  - ${{ inputs.token }}
+  - "--repo"
+  - ${{ inputs.repo }}
+  - "--number"
+  - ${{ inputs.number }}
