@@ -3,7 +3,7 @@ set -eu
 set -o pipefail
 
 function main() {
-  local token repo number
+  local token repo number botsString
 
   while [ "${#}" != 0 ]; do
     case "${1}" in
@@ -22,6 +22,11 @@ function main() {
         shift 2
         ;;
 
+      --bots)
+        botsString="${2}"
+        shift 2
+        ;;
+
       "")
         shift
         ;;
@@ -32,7 +37,7 @@ function main() {
     esac
   done
 
-  if rules::has_human_commits "${token}" "${repo}" "${number}"; then
+  if rules::has_human_commits "${token}" "${repo}" "${number}" "${botsString}"; then
     echo "::set-output name=human_commits::true"
     exit 0
   fi
@@ -40,23 +45,36 @@ function main() {
 }
 
 function rules::has_human_commits() {
-  local token repo number
+  local token repo number bots humanCommit
   token=${1}
   repo=${2}
   number=${3}
+  botsString=${4}
 
-  authors=$(curl "https://api.github.com/repos/${repo}/pulls/${number}/commits" \
-  --silent \
-  --location \
-  --header "Authorization: token ${token}" \
-  | jq -r '.[] | .author.login, .committer.login')
+  IFS="," read -r -a bots <<< "${botsString}"
 
-  for author in $authors; do
-    if [[ $author != "paketo-bot" && ${author} != "web-flow" && ${author} != "dependabot[bot]" ]]; then
-      echo "human committer: " ${author}
-      return 0
-    fi
-  done
+  # this allows us to parse a newline-separated set of names (which might
+  # include spaces) that come out of jq and iterate over them without
+  # splitting on spaces
+  while IFS= read -r author; do
+      humanCommit=0
+      for bot in "${bots[@]}"; do
+        if [[ "${author}" == "${bot}" ]]; then
+          humanCommit=1
+          break
+        fi
+      done
+
+      if [[ ${humanCommit} -eq 0 ]]; then
+        echo "human committer: " "${author}"
+        return 0
+      fi
+  done < <(curl "https://api.github.com/repos/${repo}/pulls/${number}/commits" \
+    --silent \
+    --location \
+    --header \
+    "Authorization: token ${token}" | jq -r '.[] | .commit.author.name, .commit.committer.name')
+
   return 1
 }
 

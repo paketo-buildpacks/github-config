@@ -54,6 +54,7 @@ jobs:
         token: ${{ secrets.PAKETO_BOT_REVIEWER_GITHUB_TOKEN }}
         repo: ${{ github.repository }}
         number: ${{ github.event.number }}
+        bots: "dependabot[bot],paketo-bot,GitHub"
 
     - name: Checkout
       if: steps.human-commits.outputs.human_commits == 'false'
