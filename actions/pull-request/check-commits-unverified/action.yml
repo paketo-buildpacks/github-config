@@ -1,7 +1,7 @@
-name: 'Check PR'
+name: 'Check PR Commit Verification'
 
 description: |
-  Checks whether PRs have been modified by human user accounts.
+  Checks whether PRs have unverified commits.
 
 inputs:
   token:
@@ -13,10 +13,6 @@ inputs:
   number:
     description: 'PR number'
     required: true
-  bots:
-    description: 'A comma-separated list of bot usernames from which to allow commits.'
-    required: true
-    default: 'dependabot[bot],web-flow,paketo-bot'
 
 runs:
   using: 'docker'
@@ -28,5 +24,3 @@ runs:
   - ${{ inputs.repo }}
   - "--number"
   - ${{ inputs.number }}
-  - "--bots"
-  - ${{ inputs.bots }}
