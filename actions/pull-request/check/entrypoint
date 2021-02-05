@@ -45,37 +45,49 @@ function main() {
 }
 
 function rules::has_human_commits() {
-  local token repo number bots humanCommit
-  token=${1}
-  repo=${2}
-  number=${3}
-  botsString=${4}
+  local token repo number
+  token="${1}"
+  repo="${2}"
+  number="${3}"
 
-  IFS="," read -r -a bots <<< "${botsString}"
+  IFS="," read -r -a bots <<< "${4}"
+  IFS=" " read -r -a committers <<< "$(
+    curl "https://api.github.com/repos/${repo}/pulls/${number}/commits" \
+      --silent \
+      --location \
+      --header "Authorization: token ${token}" \
+      | jq -r '.[] | .author.login, .committer.login' | xargs
+  )"
+  declare -a unknown
 
-  # this allows us to parse a newline-separated set of names (which might
-  # include spaces) that come out of jq and iterate over them without
-  # splitting on spaces
-  while IFS= read -r author; do
-      humanCommit=0
-      for bot in "${bots[@]}"; do
-        if [[ "${author}" == "${bot}" ]]; then
-          humanCommit=1
-          break
+  for committer in "${committers[@]}"; do
+    # check to see if this login belongs to a bot
+    for bot in "${bots[@]}"; do
+      if [[ "${committer}" == "${bot}" ]]; then
+        continue 2
+      fi
+    done
+
+    # check to see if this login is on the list of unknowns
+    if [[ "${#unknown[@]}" != 0 ]]; then
+      for login in "${unknown[@]}"; do
+        if [[ "${committer}" == "${login}" ]]; then
+          continue 2;
         fi
       done
+    fi
 
-      if [[ ${humanCommit} -eq 0 ]]; then
-        echo "human committer: " "${author}"
-        return 0
-      fi
-  done < <(curl "https://api.github.com/repos/${repo}/pulls/${number}/commits" \
-    --silent \
-    --location \
-    --header \
-    "Authorization: token ${token}" | jq -r '.[] | .commit.author.name, .commit.committer.name')
+    # add this committer to the list of unknowns
+    unknown+=("${committer}")
+  done
 
-  return 1
+  # if the length of unknown logins is 0, fail the check
+  if [[ "${#unknown[@]}" == 0 ]]; then
+    return 1
+  fi
+
+  echo "human committers: ${unknown[*]}"
+  return 0
 }
 
 main "${@:-}"
