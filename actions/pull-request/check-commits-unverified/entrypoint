@@ -1,0 +1,80 @@
+#!/bin/bash
+set -eu
+set -o pipefail
+
+function main() {
+  local token repo number
+  while [ "${#}" != 0 ]; do
+    case "${1}" in
+      --token)
+        token="${2}"
+        shift 2
+        ;;
+
+      --repo)
+        repo="${2}"
+        shift 2
+        ;;
+
+      --number)
+        number="${2}"
+        shift 2
+        ;;
+
+      "")
+        shift
+        ;;
+
+      *)
+        echo "unknown argument \"${1}\""
+        exit 1
+    esac
+  done
+
+  if rules::has_unverified_commits "${token}" "${repo}" "${number}" ; then
+    echo "::set-output name=unverified_commits::true"
+    exit 0
+  fi
+  echo "::set-output name=unverified_commits::false"
+}
+
+function rules::has_unverified_commits() {
+  local token repo number
+  token="${1}"
+  repo="${2}"
+  number="${3}"
+
+  declare -a unverified
+
+  IFS=" " read -r -a verified <<< "$(
+    curl "https://api.github.com/repos/${repo}/pulls/${number}/commits" \
+      --silent \
+      --location \
+      --header "Authorization: token ${token}" \
+      | jq -r '.[] | .commit.verification.verified' | xargs
+  )"
+
+  IFS=" " read -r -a committers <<< "$(
+    curl "https://api.github.com/repos/${repo}/pulls/${number}/commits" \
+      --silent \
+      --location \
+      --header "Authorization: token ${token}" \
+      | jq -r '.[] | .committer.login' | xargs
+  )"
+
+  for i in "${!verified[@]}"; do
+    if [[ "${verified[$i]}" == "false" ]]; then
+      unverified+=("${committers[$i]}")
+    fi
+  done
+
+  # if the length of unverified is 0, fail the check
+  if [[ "${#unverified[@]}" == 0 ]]; then
+    return 1
+  fi
+
+  printf "PR includes unverified commits from: %s \n" "$(echo "${unverified[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ')"
+  return 0
+}
+
+main "${@:-}"
