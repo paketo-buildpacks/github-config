@@ -1,31 +1,38 @@
 name: 'Generate Builder.toml'
 
 description: |
-  This action generates an updated builder.toml[1].  All buildpack images,
-  lifecycle-image and build-image in the generated builder.toml are tagged with
-  their exact latest versions available on the registry.
-  [1] https://buildpacks.io/docs/reference/config/builder-config
-
-# It is assumed that ${registry-server}/<buildpack-id> gives the name of the
-# buildpack image. When this assumption is not valid anymore, this action will
-# require to implement an {id, image} mapping.
-inputs:
-  builder-file:
-    description: 'Path to the builder.toml file'
-    required: true
-  registry-server:
-    description: 'Registry server uri for images in order.toml (.e.g. gcr.io)'
-    required: true
-
-outputs:
-  builder_toml:
-    description: The generated builder.toml for the builder
+  This action updates the builder.toml with any new dependency versions.
 
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
-  args:
-  - "--builder-file"
-  - ${{ inputs.builder-file }}
-  - "--registry-server"
-  - ${{ inputs.registry-server }}
+  using: 'composite'
+  steps:
+
+  - name: Choose Jam Version
+    id: version
+    shell: bash
+    run: |
+      #!/usr/bin/env bash
+      set -eu
+      echo "::set-output name=version::0.7.0"
+
+  - name: Install Jam
+    shell: bash
+    run: |
+      #!/usr/bin/env bash
+      set -eu
+      mkdir -p "${HOME}"/bin
+      echo "PATH=${HOME}/bin:${PATH}" >> "${GITHUB_ENV}"
+      mkdir -p "${HOME}/bin"
+      curl "https://github.com/paketo-buildpacks/packit/releases/download/v${{ steps.version.outputs.version }}/jam-linux" \
+        --silent \
+        --location \
+        --output "${HOME}/bin/jam"
+      chmod +x "${HOME}/bin/jam"
+
+  - name: Update Builder
+    shell: bash
+    run: |
+      #!/usr/bin/env bash
+      set -eu
+      jam update-builder \
+        --builder-file "${PWD}/builder.toml"
