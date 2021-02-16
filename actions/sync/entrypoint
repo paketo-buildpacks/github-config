@@ -5,32 +5,17 @@ set -u
 set -o pipefail
 
 function main() {
-  local config_repo current_repo config_path ssh_private_key current_path branch
+  local workspace config
 
   while [[ "${#}" != 0 ]]; do
     case "${1}" in
-      --config-repo)
-        config_repo="${GITHUB_WORKSPACE}/${2}"
+      --workspace)
+        workspace="${2}"
         shift 2
         ;;
 
-      --current-repo)
-        current_repo="${GITHUB_WORKSPACE}/${2}"
-        shift 2
-        ;;
-
-      --config-path)
-        config_path="${2}"
-        shift 2
-        ;;
-
-      --ssh-private-key)
-        ssh_private_key="${2}"
-        shift 2
-        ;;
-
-      --current-path)
-        current_path="${2}"
+      --config)
+        config="${2}"
         shift 2
         ;;
 
@@ -40,148 +25,37 @@ function main() {
     esac
   done
 
-  branch="automation/github-config/update"
-
-  validate "${config_repo}" "${current_repo}" "${config_path}"
-  checkout_pr_branch "${current_repo}" "${branch}"
-  sync_dirs "${config_repo}" "${current_repo}" "${config_path}" "${current_path}"
-  if [ "$(check_for_updates "${current_repo}")" = 0 ]; then
-    echo "nothing to sync"
-  else
-    commit_and_push "${current_repo}" "${ssh_private_key}" "${branch}" "${config_repo}"
-    open_pr "${branch}"
-  fi
-}
-
-function validate() {
-  local rc config_repo current_repo config_path
-  rc=0
-  config_repo="${1}"
-  current_repo="${2}"
-  config_path="${3}"
-
-  if [ ! -d "${config_repo}/.git" ]; then
-    echo "src-repo ${config_repo} is not a valid git repository"; rc=1;
-  fi
-
-  if [ ! -d "${current_repo}/.git" ]; then
-    echo "this-repo ${current_repo} is not a valid git repository"; rc=1;
-  fi
-
-  if [ ! -d "${config_repo}/${config_path}" ]; then
-    echo "src-path ${config_path} is not a valid path inside src-repo"; rc=1;
-  fi
-
-  if [ "${rc}" -ne 0 ]; then
-    exit 1
-  fi
-}
-
-function checkout_pr_branch() {
-  local current_repo branch
-  current_repo="${1}"
-  branch="${2}"
-
-  git -C "${current_repo}" fetch origin
-
-  if git -C "${current_repo}" branch -a | grep "${branch}"; then
-    git -C "${current_repo}" checkout -b "${branch}" "origin/${branch}"
-
-    git -C "${current_repo}" pull -r
-  else
-    git -C "${current_repo}" checkout -b "${branch}"
-  fi
-}
-
-function sync_dirs() {
-  local config_repo current_repo config_path current_path
-  config_repo="${1}"
-  current_repo="${2}"
-  config_path="${3}"
-  current_path="${4}"
-
-
-  pushd "${config_repo}/${config_path}" > /dev/null
-    for dir in $(ls -Ap . | grep "/"); do
-      if [[ -f "${current_repo}/${current_path}/${dir}/.syncignore" ]]; then
-        rsync \
-          -r -v -c "${dir}" \
-          "${current_repo}/${current_path}/${dir}" \
-          --delete \
-          --exclude=".syncignore" \
-          --exclude-from="${current_repo}/${current_path}/${dir}/.syncignore"
-      else
-        rsync \
-          -r -v -c "${dir}" \
-          "${current_repo}/${current_path}/${dir}" \
-          --delete
-      fi
-    done
+  pushd "${config}" > /dev/null
+    IFS=" " read -r -a directories < <(find . -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0)
   popd > /dev/null
-}
 
-function check_for_updates() {
-  local current_repo num_changes
-  current_repo="${1}"
+  for dir in "${directories[@]}"; do
+    local src dest
+    src="$(cd "${config}/${dir}" && pwd)/"
+    dest="$(cd "${workspace}/${dir}" && pwd)/"
 
-  pushd "${current_repo}" > /dev/null
-    num_changes=$( git status --porcelain=v1 2>/dev/null | wc -l)
-    echo $num_changes
-  popd > /dev/null
-}
+    echo "syncing from ${src} to ${dest}"
 
+    local args=(
+      --recursive
+      --verbose
+      --checksum
+      "${src}"
+      "${dest}"
+      --delete
+    )
 
-function commit_and_push() {
-  local current_repo ssh_private_key branch config_repo sha
-  current_repo="${1}"
-  ssh_private_key="${2}"
-  branch="${3}"
-  config_repo="${4}"
+    if [[ -f "${dest}/.syncignore" ]]; then
+      args+=(
+        --exclude=".syncignore"
+        --exclude-from="${dest}/.syncignore"
+      )
+    fi
 
-  sha="$(git -C "${config_repo}" rev-parse --short HEAD)"
+    bash -c "rsync ${args[*]}"
 
-  pushd "${current_repo}" > /dev/null
-    git config user.email "paketobuildpacks@paketo.io"
-    git config user.name "paketo-bot"
-    git add --all .
-    git commit --message "Update github-config to ${sha}"
-    git remote add origin-ssh "git@github.com:${GITHUB_REPOSITORY}.git"
-
-    eval "$(ssh-agent)"
-    echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> /etc/ssh/ssh_config
-
-    echo "${ssh_private_key}" | ssh-add -
-
-    git push origin-ssh "${branch}"
-  popd > /dev/null
-}
-
-function open_pr() {
-  local branch org
-  branch="${1}"
-  org="$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f1)"
-
-  local count
-  count="$(
-    curl "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?head=${org}:${branch}" \
-      -H "Authorization: token ${GITHUB_TOKEN}" \
-      --silent \
-      | jq -r 'length'
-  )"
-
-  if [[ "${count}" != "0" ]]; then
-    echo "PR already exists, updated with new commit."
-    return
-  fi
-
-  curl "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls" \
-    -H "Authorization: token ${GITHUB_TOKEN}" \
-    -X POST \
-    --data '{
-      "head": "'"${branch}"'",
-      "base": "main",
-      "title": "Update shared github-config"
-    }'
+    echo
+  done
 }
 
 main "${@:-}"
