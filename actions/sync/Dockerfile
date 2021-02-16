@@ -2,8 +2,7 @@ FROM alpine/git
 
 RUN apk add \
       bash \
-      curl \
-      jq \
+      findutils \
       rsync \
     && rm -rf /var/cache/apk/*
 

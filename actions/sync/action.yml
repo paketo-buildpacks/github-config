@@ -1,38 +1,22 @@
 name: 'Sync'
 
 description: |
-  Copies a fixed path from the source repo to the root of the repo
-  that uses this action, then sends a PR against the repo's main branch
-inputs:
-  config-repo:
-    description: 'Path to checked out repo with shared files'
-    required: true
-  current-repo:
-    description: 'Path to this repo checkout out'
-    required: true
-  config-path:
-    description: 'Path inside config repo that maps to the current repo'
-    required: true
-  ssh-private-key:
-    description: 'Private SSH key to push to the current repo'
-    required: true
-  current-path:
-    description: 'Path inside the current repo to copy into'
-    default: ''
+  Syncs directories between a shared github-config repo and a buildpack repo
 
-outputs: {}
+inputs:
+  workspace:
+    description: 'Path to the workspace to sync into'
+    required: true
+
+  config:
+    description: 'Path to the github-config directory to sync'
+    required: true
 
 runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-  - --config-repo
-  - ${{ inputs.config-repo }}
-  - --current-repo
-  - ${{ inputs.current-repo}}
-  - --config-path
-  - ${{ inputs.config-path }}
-  - --ssh-private-key
-  - ${{ inputs.ssh-private-key }}
-  - --current-path
-  - ${{ inputs.current-path }}
+  - --workspace
+  - ${{ inputs.workspace }}
+  - --config
+  - ${{ inputs.config }}
