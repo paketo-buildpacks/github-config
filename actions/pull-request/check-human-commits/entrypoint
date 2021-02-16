@@ -58,7 +58,7 @@ function rules::has_human_commits() {
       --header "Authorization: token ${token}" \
       | jq -r '.[] | .author.login, .committer.login' | xargs
   )"
-  declare -a unknown
+  declare -a unknown=()
 
   for committer in "${committers[@]}"; do
     # check to see if this login belongs to a bot
