@@ -12,6 +12,14 @@ inputs:
   pathspec:
     description: 'Git pathspec to stage'
     required: true
+  keyid:
+    description: 'ID of GPG signing key to use for signed commit'
+    required: false
+    default: ''
+  key:
+    description: 'GPG signing key to use for signed commit'
+    required: false
+    default: ''
 
 outputs:
   commit_sha:
@@ -25,3 +33,7 @@ runs:
   - ${{ inputs.message }}
   - "--pathspec"
   - ${{ inputs.pathspec }}
+  - "--keyid"
+  - ${{ inputs.keyid }}
+  - "--key"
+  - ${{ inputs.key }}
