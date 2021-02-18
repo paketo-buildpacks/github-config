@@ -4,7 +4,7 @@ set -eu
 set -o pipefail
 
 function main() {
-  local message pathspec
+  local message pathspec keyid key
   while [ "${#}" != 0 ]; do
     case "${1}" in
       --message)
@@ -14,6 +14,16 @@ function main() {
 
       --pathspec)
         pathspec="${2}"
+        shift 2
+        ;;
+
+      --keyid)
+        keyid="${2}"
+        shift 2
+        ;;
+
+      --key)
+        key="${2}"
         shift 2
         ;;
 
@@ -27,12 +37,22 @@ function main() {
     esac
   done
 
+  if [ -n "$keyid" ] && [ -n "$key" ]; then
+    mkdir -p ~/.gnupg/
+    printf "%s" "$key" | base64 --decode > ~/.gnupg/private.key
+    gpg --import ~/.gnupg/private.key
+
+    git config --global user.signingkey "$keyid"
+    git config --global commit.gpgsign true
+  fi
+
   git config --global user.email "paketobuildpacks@gmail.com"
   git config --global user.name "paketo-bot"
 
   if [[ -n "$(git status --short -- "${pathspec}")" ]]; then
     git add --all "${pathspec}"
     git commit --message "${message}"
+
     echo "::set-output name=commit_sha::$(git rev-parse HEAD)"
     exit 0
   fi
