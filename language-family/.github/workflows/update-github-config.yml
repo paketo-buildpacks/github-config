@@ -26,10 +26,10 @@ jobs:
         branch: automation/github-config/update
 
     - name: Run the sync action
-      uses: paketo-buildpacks/github-config/actions/sync@main
+      uses: paketo-buildpacks/github-config/actions/sync@sync-action
       with:
-        workspace: ${{ github.workspace }}
-        config: "${{ github.workspace }}/github-config/language-family"
+        workspace: /github/workspace
+        config: /github/workspace/github-config/language-family
 
     - name: Cleanup
       run: rm -rf github-config
