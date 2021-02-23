@@ -12,7 +12,7 @@ source "${ROOT_DIR}/scripts/.util/print.sh"
 source "${ROOT_DIR}/scripts/sanity.sh"
 
 function main() {
-  local target buildpack_type
+  local target repo_type
 
   while [[ "${#}" != 0 ]]; do
     case "${1}" in
@@ -21,8 +21,8 @@ function main() {
         shift 2
         ;;
 
-      --buildpack-type)
-        buildpack_type="${2}"
+      --repo-type)
+        repo_type="${2}"
         shift 2
         ;;
 
@@ -48,43 +48,43 @@ function main() {
     util::print::error "--target is a required flag"
   fi
 
-  if [[ -z "${buildpack_type:-}" ]]; then
+  if [[ -z "${repo_type:-}" ]]; then
     usage
     echo
-    util::print::error "--buildpack-type is a required flag"
+    util::print::error "--repo-type is a required flag"
   fi
 
   sanity::check "${ROOT_DIR}"
-  bootstrap "${target}" "${buildpack_type}"
+  bootstrap "${target}" "${repo_type}"
 }
 
 function usage() {
   cat <<-USAGE
-bootstrap.sh --target <target> --buildpack-type <buildpack-type> [OPTIONS]
+bootstrap.sh --target <target> --repo-type <repo-type> [OPTIONS]
 
-Bootstraps a buildpack repository with github configuration and scripts.
+Bootstraps a repository with github configuration and scripts.
 
 OPTIONS
-  --buildpack-type <buildpack-type>  type of buildpack (implementation|language-family)
-  --help  -h                         prints the command usage
-  --target <target>                  path to a buildpack repository
+  --repo-type <repo-type>  type of repo (implementation|language-family|builder)
+  --help  -h               prints the command usage
+  --target <target>        path to a buildpack repository
 USAGE
 }
 
 function bootstrap() {
-  local target buildpack_type
+  local target repo_type
   target="${1}"
-  buildpack_type="${2}"
+  repo_type="${2}"
 
   if [[ ! -d "${target}" ]]; then
     util::print::error "cannot bootstrap: \"${target}\" does not exist"
   fi
 
-  if [[ "${buildpack_type}" != "implementation" && "${buildpack_type}" != "language-family" ]]; then
-    util::print::error "cannot bootstrap: \"${buildpack_type}\" is not a valid buildpack type"
+  if [[ "${repo_type}" != "implementation" && "${repo_type}" != "language-family" && "${repo_type}" != "builder" ]]; then
+    util::print::error "cannot bootstrap: \"${repo_type}\" is not a valid repo type"
   fi
 
-  cp -pR "${ROOT_DIR}/${buildpack_type}/." "${target}"
+  cp -pR "${ROOT_DIR}/${repo_type}/." "${target}"
 }
 
 main "${@:-}"
