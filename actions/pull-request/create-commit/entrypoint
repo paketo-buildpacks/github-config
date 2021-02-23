@@ -39,8 +39,9 @@ function main() {
 
   if [ -n "$keyid" ] && [ -n "$key" ]; then
     mkdir -p ~/.gnupg/
-    printf "%s" "$key" | base64 --decode > ~/.gnupg/private.key
-    gpg --import ~/.gnupg/private.key
+    printf "quiet" > ~/.gnupg/options
+    printf "%s" "$key" | base64 -d > ~/.gnupg/private.key
+    gpg --options ~/.gnupg/options --import ~/.gnupg/private.key
 
     git config --global user.signingkey "$keyid"
     git config --global commit.gpgsign true
