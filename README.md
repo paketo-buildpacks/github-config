@@ -14,8 +14,8 @@ github repo has recommended settings.
 
 If you just wrote a new CNB, run [bootstrap.sh](scripts/bootstrap.sh) as follows:
 ```sh
-# type is either "implementation" or "language-family"
-./scripts/bootstrap.sh <path/to/your/cnb> <type>
+# type is either "implementation", "language-family", or "builder"
+./scripts/bootstrap.sh --target <path/to/your/cnb> --repo-type <type>
 ```
 
 This will copy the relevant config files to your CNB. Git commit and Push your CNB.
