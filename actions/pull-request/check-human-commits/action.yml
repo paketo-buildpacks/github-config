@@ -16,7 +16,7 @@ inputs:
   bots:
     description: 'A comma-separated list of bot usernames from which to allow commits.'
     required: true
-    default: 'dependabot[bot],web-flow,paketo-bot'
+    default: 'dependabot[bot],web-flow,paketo-bot,cf-buildpacks-eng'
 
 runs:
   using: 'docker'
