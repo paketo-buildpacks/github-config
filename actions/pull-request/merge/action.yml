@@ -13,6 +13,10 @@ inputs:
   number:
     description: 'PR number'
     required: true
+  delete-branch:
+    description: 'Delete the branch after merge'
+    required: true
+    default: 'false'
 
 runs:
   using: 'docker'
@@ -24,3 +28,5 @@ runs:
   - ${{ inputs.token }}
   - "--number"
   - ${{ inputs.number }}
+  - "--delete-branch"
+  - ${{ inputs.delete-branch }}
