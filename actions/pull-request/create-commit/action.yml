@@ -12,6 +12,14 @@ inputs:
   pathspec:
     description: 'Git pathspec to stage'
     required: true
+  committer_name:
+    description: 'Name of the committer'
+    required: false
+    default: 'paketo-bot'
+  committer_email:
+    description: 'Email of the committer'
+    required: false
+    default: 'paketobuildpacks@gmail.com'
   keyid:
     description: 'ID of GPG signing key to use for signed commit'
     required: false
@@ -33,6 +41,10 @@ runs:
   - ${{ inputs.message }}
   - "--pathspec"
   - ${{ inputs.pathspec }}
+  - "--committer-name"
+  - ${{ inputs.committer_name }}
+  - "--committer-email"
+  - ${{ inputs.committer_email }}
   - "--keyid"
   - ${{ inputs.keyid }}
   - "--key"

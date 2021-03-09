@@ -4,7 +4,7 @@ set -eu
 set -o pipefail
 
 function main() {
-  local message pathspec keyid key
+  local message pathspec committer_name committer_email keyid key
   while [ "${#}" != 0 ]; do
     case "${1}" in
       --message)
@@ -14,6 +14,16 @@ function main() {
 
       --pathspec)
         pathspec="${2}"
+        shift 2
+        ;;
+
+      --committer-name)
+        committer_name="${2}"
+        shift 2
+        ;;
+
+      --committer-email)
+        committer_email="${2}"
         shift 2
         ;;
 
@@ -47,8 +57,8 @@ function main() {
     git config --global commit.gpgsign true
   fi
 
-  git config --global user.email "paketobuildpacks@gmail.com"
-  git config --global user.name "paketo-bot"
+  git config --global user.name "${committer_name}"
+  git config --global user.email "${committer_email}"
 
   if [[ -n "$(git status --short -- "${pathspec}")" ]]; then
     git add --all "${pathspec}"
