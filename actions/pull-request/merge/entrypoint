@@ -4,15 +4,10 @@ set -eu
 set -o pipefail
 
 function main() {
-  local user token number
+  local token number
 
   while [ "${#}" != 0 ]; do
     case "${1}" in
-      --user)
-        user="${2}"
-        shift 2
-        ;;
-
       --token)
         token="${2}"
         shift 2
@@ -33,24 +28,9 @@ function main() {
     esac
   done
 
-  pr::merge "${user}" "${token}" "${number}"
-}
-
-function pr::merge() {
-  local user token number
-  user="${1}"
-  token="${2}"
-  number="${3}"
+  echo "${token}" | gh auth login --with-token
 
   echo "Merging PR ${number}"
-
-  mkdir -p "${HOME}/.config/gh"
-  cat <<-EOF > "${HOME}/.config/gh/hosts.yml"
----
-github.com:
-  user: ${user}
-  oauth_token: ${token}
-EOF
 
   pushd "${GITHUB_WORKSPACE}" > /dev/null || true
     gh pr merge "${number}" --rebase --delete-branch=false

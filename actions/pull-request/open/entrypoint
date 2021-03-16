@@ -38,16 +38,6 @@ function main() {
     esac
   done
 
-  pr::open "${token}" "${title}" "${body}" "${branch}"
-}
-
-function pr::open() {
-  local token title body branch
-  token="${1}"
-  title="${2}"
-  body="${3}"
-  branch="${4}"
-
   echo "${token}" | gh auth login --with-token
 
   count="$(gh pr list --repo "${GITHUB_REPOSITORY}" \
