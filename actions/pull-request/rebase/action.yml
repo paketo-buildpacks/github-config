@@ -4,9 +4,6 @@ description: |
   Rebases a PR against the base branch
 
 inputs:
-  user:
-    description: 'User account to use when approving'
-    required: true
   token:
     description: 'Token used to authenticate user account'
     required: true
@@ -18,8 +15,6 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-  - "--user"
-  - ${{ inputs.user }}
   - "--token"
   - ${{ inputs.token }}
   - "--number"
