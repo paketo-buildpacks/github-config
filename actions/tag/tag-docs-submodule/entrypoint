@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# requires run: git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+# before executing this script
+
+main() {
+  local version
+
+  while [ "${#}" != 0 ]; do
+    case "${1}" in
+      --version)
+        version="${2}"
+        shift 2
+        ;;
+
+      "")
+        version=""
+        shift
+        ;;
+
+      *)
+        echo "unknown argument \"${1}\""
+        exit 1
+    esac
+  done
+
+  if [ -z "${version}" ]; then
+    echo "error: version parameter is required"
+    exit 1
+  fi
+
+  if ! git describe --tags --exact-match --match "v${version}" HEAD > /dev/null 2>&1; then
+    echo "error: HEAD has not yet been tagged with a main module release"
+    exit 1
+  fi
+
+  if git describe --tags --exact-match --match "docs/v${version}" HEAD > /dev/null 2>&1; then
+    echo "error: HEAD has already been tagged with a docs release"
+    exit 1
+  fi
+  echo "::set-output name=tag::docs/v${version}"
+}
+
+main "${@:-}"
