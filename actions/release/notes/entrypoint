@@ -1,12 +1,89 @@
 #!/bin/bash
 
+set -e
+set -u
+set -o pipefail
+
 function main() {
+  local token repo
+  while [ "${#}" != 0 ]; do
+    case "${1}" in
+      --token)
+        token="${2}"
+        shift 2
+        ;;
+
+      --repo)
+        repo="${2}"
+        shift 2
+        ;;
+
+      "")
+        shift
+        ;;
+
+      *)
+        echo "unknown argument \"${1}\""
+        exit 1
+    esac
+  done
+
+  if [[ -z "${token}" ]]; then
+    echo "--token is a required flag"
+    exit 1
+  fi
+
+  if [[ -z "${repo}" ]]; then
+    echo "--repo is a required flag"
+    exit 1
+  fi
+
   local content
   content="$(
     jam summarize \
       --buildpack "${GITHUB_WORKSPACE}/build/buildpackage.cnb" \
       --format markdown
   )"
+
+  local version
+  version="$(
+    curl "https://api.github.com/repos/${repo}/releases/latest" \
+      --header "Authorization: token ${token}" \
+      --location \
+      --silent \
+    | jq -r -S .tag_name
+  )"
+
+  IFS=$'\n' read -r -d '' -a commits < <(
+    curl "https://api.github.com/repos/${repo}/compare/${version}...main" \
+      --header "Authorization: token ${token}" \
+      --location \
+      --silent \
+    | jq -r -S .commits[].sha \
+    && printf '\0' # NULL-terminate the input
+  )
+
+  local changes
+  changes="$(
+    for commit in "${commits[@]}"; do
+      curl "https://api.github.com/repos/${repo}/commits/${commit}/pulls" \
+        --header "Accept: application/vnd.github.groot-preview+json" \
+        --header "Authorization: token ${token}" \
+        --location \
+        --silent \
+      | jq -r -S -c '.[] | @text "* #\(.number): \(.title) *@\(.user.login)*"'
+    done \
+    | sort -n
+  )"
+
+  if [[ -n "${changes}" ]]; then
+    content="$(
+      echo "${content}"
+      echo
+      echo "### Changes"
+      echo "${changes}"
+    )"
+  fi
 
   # Convert multiline output to single line output as GitHub "set-output" does
   # not support multiline strings:
