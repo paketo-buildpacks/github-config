@@ -71,7 +71,7 @@ function main() {
         --header "Authorization: token ${token}" \
         --location \
         --silent \
-      | jq -r -S -c '.[] | @text "* #\(.number): \(.title) *@\(.user.login)*"'
+      | jq -r -S -c '.[] | select(.head.ref != "automation/github-config/update") | @text "* #\(.number): \(.title) *@\(.user.login)*"'
     done \
     | sort -n
   )"
