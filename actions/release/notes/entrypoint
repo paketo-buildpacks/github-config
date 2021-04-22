@@ -54,35 +54,37 @@ function main() {
     | jq -r -S .tag_name
   )"
 
-  IFS=$'\n' read -r -d '' -a commits < <(
-    curl "https://api.github.com/repos/${repo}/compare/${version}...main" \
-      --header "Authorization: token ${token}" \
-      --location \
-      --silent \
-    | jq -r -S .commits[].sha \
-    && printf '\0' # NULL-terminate the input
-  )
-
-  local changes
-  changes="$(
-    for commit in "${commits[@]}"; do
-      curl "https://api.github.com/repos/${repo}/commits/${commit}/pulls" \
-        --header "Accept: application/vnd.github.groot-preview+json" \
+  if [[ "${version}" != "null" ]]; then
+    IFS=$'\n' read -r -d '' -a commits < <(
+      curl "https://api.github.com/repos/${repo}/compare/${version}...main" \
         --header "Authorization: token ${token}" \
         --location \
         --silent \
-      | jq -r -S -c '.[] | select(.head.ref != "automation/github-config/update") | @text "* #\(.number): \(.title) *@\(.user.login)*"'
-    done \
-    | sort -n
-  )"
+      | jq -r -S .commits[].sha \
+      && printf '\0' # NULL-terminate the input
+    )
 
-  if [[ -n "${changes}" ]]; then
-    content="$(
-      echo "${content}"
-      echo
-      echo "### Changes"
-      echo "${changes}"
+    local changes
+    changes="$(
+      for commit in "${commits[@]}"; do
+        curl "https://api.github.com/repos/${repo}/commits/${commit}/pulls" \
+          --header "Accept: application/vnd.github.groot-preview+json" \
+          --header "Authorization: token ${token}" \
+          --location \
+          --silent \
+        | jq -r -S -c '.[] | select(.head.ref != "automation/github-config/update") | @text "* #\(.number): \(.title) *@\(.user.login)*"'
+      done \
+      | sort -n
     )"
+
+    if [[ -n "${changes}" ]]; then
+      content="$(
+        echo "${content}"
+        echo
+        echo "### Changes"
+        echo "${changes}"
+      )"
+    fi
   fi
 
   # Convert multiline output to single line output as GitHub "set-output" does
