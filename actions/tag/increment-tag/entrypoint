@@ -32,7 +32,7 @@ main() {
   if [ -n "${current_version}" ]; then
     tag="${current_version}"
   else
-    previous="$(git describe --tags "$(git rev-list --tags --max-count=1)" || echo "v0.0.0")"
+    previous="$(git describe --tags --match "v[0-9]*" "$(git rev-list --tags --max-count=1)" || echo "v0.0.0")"
     tag="$(printf "%s" "$previous" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')"
   fi
 
