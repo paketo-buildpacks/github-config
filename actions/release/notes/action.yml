@@ -3,10 +3,6 @@ name: 'Create Language Family Release Notes'
 description: |
   Creates release notes for a language family
 
-runs:
-  using: 'docker'
-  image: 'Dockerfile'
-
 inputs:
   repo:
     description: 'Repository that will have draft release reset'
