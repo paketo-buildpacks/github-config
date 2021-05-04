@@ -62,6 +62,7 @@ func TestEntrypoint(t *testing.T) {
 					w.WriteHeader(http.StatusOK)
 
 				case "/repos/some-owner/some-repo/actions/artifacts/54321/zip":
+					// serving a zip file
 					filename := "payload"
 					buf := new(bytes.Buffer)
 					writer := zip.NewWriter(buf)
@@ -85,7 +86,7 @@ func TestEntrypoint(t *testing.T) {
 					w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 					_, _ = w.Write(buf.Bytes())
 
-				case "/repos/some-owner/some-repo/actions/runs/45678/artifacts":
+				case "/repos/some-owner/nonexistent-repo/actions/runs/45678/artifacts":
 					w.WriteHeader(http.StatusNotFound)
 
 				case "/repos/some-owner/some-repo/actions/artifacts/55555/zip":
@@ -170,7 +171,7 @@ func TestEntrypoint(t *testing.T) {
 					command := exec.Command(
 						entrypoint,
 						"--name", "payload",
-						"--repo", "some-owner/some-repo",
+						"--repo", "some-owner/nonexistent-repo",
 						"--runID", "45678",
 						"--githubAPI", mockServer.URL,
 					)
