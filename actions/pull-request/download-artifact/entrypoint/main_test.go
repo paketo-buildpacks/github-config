@@ -19,7 +19,6 @@ import (
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
-	. "github.com/paketo-buildpacks/occam/matchers"
 )
 
 func TestEntrypoint(t *testing.T) {
@@ -128,12 +127,9 @@ func TestEntrypoint(t *testing.T) {
 
 				Eventually(session).Should(gexec.Exit(0), func() string { return string(buffer.Contents()) })
 
-				out := string(buffer.Contents())
-				Expect(out).To(ContainLines(
-					"Getting workflow artifacts",
-					"Getting workflow artifact zip file",
-					"Reading file: payload",
-				))
+				Expect(buffer).To(gbytes.Say("Getting workflow artifacts"))
+				Expect(buffer).To(gbytes.Say("Getting workflow artifact zip file"))
+				Expect(buffer).To(gbytes.Say("Reading file: payload"))
 
 				contents, _ := os.ReadFile(filepath.Join(tempDir, "event.json"))
 				Expect(string(contents)).To(MatchJSON(`{
