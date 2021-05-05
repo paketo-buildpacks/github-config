@@ -27,6 +27,11 @@ jobs:
         echo $(cat event.json | jq -r '.pull_request.user.login' | sed s/^v//) == 'dependabot[bot]'}}
     runs-on: ubuntu-latest
     steps:
+    - name: Retrieve pull request number
+      run: |
+        echo "::set-output name=NUMBER::$(cat event.json | jq -r '.pull_request.number')"
+      id: pull_request_number
+
     - name: Check Commit Verification
       id: unverified-commits
       uses: paketo-buildpacks/github-config/actions/pull-request/check-unverified-commits@main
@@ -34,7 +39,7 @@ jobs:
         token: ${{ secrets.PAKETO_BOT_REVIEWER_GITHUB_TOKEN }}
         repo: ${{ github.repository }}
         # TODO: do we have access to the number in another way?
-        number: ${{ cat event.json | jq -r '.pull_request.number' }}
+        number: ${{ steps.pull_request_number.outputs.NUMBER }}
 
     - name: Check for Human Commits
       id: human-commits
@@ -42,7 +47,7 @@ jobs:
       with:
         token: ${{ secrets.PAKETO_BOT_REVIEWER_GITHUB_TOKEN }}
         repo: ${{ github.repository }}
-        number: ${{ cat event.json | jq -r '.pull_request.number' }}
+        number: ${{ steps.pull_request_number.outputs.NUMBER }}
 
     - name: Checkout
       if: steps.human-commits.outputs.human_commits == 'false' && steps.unverified-commits.outputs.unverified_commits == 'false'
@@ -53,4 +58,4 @@ jobs:
       uses: paketo-buildpacks/github-config/actions/pull-request/approve@main
       with:
         token: ${{ secrets.PAKETO_BOT_REVIEWER_GITHUB_TOKEN }}
-        number: ${{ cat event.json | jq -r '.pull_request.number' }}
+        number: ${{ steps.pull_request_number.outputs.NUMBER }}
