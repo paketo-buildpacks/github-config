@@ -57,7 +57,9 @@ func TestEntrypoint(t *testing.T) {
 					w.Header().Set("Content-Type", "application/json")
 					w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 					body, err := os.ReadFile(filename)
-					Expect(err).NotTo(HaveOccurred())
+					if err != nil {
+						log.Fatal(err)
+					}
 					_, _ = w.Write(body)
 					w.WriteHeader(http.StatusOK)
 
