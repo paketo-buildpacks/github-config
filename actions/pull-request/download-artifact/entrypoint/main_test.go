@@ -125,6 +125,7 @@ func TestEntrypoint(t *testing.T) {
 					"--run-id", "12345",
 					"--github-api", mockServer.URL,
 					"--workspace", tempDir,
+					"--token", "some-token",
 				)
 
 				buffer := gbytes.NewBuffer()
@@ -178,6 +179,7 @@ func TestEntrypoint(t *testing.T) {
 						"--run-id", "45678",
 						"--github-api", mockServer.URL,
 						"--workspace", tempDir,
+						"--token", "some-token",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -198,6 +200,7 @@ func TestEntrypoint(t *testing.T) {
 						"--run-id", "12345",
 						"--github-api", mockServer.URL,
 						"--workspace", tempDir,
+						"--token", "some-token",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -218,6 +221,7 @@ func TestEntrypoint(t *testing.T) {
 						"--run-id", "12345",
 						"--github-api", mockServer.URL,
 						"--workspace", tempDir,
+						"--token", "some-token",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -238,6 +242,7 @@ func TestEntrypoint(t *testing.T) {
 						"--run-id", "12345",
 						"--github-api", mockServer.URL,
 						"--workspace", tempDir,
+						"--token", "some-token",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -264,6 +269,7 @@ func TestEntrypoint(t *testing.T) {
 						"--run-id", "12345",
 						"--github-api", mockServer.URL,
 						"--workspace", filepath.Join(tempDir, "bad-dir"),
+						"--token", "some-token",
 					)
 
 					buffer := gbytes.NewBuffer()

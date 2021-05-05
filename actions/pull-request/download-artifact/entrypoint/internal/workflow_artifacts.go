@@ -12,6 +12,7 @@ type Options struct {
 	RunID     string
 	GithubAPI string
 	Workspace string
+	Token     string
 }
 
 type ArtifactFile struct {
@@ -24,8 +25,8 @@ type Artifact struct {
 	Size               int    `json:"size_in_bytes"`
 }
 
-func GetWorkflowArtifactURL(options Options, token string) (string, int, error) {
-	var bearer = "Bearer " + token
+func GetWorkflowArtifactURL(options Options) (string, int, error) {
+	var bearer = "Bearer " + options.Token
 	var url = fmt.Sprintf("%s/repos/%s/actions/runs/%s/artifacts",
 		options.GithubAPI,
 		options.Repo,

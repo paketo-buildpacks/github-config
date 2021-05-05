@@ -18,6 +18,7 @@ func main() {
 	flag.StringVar(&options.RunID, "run-id", "", "ID of the specific workflow that contains the artifact")
 	flag.StringVar(&options.GithubAPI, "github-api", "", "Github API endpoint to query for the download")
 	flag.StringVar(&options.Workspace, "workspace", "", "Path to the workspace to put artifacts")
+	flag.StringVar(&options.Token, "token", "", "Github Access Token used to make the request")
 	flag.Parse()
 
 	if options.Name == "" {
@@ -36,7 +37,11 @@ func main() {
 		fail(errors.New(`missing required input "workspace"`))
 	}
 
-	archiveDownloadURL, zipSize, err := internal.GetWorkflowArtifactURL(options, os.Getenv("GITHUB_TOKEN"))
+	if options.Token == "" {
+		fail(errors.New(`missing required input "token"`))
+	}
+
+	archiveDownloadURL, zipSize, err := internal.GetWorkflowArtifactURL(options)
 	if err != nil {
 		fail(err)
 	}
@@ -46,7 +51,7 @@ func main() {
 		archiveDownloadURL = options.GithubAPI + archiveDownloadURL
 	}
 
-	payloadResponseBody, err := internal.GetArtifactZip(archiveDownloadURL, os.Getenv("GITHUB_TOKEN"))
+	payloadResponseBody, err := internal.GetArtifactZip(archiveDownloadURL, options.Token)
 	if err != nil {
 		fail(err)
 	}

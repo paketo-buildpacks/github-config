@@ -21,6 +21,10 @@ inputs:
   workspace:
     description: 'Path to the workspace to put artifacts'
     required: true
+  token:
+    description: 'Github Access Token used to make the request'
+    required: true
+
 
 runs:
   using: 'docker'
@@ -36,3 +40,5 @@ runs:
   - ${{ inputs.github_api }}
   - "--workspace"
   - ${{ inputs.workspace }}
+  - "--token"
+  - ${{ inputs.token }}
