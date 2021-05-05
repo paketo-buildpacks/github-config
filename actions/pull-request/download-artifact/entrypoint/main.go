@@ -16,7 +16,7 @@ func main() {
 	flag.StringVar(&options.Name, "name", "", "Name of the uploaded artifact")
 	flag.StringVar(&options.Repo, "repo", "", "Org and repository that the workflow lives in")
 	flag.StringVar(&options.RunID, "run-id", "", "ID of the specific workflow that contains the artifact")
-	flag.StringVar(&options.GithubAPI, "github-api", "", "Github API endpoint to query for the download")
+	flag.StringVar(&options.GithubAPI, "github-api", "https://api.github.com", "Github API endpoint to query for the download")
 	flag.StringVar(&options.Workspace, "workspace", "", "Path to the workspace to put artifacts")
 	flag.StringVar(&options.Token, "token", "", "Github Access Token used to make the request")
 	flag.Parse()

@@ -17,7 +17,6 @@ inputs:
   github_api:
     description: 'Github API endpoint to query for the download'
     required: false
-    default: "https://api.github.com"
   workspace:
     description: 'Path to the workspace to put artifacts'
     required: true
