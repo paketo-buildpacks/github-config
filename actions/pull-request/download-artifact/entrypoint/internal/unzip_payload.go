@@ -12,16 +12,20 @@ import (
 func GetArtifactZip(archiveDownloadURL, token string) ([]byte, error) {
 	var bearer = "Bearer " + token
 	req, err := http.NewRequest("GET", archiveDownloadURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	req.Header.Add("Authorization", bearer)
 	payloadResp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return []byte{}, fmt.Errorf("failed to get artifact zip file: %w", err)
+		return nil, fmt.Errorf("failed to get artifact zip file: %w", err)
 	}
 
 	defer payloadResp.Body.Close()
 	payloadBody, err := io.ReadAll(payloadResp.Body)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 
 	return payloadBody, nil
@@ -30,7 +34,7 @@ func GetArtifactZip(archiveDownloadURL, token string) ([]byte, error) {
 func UnzipPayload(payloadName string, payloadBody []byte, zipSize int) ([]byte, error) {
 	zipReader, err := zip.NewReader(bytes.NewReader(payloadBody), int64(zipSize))
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 
 	for _, zipFile := range zipReader.File {
@@ -39,12 +43,12 @@ func UnzipPayload(payloadName string, payloadBody []byte, zipSize int) ([]byte, 
 		if zipFile.Name == payloadName {
 			unzippedFileBytes, err := readZipFile(zipFile)
 			if err != nil {
-				return []byte{}, err
+				return nil, err
 			}
 			return unzippedFileBytes, nil
 		}
 	}
-	return []byte{}, fmt.Errorf("no payload with the name %s found in zip", payloadName)
+	return nil, fmt.Errorf("no payload with the name %s found in zip", payloadName)
 }
 
 func readZipFile(zf *zip.File) ([]byte, error) {

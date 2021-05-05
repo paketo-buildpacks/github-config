@@ -11,10 +11,10 @@ inputs:
   repo:
     description: 'Org and repository that the workflow lives in'
     required: true
-  runID:
+  run_id:
     description: 'ID of the specific workflow that contains the artifact'
     required: true
-  githubAPI:
+  github_api:
     description: 'Github API endpoint to query for the download'
     required: false
     default: "https://api.github.com"
@@ -27,7 +27,7 @@ runs:
   - ${{ inputs.name }}
   - "--repo"
   - ${{ inputs.repo }}
-  - "--runID"
-  - ${{ inputs.runID }}
-  - "--githubAPI"
-  - ${{ inputs.githubAPI }}
+  - "--run-id"
+  - ${{ inputs.run_id }}
+  - "--github-api"
+  - ${{ inputs.github_api }}

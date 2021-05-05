@@ -117,8 +117,8 @@ func TestEntrypoint(t *testing.T) {
 					entrypoint,
 					"--name", "payload",
 					"--repo", "some-owner/some-repo",
-					"--runID", "12345",
-					"--githubAPI", mockServer.URL,
+					"--run-id", "12345",
+					"--github-api", mockServer.URL,
 				)
 
 				buffer := gbytes.NewBuffer()
@@ -172,8 +172,8 @@ func TestEntrypoint(t *testing.T) {
 						entrypoint,
 						"--name", "payload",
 						"--repo", "some-owner/nonexistent-repo",
-						"--runID", "45678",
-						"--githubAPI", mockServer.URL,
+						"--run-id", "45678",
+						"--github-api", mockServer.URL,
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -191,8 +191,8 @@ func TestEntrypoint(t *testing.T) {
 						entrypoint,
 						"--name", "wrong-artifact",
 						"--repo", "some-owner/some-repo",
-						"--runID", "12345",
-						"--githubAPI", mockServer.URL,
+						"--run-id", "12345",
+						"--github-api", mockServer.URL,
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -210,8 +210,8 @@ func TestEntrypoint(t *testing.T) {
 						entrypoint,
 						"--name", "another-payload",
 						"--repo", "some-owner/some-repo",
-						"--runID", "12345",
-						"--githubAPI", mockServer.URL,
+						"--run-id", "12345",
+						"--github-api", mockServer.URL,
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -236,8 +236,8 @@ func TestEntrypoint(t *testing.T) {
 						entrypoint,
 						"--name", "payload",
 						"--repo", "some-owner/some-repo",
-						"--runID", "12345",
-						"--githubAPI", mockServer.URL,
+						"--run-id", "12345",
+						"--github-api", mockServer.URL,
 					)
 
 					buffer := gbytes.NewBuffer()

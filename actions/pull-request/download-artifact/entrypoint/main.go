@@ -15,8 +15,8 @@ func main() {
 
 	flag.StringVar(&options.Name, "name", "", "Name of the uploaded artifact")
 	flag.StringVar(&options.Repo, "repo", "", "Org and repository that the workflow lives in")
-	flag.StringVar(&options.RunID, "runID", "", "ID of the specific workflow that contains the artifact")
-	flag.StringVar(&options.GithubAPI, "githubAPI", "", "Github API endpoint to query for the download")
+	flag.StringVar(&options.RunID, "run-id", "", "ID of the specific workflow that contains the artifact")
+	flag.StringVar(&options.GithubAPI, "github-api", "", "Github API endpoint to query for the download")
 	flag.Parse()
 
 	if options.Name == "" {
@@ -28,7 +28,7 @@ func main() {
 	}
 
 	if options.RunID == "" {
-		fail(errors.New(`missing required input "runID"`))
+		fail(errors.New(`missing required input "run-id"`))
 	}
 
 	archiveDownloadURL, zipSize, err := internal.GetWorkflowArtifactURL(options, os.Getenv("GITHUB_TOKEN"))

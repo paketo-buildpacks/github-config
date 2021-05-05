@@ -2,8 +2,6 @@ FROM golang:alpine
 
 RUN apk add \
     bash \
-    git \
-    gnupg \
   && rm -rf /var/cache/apk/*
 
 COPY entrypoint /tmp/entrypoint
