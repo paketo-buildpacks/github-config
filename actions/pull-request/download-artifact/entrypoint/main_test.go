@@ -104,12 +104,10 @@ func TestEntrypoint(t *testing.T) {
 
 			tempDir, err = os.MkdirTemp("", "output")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(os.Setenv("GITHUB_WORKSPACE", tempDir)).To(Succeed())
 		})
 
 		it.After(func() {
 			mockServer.Close()
-			Expect(os.Unsetenv("GITHUB_WORKSPACE")).To(Succeed())
 			Expect(os.RemoveAll(tempDir)).To(Succeed())
 		})
 
@@ -121,6 +119,7 @@ func TestEntrypoint(t *testing.T) {
 					"--repo", "some-owner/some-repo",
 					"--run-id", "12345",
 					"--github-api", mockServer.URL,
+					"--workspace", tempDir,
 				)
 
 				buffer := gbytes.NewBuffer()
@@ -176,6 +175,7 @@ func TestEntrypoint(t *testing.T) {
 						"--repo", "some-owner/nonexistent-repo",
 						"--run-id", "45678",
 						"--github-api", mockServer.URL,
+						"--workspace", tempDir,
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -195,6 +195,7 @@ func TestEntrypoint(t *testing.T) {
 						"--repo", "some-owner/some-repo",
 						"--run-id", "12345",
 						"--github-api", mockServer.URL,
+						"--workspace", tempDir,
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -214,6 +215,7 @@ func TestEntrypoint(t *testing.T) {
 						"--repo", "some-owner/some-repo",
 						"--run-id", "12345",
 						"--github-api", mockServer.URL,
+						"--workspace", tempDir,
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -228,10 +230,9 @@ func TestEntrypoint(t *testing.T) {
 			context("cannot write the file to the github workspace", func() {
 				it.Before(func() {
 					Expect(os.Mkdir(filepath.Join(tempDir, "bad-dir"), 0000))
-					Expect(os.Setenv("GITHUB_WORKSPACE", filepath.Join(tempDir, "bad-dir"))).To(Succeed())
 				})
 				it.After(func() {
-					Expect(os.Unsetenv("GITHUB_WORKSPACE")).To(Succeed())
+					Expect(os.Remove(filepath.Join(tempDir, "bad-dir"))).To(Succeed())
 				})
 				it("returns an error and exits non-zero", func() {
 					command := exec.Command(
@@ -240,6 +241,7 @@ func TestEntrypoint(t *testing.T) {
 						"--repo", "some-owner/some-repo",
 						"--run-id", "12345",
 						"--github-api", mockServer.URL,
+						"--workspace", filepath.Join(tempDir, "bad-dir"),
 					)
 
 					buffer := gbytes.NewBuffer()

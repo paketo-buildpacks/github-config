@@ -17,6 +17,7 @@ func main() {
 	flag.StringVar(&options.Repo, "repo", "", "Org and repository that the workflow lives in")
 	flag.StringVar(&options.RunID, "run-id", "", "ID of the specific workflow that contains the artifact")
 	flag.StringVar(&options.GithubAPI, "github-api", "", "Github API endpoint to query for the download")
+	flag.StringVar(&options.Workspace, "workspace", "", "Path to the workspace to put artifacts")
 	flag.Parse()
 
 	if options.Name == "" {
@@ -29,6 +30,10 @@ func main() {
 
 	if options.RunID == "" {
 		fail(errors.New(`missing required input "run-id"`))
+	}
+
+	if options.Workspace == "" {
+		fail(errors.New(`missing required input "workspace"`))
 	}
 
 	archiveDownloadURL, zipSize, err := internal.GetWorkflowArtifactURL(options, os.Getenv("GITHUB_TOKEN"))
@@ -52,13 +57,10 @@ func main() {
 	}
 
 	// Write the unzipped contents to a json file in the github.workspace
-	if workspace, ok := os.LookupEnv("GITHUB_WORKSPACE"); ok {
-		err = os.WriteFile(filepath.Join(workspace, "event.json"), unzippedFileBytes, 0600)
-		if err != nil {
-			fail(err)
-		}
+	err = os.WriteFile(filepath.Join(options.Workspace, "event.json"), unzippedFileBytes, 0600)
+	if err != nil {
+		fail(err)
 	}
-
 }
 
 func fail(err error) {

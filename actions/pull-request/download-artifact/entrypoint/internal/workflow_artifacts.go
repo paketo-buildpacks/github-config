@@ -11,6 +11,7 @@ type Options struct {
 	Repo      string
 	RunID     string
 	GithubAPI string
+	Workspace string
 }
 
 type ArtifactFile struct {

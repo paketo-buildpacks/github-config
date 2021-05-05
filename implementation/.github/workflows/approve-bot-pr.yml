@@ -19,6 +19,7 @@ jobs:
           name: "event-payload"
           repo: ${{ github.repository }}
           run_id: ${{ github.event.workflow_run.id }},
+          workspace: ${{ github.workspace }}
 
   approve:
     name: Approve Bot PRs
