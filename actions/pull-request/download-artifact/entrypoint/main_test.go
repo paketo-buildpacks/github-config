@@ -96,6 +96,12 @@ func TestEntrypoint(t *testing.T) {
 					w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 					w.WriteHeader(http.StatusOK)
 
+				case "/repos/some-owner/some-repo/actions/artifacts/77777/zip":
+					filename := "other-payload"
+					w.Header().Set("Content-Type", "application/json")
+					w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+					w.WriteHeader(http.StatusBadRequest)
+
 				default:
 					t.Fatal(fmt.Sprintf("unknown path: %s", req.URL.Path))
 				}
@@ -179,7 +185,7 @@ func TestEntrypoint(t *testing.T) {
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
-					Expect(string(buffer.Contents())).To(ContainSubstring("no workflow artifact found"))
+					Expect(string(buffer.Contents())).To(ContainSubstring("failed getting workflow artifacts with status code: 404"))
 				})
 			})
 
@@ -220,6 +226,26 @@ func TestEntrypoint(t *testing.T) {
 
 					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
 					Expect(string(buffer.Contents())).To(ContainSubstring("zip: not a valid zip file"))
+				})
+			})
+
+			context("request to retrieve payload returns a bad status code", func() {
+				it("returns an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--name", "other-payload",
+						"--repo", "some-owner/some-repo",
+						"--run-id", "12345",
+						"--github-api", mockServer.URL,
+						"--workspace", tempDir,
+					)
+
+					buffer := gbytes.NewBuffer()
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
+					Expect(string(buffer.Contents())).To(ContainSubstring("failed getting payload with status code: 400"))
 				})
 			})
 

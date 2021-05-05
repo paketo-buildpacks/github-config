@@ -46,12 +46,12 @@ func main() {
 		archiveDownloadURL = options.GithubAPI + archiveDownloadURL
 	}
 
-	payloadBody, err := internal.GetArtifactZip(archiveDownloadURL, os.Getenv("GITHUB_TOKEN"))
+	payloadResponseBody, err := internal.GetArtifactZip(archiveDownloadURL, os.Getenv("GITHUB_TOKEN"))
 	if err != nil {
 		fail(err)
 	}
 
-	unzippedFileBytes, err := internal.UnzipPayload(options.Name, payloadBody, zipSize)
+	unzippedFileBytes, err := internal.UnzipPayload(options.Name, payloadResponseBody, zipSize)
 	if err != nil {
 		fail(err)
 	}

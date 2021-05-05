@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func GetArtifactZip(archiveDownloadURL, token string) ([]byte, error) {
+func GetArtifactZip(archiveDownloadURL, token string) (io.ReadCloser, error) {
 	var bearer = "Bearer " + token
 	req, err := http.NewRequest("GET", archiveDownloadURL, nil)
 	if err != nil {
@@ -19,19 +19,25 @@ func GetArtifactZip(archiveDownloadURL, token string) ([]byte, error) {
 	req.Header.Add("Authorization", bearer)
 	payloadResp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		payloadResp.Body.Close()
 		return nil, fmt.Errorf("failed to get artifact zip file: %w", err)
 	}
 
-	defer payloadResp.Body.Close()
-	payloadBody, err := io.ReadAll(payloadResp.Body)
+	if payloadResp.StatusCode != http.StatusOK {
+		payloadResp.Body.Close()
+		return nil, fmt.Errorf("failed getting payload with status code: %d", payloadResp.StatusCode)
+	}
+
+	return payloadResp.Body, nil
+}
+
+func UnzipPayload(payloadName string, payloadResponseBody io.ReadCloser, zipSize int) ([]byte, error) {
+	defer payloadResponseBody.Close()
+	payloadBody, err := io.ReadAll(payloadResponseBody)
 	if err != nil {
 		return nil, err
 	}
 
-	return payloadBody, nil
-}
-
-func UnzipPayload(payloadName string, payloadBody []byte, zipSize int) ([]byte, error) {
 	zipReader, err := zip.NewReader(bytes.NewReader(payloadBody), int64(zipSize))
 	if err != nil {
 		return nil, err
