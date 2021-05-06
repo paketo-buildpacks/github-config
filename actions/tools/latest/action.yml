@@ -1,0 +1,25 @@
+name: 'Fetch Latest Tool Version'
+
+description: |
+  Fetches the latest version of a given tool
+
+inputs:
+  token:
+    description: 'Token used to authenticate user account'
+    required: true
+  repo:
+    description: 'Repo containing the tool to check for a latest version'
+    required: true
+
+outputs:
+  version:
+    description: The version of the latest release
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - --token
+  - ${{ inputs.token }}
+  - --repo
+  - ${{ inputs.repo }}
