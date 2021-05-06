@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -55,10 +54,35 @@ func TestEntrypoint(t *testing.T) {
 					filename := "artifact.json"
 					w.Header().Set("Content-Type", "application/json")
 					w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
-					body, err := os.ReadFile(filename)
-					if err != nil {
-						log.Fatal(err)
-					}
+					body := []byte(`{
+  "total_count": 3,
+  "artifacts": [
+    {
+      "id": 12345,
+      "name": "payload",
+      "size_in_bytes": 28244,
+      "url": "/repos/some-owner/some-repo/actions/artifacts/54321",
+      "archive_download_url": "/repos/some-owner/some-repo/actions/artifacts/54321/zip",
+      "expired": false
+    },
+    {
+      "id": 23456,
+      "name": "another-payload",
+      "size_in_bytes": 28244,
+      "url": "/repos/some-owner/some-repo/actions/artifacts/55555",
+      "archive_download_url": "/repos/some-owner/some-repo/actions/artifacts/55555/zip",
+      "expired": false
+    },
+    {
+      "id": 34567,
+      "name": "other-payload",
+      "size_in_bytes": 28244,
+      "url": "/repos/some-owner/some-repo/actions/artifacts/77777",
+      "archive_download_url": "/repos/some-owner/some-repo/actions/artifacts/77777/zip",
+      "expired": false
+    }
+  ]
+}`)
 					_, _ = w.Write(body)
 					w.WriteHeader(http.StatusOK)
 
@@ -67,15 +91,38 @@ func TestEntrypoint(t *testing.T) {
 					filename := "payload"
 					buf := new(bytes.Buffer)
 					writer := zip.NewWriter(buf)
-					data, err := ioutil.ReadFile(filename + ".json")
-					if err != nil {
-						log.Fatal(err)
-					}
+					data := []byte(`{
+  "action": "synchronize",
+  "pull_request": {
+    "_links": {
+      "comments": {
+        "href": "https://api.github.com/repos/some-org/some-repo/issues/1/comments"
+      },
+      "commits": {
+        "href": "https://api.github.com/repos/some-org/some-repo/pulls/1/commits"
+      }
+    },
+    "body": "Body of PR",
+    "changed_files": 2,
+    "closed_at": null,
+    "comments": 0,
+    "commits": 5,
+    "deletions": 52,
+    "labels": [],
+    "number": 1,
+    "state": "open",
+    "title": "Title",
+    "user": {
+      "id": 98765,
+      "login": "paketo-bot"
+    }
+  }
+}`)
 					f, err := writer.Create(filename)
 					if err != nil {
 						log.Fatal(err)
 					}
-					_, err = f.Write([]byte(data))
+					_, err = f.Write(data)
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -86,6 +133,7 @@ func TestEntrypoint(t *testing.T) {
 					w.Header().Set("Content-Type", "application/zip")
 					w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 					_, _ = w.Write(buf.Bytes())
+					w.WriteHeader(http.StatusOK)
 
 				case "/repos/some-owner/nonexistent-repo/actions/runs/45678/artifacts":
 					w.WriteHeader(http.StatusNotFound)

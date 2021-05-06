@@ -30,7 +30,7 @@ jobs:
     steps:
     - name: Retrieve pull request number
       run: |
-        echo "::set-output name=NUMBER::$(cat event.json | jq -r '.pull_request.number')"
+        echo "::set-output name=number::$(cat event.json | jq -r '.pull_request.number')"
       id: pull_request_number
 
     - name: Check Commit Verification
@@ -39,7 +39,7 @@ jobs:
       with:
         token: ${{ secrets.PAKETO_BOT_REVIEWER_GITHUB_TOKEN }}
         repo: ${{ github.repository }}
-        number: ${{ steps.pull_request_number.outputs.NUMBER }}
+        number: ${{ steps.pull_request_number.outputs.number }}
 
     - name: Check for Human Commits
       id: human-commits
@@ -47,7 +47,7 @@ jobs:
       with:
         token: ${{ secrets.PAKETO_BOT_REVIEWER_GITHUB_TOKEN }}
         repo: ${{ github.repository }}
-        number: ${{ steps.pull_request_number.outputs.NUMBER }}
+        number: ${{ steps.pull_request_number.outputs.number }}
 
     - name: Checkout
       if: steps.human-commits.outputs.human_commits == 'false' && steps.unverified-commits.outputs.unverified_commits == 'false'
@@ -58,4 +58,4 @@ jobs:
       uses: paketo-buildpacks/github-config/actions/pull-request/approve@main
       with:
         token: ${{ secrets.PAKETO_BOT_REVIEWER_GITHUB_TOKEN }}
-        number: ${{ steps.pull_request_number.outputs.NUMBER }}
+        number: ${{ steps.pull_request_number.outputs.number }}
