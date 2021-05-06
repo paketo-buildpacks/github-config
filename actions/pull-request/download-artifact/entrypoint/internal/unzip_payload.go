@@ -2,11 +2,11 @@ package internal
 
 import (
 	"archive/zip"
-	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 )
 
 func GetArtifactZip(archiveDownloadURL, token string) (io.ReadCloser, error) {
@@ -31,14 +31,19 @@ func GetArtifactZip(archiveDownloadURL, token string) (io.ReadCloser, error) {
 	return payloadResp.Body, nil
 }
 
-func UnzipPayload(payloadName string, payloadResponseBody io.ReadCloser, zipSize int) ([]byte, error) {
-	defer payloadResponseBody.Close()
-	payloadBody, err := io.ReadAll(payloadResponseBody)
+func UnzipPayload(payloadName string, reader io.Reader, zipSize int) ([]byte, error) {
+	buffer, err := os.CreateTemp("", "")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(buffer.Name())
+
+	_, err = io.Copy(buffer, reader)
 	if err != nil {
 		return nil, err
 	}
 
-	zipReader, err := zip.NewReader(bytes.NewReader(payloadBody), int64(zipSize))
+	zipReader, err := zip.NewReader(buffer, int64(zipSize))
 	if err != nil {
 		return nil, err
 	}

@@ -55,6 +55,7 @@ func main() {
 	if err != nil {
 		fail(err)
 	}
+	defer payloadResponseBody.Close()
 
 	unzippedFileBytes, err := internal.UnzipPayload(options.Name, payloadResponseBody, zipSize)
 	if err != nil {
