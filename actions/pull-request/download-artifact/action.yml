@@ -14,9 +14,6 @@ inputs:
   run_id:
     description: 'ID of the specific workflow that contains the artifact'
     required: true
-  github_api:
-    description: 'Github API endpoint to query for the download'
-    required: false
   workspace:
     description: 'Path to the workspace to put artifacts'
     required: true
@@ -35,8 +32,6 @@ runs:
   - ${{ inputs.repo }}
   - "--run-id"
   - ${{ inputs.run_id }}
-  - "--github-api"
-  - ${{ inputs.github_api }}
   - "--workspace"
   - ${{ inputs.workspace }}
   - "--token"
