@@ -66,6 +66,14 @@ func TestEntrypoint(t *testing.T) {
       "expired": false
     },
     {
+      "id": 123456,
+      "name": "bad-payload",
+      "size_in_bytes": 28244,
+      "url": "/repos/some-owner/some-repo/actions/artifacts/654321",
+      "archive_download_url": "/repos/some-owner/some-repo/actions/artifacts/654321/zip",
+      "expired": false
+    },
+    {
       "id": 23456,
       "name": "another-payload",
       "size_in_bytes": 28244,
@@ -96,7 +104,7 @@ func TestEntrypoint(t *testing.T) {
 
 				case "/repos/some-owner/some-repo/actions/artifacts/54321/zip":
 					// serving a zip file
-					filename := "payload"
+					filename := "event.json"
 					buf := new(bytes.Buffer)
 					writer := zip.NewWriter(buf)
 					data := []byte(`{
@@ -126,6 +134,29 @@ func TestEntrypoint(t *testing.T) {
     }
   }
 }`)
+					f, err := writer.Create(filename)
+					if err != nil {
+						log.Fatal(err)
+					}
+					_, err = f.Write(data)
+					if err != nil {
+						log.Fatal(err)
+					}
+					err = writer.Close()
+					if err != nil {
+						log.Fatal(err)
+					}
+					w.Header().Set("Content-Type", "application/zip")
+					w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+					_, _ = w.Write(buf.Bytes())
+					w.WriteHeader(http.StatusOK)
+
+				case "/repos/some-owner/some-repo/actions/artifacts/654321/zip":
+					// serving a zip file
+					filename := "wrong-file.json"
+					buf := new(bytes.Buffer)
+					writer := zip.NewWriter(buf)
+					data := []byte(`{}`)
 					f, err := writer.Create(filename)
 					if err != nil {
 						log.Fatal(err)
@@ -198,7 +229,7 @@ func TestEntrypoint(t *testing.T) {
 
 				Expect(buffer).To(gbytes.Say(`Getting workflow artifacts from http://127.0.0.1:\d+/repos/some-owner/some-repo/actions/runs/12345/artifacts`))
 				Expect(buffer).To(gbytes.Say("Getting workflow artifact zip file"))
-				Expect(buffer).To(gbytes.Say("Reading file: payload"))
+				Expect(buffer).To(gbytes.Say("Reading file: event.json"))
 
 				contents, _ := os.ReadFile(filepath.Join(tempDir, "event.json"))
 				Expect(string(contents)).To(MatchJSON(`{
@@ -382,6 +413,30 @@ func TestEntrypoint(t *testing.T) {
 
 					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
 					Expect(string(buffer.Contents())).To(ContainSubstring("permission denied"))
+				})
+			})
+			context("the zip file does not contain an event.json file", func() {
+				it("it returns an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--name", "bad-payload",
+						"--repo", "some-owner/some-repo",
+						"--run-id", "12345",
+						"--github-api", mockServer.URL,
+						"--workspace", tempDir,
+						"--token", "some-token",
+					)
+
+					buffer := gbytes.NewBuffer()
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
+
+					Expect(buffer).To(gbytes.Say(`Getting workflow artifacts from http://127.0.0.1:\d+/repos/some-owner/some-repo/actions/runs/12345/artifacts`))
+					Expect(buffer).To(gbytes.Say("Getting workflow artifact zip file"))
+					Expect(buffer).To(gbytes.Say("Reading file: wrong-file.json"))
+					Expect(buffer).To(gbytes.Say("no payload with the name event.json found in zip"))
 				})
 			})
 		})

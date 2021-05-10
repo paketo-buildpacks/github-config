@@ -57,7 +57,7 @@ func main() {
 	}
 	defer payloadResponseBody.Close()
 
-	unzippedFileBytes, err := internal.UnzipPayload(options.Name, payloadResponseBody, zipSize)
+	unzippedFileBytes, err := internal.UnzipPayload(payloadResponseBody, zipSize)
 	if err != nil {
 		fail(err)
 	}
