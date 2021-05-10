@@ -19,7 +19,6 @@ func GetArtifactZip(archiveDownloadURL, token string) (io.ReadCloser, error) {
 	req.Header.Add("Authorization", bearer)
 	payloadResp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		payloadResp.Body.Close()
 		return nil, fmt.Errorf("failed to get artifact zip file: %w", err)
 	}
 

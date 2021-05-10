@@ -40,7 +40,11 @@ func GetWorkflowArtifactURL(options Options) (string, int, error) {
 
 	fmt.Println("Getting workflow artifacts")
 	resp, err := http.DefaultClient.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
+	if err != nil {
+		return "", 0, fmt.Errorf("failed making a request to get artifacts: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
 		return "", 0, fmt.Errorf("failed getting workflow artifacts with status code: %d", resp.StatusCode)
 	}
 
