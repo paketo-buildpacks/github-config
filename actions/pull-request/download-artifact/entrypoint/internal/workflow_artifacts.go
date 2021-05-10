@@ -38,7 +38,7 @@ func GetWorkflowArtifactURL(options Options) (string, int, error) {
 	}
 	req.Header.Add("Authorization", bearer)
 
-	fmt.Println("Getting workflow artifacts")
+	fmt.Printf("Getting workflow artifacts from %s\n", url)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed making a request to get artifacts: %w", err)

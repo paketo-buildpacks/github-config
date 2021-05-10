@@ -196,7 +196,7 @@ func TestEntrypoint(t *testing.T) {
 
 				Eventually(session).Should(gexec.Exit(0), func() string { return string(buffer.Contents()) })
 
-				Expect(buffer).To(gbytes.Say("Getting workflow artifacts"))
+				Expect(buffer).To(gbytes.Say(`Getting workflow artifacts from http://127.0.0.1:\d+/repos/some-owner/some-repo/actions/runs/12345/artifacts`))
 				Expect(buffer).To(gbytes.Say("Getting workflow artifact zip file"))
 				Expect(buffer).To(gbytes.Say("Reading file: payload"))
 
