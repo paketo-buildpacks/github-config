@@ -63,7 +63,7 @@ func main() {
 	}
 
 	// Write the unzipped contents to a json file in the github.workspace
-	err = os.WriteFile(filepath.Join(options.Workspace, "event.json"), unzippedFileBytes, 0600)
+	err = os.WriteFile(filepath.Join(options.Workspace, "event.json"), unzippedFileBytes, 0644)
 	if err != nil {
 		fail(err)
 	}
