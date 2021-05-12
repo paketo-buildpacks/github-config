@@ -15,18 +15,23 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       pr-author: ${{ steps.check-pr-author.outputs.author }}
+      pr-number: ${{ steps.get-pr-number.outputs.number }}
     steps:
       - name: 'Download artifact'
-        uses: paketo-buildpacks/github-config/actions/pull-request/download-artifact@main
+        uses: paketo-buildpacks/github-config/actions/pull-request/download-artifact@approve-bot-prs
         with:
           name: "event-payload"
           repo: ${{ github.repository }}
           run_id: ${{ github.event.workflow_run.id }}
-          workspace: ${{ github.workspace }}
+          workspace: "/github/workspace"
           token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
       - id: check-pr-author
         run: |
           echo "::set-output name=author::$(cat event.json | jq -r '.pull_request.user.login' | sed s/^v//)"
+      - id: get-pr-number
+        run: |
+          echo "::set-output name=number::$(cat event.json | jq -r '.pull_request.number')"
+
   approve:
     name: Approve Bot PRs
     needs: download
@@ -35,18 +40,13 @@ jobs:
       needs.download.outputs.pr-author == 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     steps:
-    - name: Retrieve pull request number
-      run: |
-        echo "::set-output name=number::$(cat event.json | jq -r '.pull_request.number')"
-      id: pull_request_number
-
     - name: Check Commit Verification
       id: unverified-commits
       uses: paketo-buildpacks/github-config/actions/pull-request/check-unverified-commits@main
       with:
         token: ${{ secrets.PAKETO_BOT_REVIEWER_GITHUB_TOKEN }}
         repo: ${{ github.repository }}
-        number: ${{ steps.pull_request_number.outputs.number }}
+        number: ${{ needs.download.outputs.pr-number }}
 
     - name: Check for Human Commits
       id: human-commits
@@ -54,7 +54,7 @@ jobs:
       with:
         token: ${{ secrets.PAKETO_BOT_REVIEWER_GITHUB_TOKEN }}
         repo: ${{ github.repository }}
-        number: ${{ steps.pull_request_number.outputs.number }}
+        number: ${{ needs.download.outputs.pr-number }}
 
     - name: Checkout
       if: steps.human-commits.outputs.human_commits == 'false' && steps.unverified-commits.outputs.unverified_commits == 'false'
@@ -65,4 +65,4 @@ jobs:
       uses: paketo-buildpacks/github-config/actions/pull-request/approve@main
       with:
         token: ${{ secrets.PAKETO_BOT_REVIEWER_GITHUB_TOKEN }}
-        number: ${{ steps.pull_request_number.outputs.number }}
+        number: ${{ needs.download.outputs.pr-number }}
