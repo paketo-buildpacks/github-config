@@ -14,6 +14,7 @@ func main() {
 	var options internal.Options
 
 	flag.StringVar(&options.Name, "name", "", "Name of the uploaded artifact")
+	flag.StringVar(&options.PayloadFile, "payload-file", "event.json", "Name of the file of interest inside the artifact zip")
 	flag.StringVar(&options.Repo, "repo", "", "Org and repository that the workflow lives in")
 	flag.StringVar(&options.RunID, "run-id", "", "ID of the specific workflow that contains the artifact")
 	flag.StringVar(&options.GithubAPI, "github-api", "https://api.github.com", "Github API endpoint to query for the download")
@@ -57,7 +58,7 @@ func main() {
 	}
 	defer payloadResponseBody.Close()
 
-	unzippedFileBytes, err := internal.UnzipPayload(payloadResponseBody, zipSize)
+	unzippedFileBytes, err := internal.UnzipPayload(options.PayloadFile, payloadResponseBody, zipSize)
 	if err != nil {
 		fail(err)
 	}

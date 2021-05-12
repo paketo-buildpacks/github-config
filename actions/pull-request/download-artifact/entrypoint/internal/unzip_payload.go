@@ -30,7 +30,7 @@ func GetArtifactZip(archiveDownloadURL, token string) (io.ReadCloser, error) {
 	return payloadResp.Body, nil
 }
 
-func UnzipPayload(reader io.Reader, zipSize int) ([]byte, error) {
+func UnzipPayload(payloadName string, reader io.Reader, zipSize int) ([]byte, error) {
 	buffer, err := os.CreateTemp("", "")
 	if err != nil {
 		return nil, err
@@ -47,11 +47,10 @@ func UnzipPayload(reader io.Reader, zipSize int) ([]byte, error) {
 		return nil, err
 	}
 
-	// Look for the event.json file inside the zip file
 	for _, zipFile := range zipReader.File {
 		fmt.Println("Reading file:", zipFile.Name)
 
-		if zipFile.Name == "event.json" {
+		if zipFile.Name == payloadName {
 			unzippedFileBytes, err := readZipFile(zipFile)
 			if err != nil {
 				return nil, err

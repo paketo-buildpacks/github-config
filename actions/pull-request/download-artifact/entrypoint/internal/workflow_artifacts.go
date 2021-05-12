@@ -7,12 +7,13 @@ import (
 )
 
 type Options struct {
-	Name      string
-	Repo      string
-	RunID     string
-	GithubAPI string
-	Workspace string
-	Token     string
+	Name        string
+	PayloadFile string
+	Repo        string
+	RunID       string
+	GithubAPI   string
+	Workspace   string
+	Token       string
 }
 
 type ArtifactFile struct {

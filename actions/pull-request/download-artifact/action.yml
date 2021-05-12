@@ -8,6 +8,10 @@ inputs:
   name:
     description: 'Name of the uploaded artifact'
     required: true
+  payload_file:
+    description: 'Name of the file of interest inside the artifact zip'
+    default: "event.json"
+    required: true
   repo:
     description: 'Org and repository that the workflow lives in'
     required: true
@@ -28,6 +32,8 @@ runs:
   args:
   - "--name"
   - ${{ inputs.name }}
+  - "--payload-file"
+  - ${{ inputs.payload_file }}
   - "--repo"
   - ${{ inputs.repo }}
   - "--run-id"
