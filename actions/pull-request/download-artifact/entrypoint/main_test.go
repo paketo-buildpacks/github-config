@@ -25,7 +25,6 @@ func TestEntrypoint(t *testing.T) {
 
 	SetDefaultEventuallyTimeout(5 * time.Second)
 
-	var err error
 	entrypoint, err := gexec.Build("github.com/paketo-buildpacks/github-config/actions/pull-request/download-artifact/entrypoint")
 	Expect(err).NotTo(HaveOccurred())
 
@@ -51,149 +50,87 @@ func TestEntrypoint(t *testing.T) {
 					w.WriteHeader(http.StatusOK)
 
 				case "/repos/some-owner/some-repo/actions/runs/12345/artifacts":
-					filename := "artifact.json"
-					w.Header().Set("Content-Type", "application/json")
-					w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
-					body := []byte(`{
-  "total_count": 3,
-  "artifacts": [
-    {
-      "id": 12345,
-      "name": "payload",
-      "size_in_bytes": 28244,
-      "url": "/repos/some-owner/some-repo/actions/artifacts/54321",
-      "archive_download_url": "/repos/some-owner/some-repo/actions/artifacts/54321/zip",
-      "expired": false
-    },
-    {
-      "id": 123456,
-      "name": "bad-payload",
-      "size_in_bytes": 28244,
-      "url": "/repos/some-owner/some-repo/actions/artifacts/654321",
-      "archive_download_url": "/repos/some-owner/some-repo/actions/artifacts/654321/zip",
-      "expired": false
-    },
-    {
-      "id": 23456,
-      "name": "another-payload",
-      "size_in_bytes": 28244,
-      "url": "/repos/some-owner/some-repo/actions/artifacts/55555",
-      "archive_download_url": "/repos/some-owner/some-repo/actions/artifacts/55555/zip",
-      "expired": false
-    },
-    {
-      "id": 34567,
-      "name": "other-payload",
-      "size_in_bytes": 28244,
-      "url": "/repos/some-owner/some-repo/actions/artifacts/77777",
-      "archive_download_url": "/repos/some-owner/some-repo/actions/artifacts/77777/zip",
-      "expired": false
-    },
-    {
-      "id": 45678,
-      "name": "last-payload",
-      "size_in_bytes": 28244,
-      "url": "/repos/some-owner/some-repo/actions/artifacts/88888",
-      "archive_download_url": "/repos/some-owner/some-repo/actions/artifacts/88888/zip",
-      "expired": false
-    }
-  ]
-}`)
-					_, _ = w.Write(body)
-					w.WriteHeader(http.StatusOK)
+					fmt.Fprintf(w, `{
+						"artifacts": [
+							{
+								"name": "payload",
+								"size_in_bytes": 28244,
+								"archive_download_url": "%[1]s/repos/some-owner/some-repo/actions/artifacts/54321/zip"
+							},
+							{
+								"name": "bad-payload",
+								"size_in_bytes": 28244,
+								"archive_download_url": "%[1]s/repos/some-owner/some-repo/actions/artifacts/654321/zip"
+							},
+							{
+								"name": "another-payload",
+								"size_in_bytes": 28244,
+								"archive_download_url": "%[1]s/repos/some-owner/some-repo/actions/artifacts/55555/zip"
+							},
+							{
+								"name": "other-payload",
+								"size_in_bytes": 28244,
+								"archive_download_url": "%[1]s/repos/some-owner/some-repo/actions/artifacts/77777/zip"
+							},
+							{
+								"name": "last-payload",
+								"size_in_bytes": 28244,
+								"archive_download_url": "does-not-exist/repos/some-owner/some-repo/actions/artifacts/88888/zip"
+							}
+						]
+					}`, mockServer.URL)
 
 				case "/repos/some-owner/some-repo/actions/artifacts/54321/zip":
-					// serving a zip file
-					filename := "event.json"
-					buf := new(bytes.Buffer)
+					buf := bytes.NewBuffer(nil)
 					writer := zip.NewWriter(buf)
-					data := []byte(`{
-  "action": "synchronize",
-  "pull_request": {
-    "_links": {
-      "comments": {
-        "href": "https://api.github.com/repos/some-org/some-repo/issues/1/comments"
-      },
-      "commits": {
-        "href": "https://api.github.com/repos/some-org/some-repo/pulls/1/commits"
-      }
-    },
-    "body": "Body of PR",
-    "changed_files": 2,
-    "closed_at": null,
-    "comments": 0,
-    "commits": 5,
-    "deletions": 52,
-    "labels": [],
-    "number": 1,
-    "state": "open",
-    "title": "Title",
-    "user": {
-      "id": 98765,
-      "login": "paketo-bot"
-    }
-  }
-}`)
-					f, err := writer.Create(filename)
-					if err != nil {
-						log.Fatal(err)
+					for _, name := range []string{"some", "other"} {
+						f, err := writer.Create(fmt.Sprintf("%s-file", name))
+						if err != nil {
+							log.Fatal(err)
+						}
+
+						fmt.Fprintf(f, "%s-contents", name)
 					}
-					_, err = f.Write(data)
-					if err != nil {
-						log.Fatal(err)
-					}
+
 					err = writer.Close()
 					if err != nil {
 						log.Fatal(err)
 					}
-					w.Header().Set("Content-Type", "application/zip")
-					w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
-					_, _ = w.Write(buf.Bytes())
-					w.WriteHeader(http.StatusOK)
+
+					fmt.Fprint(w, buf.String())
 
 				case "/repos/some-owner/some-repo/actions/artifacts/654321/zip":
-					// serving a zip file
-					filename := "wrong-file.json"
-					buf := new(bytes.Buffer)
+					buf := bytes.NewBuffer(nil)
 					writer := zip.NewWriter(buf)
-					data := []byte(`{}`)
-					f, err := writer.Create(filename)
+
+					f, err := writer.Create("wrong-file.json")
 					if err != nil {
 						log.Fatal(err)
 					}
-					_, err = f.Write(data)
-					if err != nil {
-						log.Fatal(err)
-					}
+
+					fmt.Fprint(f, "{}")
+
 					err = writer.Close()
 					if err != nil {
 						log.Fatal(err)
 					}
-					w.Header().Set("Content-Type", "application/zip")
-					w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
-					_, _ = w.Write(buf.Bytes())
-					w.WriteHeader(http.StatusOK)
 
-				case "/repos/some-owner/bad-endpoint/actions/runs/45678/artifacts":
-					http.Error(w, "bad request", 0)
+					fmt.Fprint(w, buf.String())
 
 				case "/repos/some-owner/nonexistent-repo/actions/runs/45678/artifacts":
 					w.WriteHeader(http.StatusNotFound)
 
+				case "/repos/some-owner/some-repo/actions/runs/1111/artifacts":
+					fmt.Fprint(w, "%%%")
+
 				case "/repos/some-owner/some-repo/actions/artifacts/55555/zip":
-					filename := "another-payload"
-					w.Header().Set("Content-Type", "application/json")
-					w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 					w.WriteHeader(http.StatusOK)
 
 				case "/repos/some-owner/some-repo/actions/artifacts/77777/zip":
-					filename := "other-payload"
-					w.Header().Set("Content-Type", "application/json")
-					w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 					w.WriteHeader(http.StatusBadRequest)
 
 				case "/repos/some-owner/some-repo/actions/artifacts/88888/zip":
-					http.Error(w, "bad request", 0)
+					http.Error(w, "bad request", http.StatusInternalServerError)
 
 				default:
 					t.Fatal(fmt.Sprintf("unknown path: %s", req.URL.Path))
@@ -214,6 +151,7 @@ func TestEntrypoint(t *testing.T) {
 				command := exec.Command(
 					entrypoint,
 					"--name", "payload",
+					"--glob", "*-file",
 					"--repo", "some-owner/some-repo",
 					"--run-id", "12345",
 					"--github-api", mockServer.URL,
@@ -227,89 +165,27 @@ func TestEntrypoint(t *testing.T) {
 
 				Eventually(session).Should(gexec.Exit(0), func() string { return string(buffer.Contents()) })
 
-				Expect(buffer).To(gbytes.Say(`Getting workflow artifacts from http://127.0.0.1:\d+/repos/some-owner/some-repo/actions/runs/12345/artifacts`))
-				Expect(buffer).To(gbytes.Say("Getting workflow artifact zip file"))
-				Expect(buffer).To(gbytes.Say("Reading file: event.json"))
+				Expect(buffer).To(gbytes.Say(fmt.Sprintf("Getting workflow artifacts from %s/repos/some-owner/some-repo/actions/runs/12345/artifacts", mockServer.URL)))
+				Expect(buffer).To(gbytes.Say(fmt.Sprintf("Downloading zip from %s/repos/some-owner/some-repo/actions/artifacts/54321/zip", mockServer.URL)))
+				Expect(buffer).To(gbytes.Say("Unpacking file: some-file"))
+				Expect(buffer).To(gbytes.Say("Unpacking file: other-file"))
 
-				contents, _ := os.ReadFile(filepath.Join(tempDir, "event.json"))
-				Expect(string(contents)).To(MatchJSON(`{
-				"action": "synchronize",
-				"pull_request": {
-					"_links": {
-						"comments": {
-							"href": "https://api.github.com/repos/some-org/some-repo/issues/1/comments"
-						},
-						"commits": {
-							"href": "https://api.github.com/repos/some-org/some-repo/pulls/1/commits"
-						}
-					},
-					"body": "Body of PR",
-					"changed_files": 2,
-					"closed_at": null,
-					"comments": 0,
-					"commits": 5,
-					"deletions": 52,
-					"labels": [],
-					"number": 1,
-					"state": "open",
-					"title": "Title",
-					"user": {
-						"id": 98765,
-						"login": "paketo-bot"
-					}
-				}
-				}`))
+				contents, err := os.ReadFile(filepath.Join(tempDir, "some-file"))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(contents)).To(Equal("some-contents"))
+
+				contents, err = os.ReadFile(filepath.Join(tempDir, "other-file"))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(contents)).To(Equal("other-contents"))
 			})
 		})
 
 		context("failure cases", func() {
-			context("the artifact GET request fails", func() {
+			context("when the --name flag is missing", func() {
 				it("returns an error and exits non-zero", func() {
 					command := exec.Command(
 						entrypoint,
-						"--name", "payload",
-						"--repo", "some-owner/bad-endpoint",
-						"--run-id", "45678",
-						"--github-api", mockServer.URL,
-						"--workspace", tempDir,
-						"--token", "some-token",
-					)
-
-					buffer := gbytes.NewBuffer()
-					session, err := gexec.Start(command, buffer, buffer)
-					Expect(err).NotTo(HaveOccurred())
-
-					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
-					Expect(string(buffer.Contents())).To(ContainSubstring("failed making a request to get artifacts"))
-				})
-			})
-
-			context("getting the artifact returns a bad status code", func() {
-				it("returns an error and exits non-zero", func() {
-					command := exec.Command(
-						entrypoint,
-						"--name", "payload",
-						"--repo", "some-owner/nonexistent-repo",
-						"--run-id", "45678",
-						"--github-api", mockServer.URL,
-						"--workspace", tempDir,
-						"--token", "some-token",
-					)
-
-					buffer := gbytes.NewBuffer()
-					session, err := gexec.Start(command, buffer, buffer)
-					Expect(err).NotTo(HaveOccurred())
-
-					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
-					Expect(string(buffer.Contents())).To(ContainSubstring("failed getting workflow artifacts with status code: 404"))
-				})
-			})
-
-			context("artifacts are returned but there is no match", func() {
-				it("returns an error and exits non-zero", func() {
-					command := exec.Command(
-						entrypoint,
-						"--name", "wrong-artifact",
+						"--glob", "some-file",
 						"--repo", "some-owner/some-repo",
 						"--run-id", "12345",
 						"--github-api", mockServer.URL,
@@ -322,7 +198,179 @@ func TestEntrypoint(t *testing.T) {
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
-					Expect(string(buffer.Contents())).To(ContainSubstring("no exact workflow artifact found"))
+					Expect(buffer).To(gbytes.Say(`missing required flag --name`))
+				})
+			})
+
+			context("when the --repo flag is missing", func() {
+				it("returns an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--name", "payload",
+						"--glob", "some-file",
+						"--run-id", "12345",
+						"--github-api", mockServer.URL,
+						"--workspace", tempDir,
+						"--token", "some-token",
+					)
+
+					buffer := gbytes.NewBuffer()
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
+					Expect(buffer).To(gbytes.Say(`missing required flag --repo`))
+				})
+			})
+
+			context("when the --run-id flag is missing", func() {
+				it("returns an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--name", "payload",
+						"--glob", "some-file",
+						"--repo", "some-owner/some-repo",
+						"--github-api", mockServer.URL,
+						"--workspace", tempDir,
+						"--token", "some-token",
+					)
+
+					buffer := gbytes.NewBuffer()
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
+					Expect(buffer).To(gbytes.Say(`missing required flag --run-id`))
+				})
+			})
+
+			context("when the --workspace flag is missing", func() {
+				it("returns an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--name", "payload",
+						"--glob", "some-file",
+						"--repo", "some-owner/some-repo",
+						"--run-id", "12345",
+						"--github-api", mockServer.URL,
+						"--token", "some-token",
+					)
+
+					buffer := gbytes.NewBuffer()
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
+					Expect(buffer).To(gbytes.Say(`missing required flag --workspace`))
+				})
+			})
+
+			context("when the --token flag is missing", func() {
+				it("returns an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--name", "payload",
+						"--glob", "some-file",
+						"--repo", "some-owner/some-repo",
+						"--run-id", "12345",
+						"--github-api", mockServer.URL,
+						"--workspace", tempDir,
+					)
+
+					buffer := gbytes.NewBuffer()
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
+					Expect(buffer).To(gbytes.Say(`missing required flag --token`))
+				})
+			})
+
+			context("the list artifacts request fails", func() {
+				it("returns an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--name", "payload",
+						"--glob", "some-file",
+						"--repo", "some-owner/some-repo",
+						"--run-id", "45678",
+						"--github-api", "does-not-exist",
+						"--workspace", tempDir,
+						"--token", "some-token",
+					)
+
+					buffer := gbytes.NewBuffer()
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
+					Expect(string(buffer.Contents())).To(ContainSubstring("failed to list artifacts"))
+				})
+			})
+
+			context("the list artifacts response is not JSON", func() {
+				it("returns an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--name", "payload",
+						"--glob", "some-file",
+						"--repo", "some-owner/some-repo",
+						"--run-id", "1111",
+						"--github-api", mockServer.URL,
+						"--workspace", tempDir,
+						"--token", "some-token",
+					)
+
+					buffer := gbytes.NewBuffer()
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
+					Expect(string(buffer.Contents())).To(ContainSubstring("failed to parse artifacts response: invalid character"))
+				})
+			})
+
+			context("listing the artifacts returns an unexpected status code", func() {
+				it("returns an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--name", "payload",
+						"--glob", "some-file",
+						"--repo", "some-owner/nonexistent-repo",
+						"--run-id", "45678",
+						"--github-api", mockServer.URL,
+						"--workspace", tempDir,
+						"--token", "some-token",
+					)
+
+					buffer := gbytes.NewBuffer()
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
+					Expect(string(buffer.Contents())).To(ContainSubstring("failed to list artifacts: status code 404"))
+				})
+			})
+
+			context("artifacts are returned but there is no match", func() {
+				it("returns an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--name", "wrong-artifact",
+						"--glob", "some-file",
+						"--repo", "some-owner/some-repo",
+						"--run-id", "12345",
+						"--github-api", mockServer.URL,
+						"--workspace", tempDir,
+						"--token", "some-token",
+					)
+
+					buffer := gbytes.NewBuffer()
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
+					Expect(string(buffer.Contents())).To(ContainSubstring("failed to find matching artifact"))
 				})
 			})
 
@@ -331,6 +379,7 @@ func TestEntrypoint(t *testing.T) {
 					command := exec.Command(
 						entrypoint,
 						"--name", "another-payload",
+						"--glob", "some-file",
 						"--repo", "some-owner/some-repo",
 						"--run-id", "12345",
 						"--github-api", mockServer.URL,
@@ -352,6 +401,7 @@ func TestEntrypoint(t *testing.T) {
 					command := exec.Command(
 						entrypoint,
 						"--name", "other-payload",
+						"--glob", "some-file",
 						"--repo", "some-owner/some-repo",
 						"--run-id", "12345",
 						"--github-api", mockServer.URL,
@@ -364,7 +414,7 @@ func TestEntrypoint(t *testing.T) {
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
-					Expect(string(buffer.Contents())).To(ContainSubstring("failed getting payload with status code: 400"))
+					Expect(string(buffer.Contents())).To(ContainSubstring("failed to get artifact zip file: status code 400"))
 				})
 			})
 
@@ -373,6 +423,7 @@ func TestEntrypoint(t *testing.T) {
 					command := exec.Command(
 						entrypoint,
 						"--name", "last-payload",
+						"--glob", "some-file",
 						"--repo", "some-owner/some-repo",
 						"--run-id", "12345",
 						"--github-api", mockServer.URL,
@@ -393,13 +444,16 @@ func TestEntrypoint(t *testing.T) {
 				it.Before(func() {
 					Expect(os.Mkdir(filepath.Join(tempDir, "bad-dir"), 0000))
 				})
+
 				it.After(func() {
 					Expect(os.Remove(filepath.Join(tempDir, "bad-dir"))).To(Succeed())
 				})
+
 				it("returns an error and exits non-zero", func() {
 					command := exec.Command(
 						entrypoint,
 						"--name", "payload",
+						"--glob", "some-file",
 						"--repo", "some-owner/some-repo",
 						"--run-id", "12345",
 						"--github-api", mockServer.URL,
@@ -415,11 +469,13 @@ func TestEntrypoint(t *testing.T) {
 					Expect(string(buffer.Contents())).To(ContainSubstring("permission denied"))
 				})
 			})
-			context("the zip file does not contain an event.json file", func() {
+
+			context("the zip file does not contain a matching file", func() {
 				it("it returns an error and exits non-zero", func() {
 					command := exec.Command(
 						entrypoint,
 						"--name", "bad-payload",
+						"--glob", "some-file",
 						"--repo", "some-owner/some-repo",
 						"--run-id", "12345",
 						"--github-api", mockServer.URL,
@@ -433,10 +489,9 @@ func TestEntrypoint(t *testing.T) {
 
 					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
 
-					Expect(buffer).To(gbytes.Say(`Getting workflow artifacts from http://127.0.0.1:\d+/repos/some-owner/some-repo/actions/runs/12345/artifacts`))
-					Expect(buffer).To(gbytes.Say("Getting workflow artifact zip file"))
-					Expect(buffer).To(gbytes.Say("Reading file: wrong-file.json"))
-					Expect(buffer).To(gbytes.Say("no payload with the name event.json found in zip"))
+					Expect(buffer).To(gbytes.Say(fmt.Sprintf("Getting workflow artifacts from %s/repos/some-owner/some-repo/actions/runs/12345/artifacts", mockServer.URL)))
+					Expect(buffer).To(gbytes.Say(fmt.Sprintf("Downloading zip from %s/repos/some-owner/some-repo/actions/artifacts/654321/zip", mockServer.URL)))
+					Expect(buffer).To(gbytes.Say(`failed to find any files matching "some-file" in zip`))
 				})
 			})
 		})
