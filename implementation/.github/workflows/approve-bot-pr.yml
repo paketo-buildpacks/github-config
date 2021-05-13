@@ -9,9 +9,7 @@ on:
 jobs:
   download:
     name: Download PR Artifact
-    if: >
-      ${{ github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     outputs:
       pr-author: ${{ steps.check-pr-author.outputs.author }}
@@ -27,7 +25,7 @@ jobs:
           token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
       - id: check-pr-author
         run: |
-          echo "::set-output name=author::$(cat event.json | jq -r '.pull_request.user.login' | sed s/^v//)"
+          echo "::set-output name=author::$(cat event.json | jq -r '.pull_request.user.login')"
       - id: get-pr-number
         run: |
           echo "::set-output name=number::$(cat event.json | jq -r '.pull_request.number')"
@@ -35,9 +33,7 @@ jobs:
   approve:
     name: Approve Bot PRs
     needs: download
-    if: >
-      ${{ needs.download.outputs.pr-author == 'paketo-bot' ||
-      needs.download.outputs.pr-author == 'dependabot[bot]' }}
+    if: ${{ needs.download.outputs.pr-author == 'paketo-bot' || needs.download.outputs.pr-author == 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     steps:
     - name: Check Commit Verification
