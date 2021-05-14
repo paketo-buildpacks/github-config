@@ -154,7 +154,7 @@ func UnzipPayload(glob, workspace string, reader io.Reader, size int) error {
 	for _, file := range zr.File {
 		match, err := filepath.Match(glob, file.Name)
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("%s: %q", err, glob)
 		}
 
 		if match {
@@ -173,22 +173,22 @@ func UnzipPayload(glob, workspace string, reader io.Reader, size int) error {
 
 			f, err := file.Open()
 			if err != nil {
-				panic(err)
+				return err
 			}
 
 			_, err = io.CopyN(fd, f, int64(file.UncompressedSize64))
 			if err != nil {
-				panic(err)
+				return err
 			}
 
 			err = f.Close()
 			if err != nil {
-				panic(err)
+				return err
 			}
 
 			err = fd.Close()
 			if err != nil {
-				panic(err)
+				return err
 			}
 		}
 	}

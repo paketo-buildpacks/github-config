@@ -352,6 +352,28 @@ func TestEntrypoint(t *testing.T) {
 				})
 			})
 
+			context("the --glob argument is not valid", func() {
+				it("returns an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--name", "payload",
+						"--glob", "[[[[",
+						"--repo", "some-owner/some-repo",
+						"--run-id", "12345",
+						"--github-api", mockServer.URL,
+						"--workspace", tempDir,
+						"--token", "some-token",
+					)
+
+					buffer := gbytes.NewBuffer()
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
+					Expect(string(buffer.Contents())).To(ContainSubstring(`syntax error in pattern: "[[[["`))
+				})
+			})
+
 			context("artifacts are returned but there is no match", func() {
 				it("returns an error and exits non-zero", func() {
 					command := exec.Command(
