@@ -1,0 +1,43 @@
+name: 'Download artifact'
+
+description: |
+  Downloads the event payload artifact associated with
+  a workflow run.
+
+inputs:
+  name:
+    description: 'Name of the uploaded artifact'
+    required: true
+  glob:
+    description: 'Glob to match files inside the artifact zip'
+    default: '*'
+  repo:
+    description: 'Org and repository that the workflow lives in'
+    required: true
+  run_id:
+    description: 'ID of the specific workflow that contains the artifact'
+    required: true
+  workspace:
+    description: 'Path to the workspace to put artifacts'
+    required: true
+  token:
+    description: 'Github Access Token used to make the request'
+    required: true
+
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--name"
+  - ${{ inputs.name }}
+  - "--glob"
+  - ${{ inputs.glob }}
+  - "--repo"
+  - ${{ inputs.repo }}
+  - "--run-id"
+  - ${{ inputs.run_id }}
+  - "--workspace"
+  - ${{ inputs.workspace }}
+  - "--token"
+  - ${{ inputs.token }}
