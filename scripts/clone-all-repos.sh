@@ -1,12 +1,11 @@
-#!/usr/bin/env bash
-
+#!/bin/bash
 set -eu
-set -o pipefail
 
-readonly ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+readonly PROGDIR="$(cd "$(dirname "${0}")" && pwd)"
+readonly WORKSPACE="${HOME}/workspace"
 
 # shellcheck source=SCRIPTDIR/.util/print.sh
-source "${ROOTDIR}/scripts/.util/print.sh"
+source "${PROGDIR}/.util/print.sh"
 
 function main() {
   while [[ "${#}" != 0 ]]; do
@@ -27,60 +26,85 @@ function main() {
     esac
   done
 
-  clone_all
+  if [ -z "${GIT_TOKEN}" ]; then
+    util::print::error "Must set GIT_TOKEN"
+  fi
+
+  clone_all_repos
+
+  util::print::success "All repos cloned. Look around in ${WORKSPACE}"
 }
 
 function usage() {
   cat <<-USAGE
 clone-all-repos.sh [OPTIONS]
 
-Clones all project repositories into a set of organization-scopes workspace directories.
+Clones relevant Paketo Buildpacks and Paketo Community repos into
+~/workspace/<org>/<repo>. Requires a \$GIT_TOKEN for Github API requests.
 
 OPTIONS
-  --help  -h  prints the command usage
+  --help       -h  prints the command usage
 USAGE
 }
 
-function clone_all() {
-  local repos line
-  repos="$(
-    cat "${ROOTDIR}/.github/data/implementation-cnbs"
-    cat "${ROOTDIR}/.github/data/language-family-cnbs"
-    cat <<-EOF | xargs -n1
-      paketo-buildpacks/github-config
-      paketo-buildpacks/occam
-      paketo-buildpacks/packit
-      paketo-buildpacks/paketo-website
-      paketo-buildpacks/rfcs
-      paketo-buildpacks/samples
-		EOF
-  )"
+function clone_all_repos() {
+  while read -r line; do
+    clone_team_repos ${line}
+  done < <( get_org_teams paketo-buildpacks | sort)
 
   while read -r line; do
-    clone_or_pull "${line}"
+    clone_team_repos ${line}
+  done < <( get_org_teams paketo-community | sort)
+}
+
+function get_org_teams(){
+  local org
+
+  org="${1}"
+
+  curl --silent \
+  -H "Accept: application/vnd.github.v3+json" \
+  -H "Authorization: token ${GIT_TOKEN}" \
+  "https://api.github.com/orgs/${org}/teams?per_page=100" \
+  | jq -r '.[] | select(.slug | (contains("java") | not) and (contains("maintainers"))) | "\(.slug) \(.repositories_url)"'
+}
+
+function clone_team_repos() {
+  local team_name repositories_url
+
+  team_name="${1}"
+  repositories_url="${2}"
+
+  repos="$(curl --silent \
+  -H "Accept: application/vnd.github.v3+json" \
+  -H "Authorization: token ${GIT_TOKEN}" \
+  "${repositories_url}" | jq -r '.[] | "\(.ssh_url) \(.full_name)"' )"
+
+  util::print::info "Cloning ${team_name} repos..."
+
+  while read -r line; do
+    clone_or_pull ${line}
   done < <( echo "${repos}" | sort)
 }
 
 function clone_or_pull() {
-  local repo
-  repo="${1}"
+  local ssh_url repo_path
+  ssh_url="${1}"
+  repo_path="${2}"
 
-  local path
-  path="${HOME}/workspace/${repo}"
+  path="${WORKSPACE}/${repo_path}"
 
   mkdir -p "$(dirname "${path}")"
 
   if [[ ! -d "${path}" ]]; then
-    echo "Cloning ${repo}"
-    git clone "git@github.com:${repo}.git" "${path}"
+    echo "Cloning ${repo_path}"
+    git clone "${ssh_url}" "${path}"
   else
-    echo "${repo} already cloned, updating"
+    echo "${repo_path} already cloned, updating"
 
     git -C "${path}" checkout main
     git -C "${path}" pull --rebase --autostash
   fi
-
-  echo
 }
 
 main "${@:-}"
