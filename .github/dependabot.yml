@@ -1,31 +1,30 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://help.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
-
 version: 2
 updates:
-  - package-ecosystem: "gomod"
-    directory: "/actions/dependency/parse/entrypoint"
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "gomod"
-    directory: "/actions/dependency/update/entrypoint"
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "gomod"
-    directory: "/actions/dispatch/entrypoint"
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "gomod"
-    directory: "/actions/release/create/entrypoint"
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "gomod"
-    directory: "/actions/release/reset-draft/entrypoint"
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "gomod"
-    directory: "/actions/release/notes/language-family/entrypoint"
-    schedule:
-      interval: "daily"
+- package-ecosystem: gomod
+  directory: "/actions/dispatch/entrypoint"
+  schedule:
+    interval: daily
+- package-ecosystem: gomod
+  directory: "/actions/pull-request/download-artifact/entrypoint"
+  schedule:
+    interval: daily
+- package-ecosystem: gomod
+  directory: "/actions/release/create/entrypoint"
+  schedule:
+    interval: daily
+- package-ecosystem: gomod
+  directory: "/actions/release/reset-draft/entrypoint"
+  schedule:
+    interval: daily
+- package-ecosystem: github-actions
+  directory: "/builder"
+  schedule:
+    interval: daily
+- package-ecosystem: github-actions
+  directory: "/implementation"
+  schedule:
+    interval: daily
+- package-ecosystem: github-actions
+  directory: "/language-family"
+  schedule:
+    interval: daily
