@@ -4,7 +4,7 @@ set -eu
 set -o pipefail
 
 function main() {
-  local token title body branch
+  local token title body branch base
 
   while [ "${#}" != 0 ]; do
     case "${1}" in
@@ -25,6 +25,11 @@ function main() {
 
       --branch)
         branch="${2}"
+        shift 2
+        ;;
+
+      --base)
+        base="${2}"
         shift 2
         ;;
 
@@ -54,7 +59,8 @@ function main() {
   pushd "${GITHUB_WORKSPACE}" > /dev/null || true
     gh pr create \
       --title "${title}" \
-      --body "${body}"
+      --body "${body}" \
+      --base "${base}"
   popd > /dev/null || true
 }
 

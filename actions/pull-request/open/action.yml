@@ -16,6 +16,9 @@ inputs:
   branch:
     description: 'Branch to PR'
     required: true
+  base:
+    description: 'Branch into which the code should be merged'
+    default: 'main'
 
 runs:
   using: 'docker'
@@ -29,3 +32,5 @@ runs:
   - ${{ inputs.body }}
   - "--branch"
   - ${{ inputs.branch }}
+  - "--base"
+  - ${{ inputs.base }}
