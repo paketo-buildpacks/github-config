@@ -1,7 +1,7 @@
-name: 'Update buildpack.toml with new buildpack versions'
+name: 'Update buildpack.toml with new dependencies'
 
 description: |
-  This action updates the buildpack.toml with any new buildpack versions.
+  This action updates the buildpack.toml with any new dependency versions.
 
 runs:
   using: 'composite'
@@ -13,6 +13,7 @@ runs:
     run: |
       #!/usr/bin/env bash
       set -eu
+      # TODO: update to newest jam version when a release is cut
       echo "::set-output name=version::0.9.0"
 
   - name: Install Jam
@@ -29,11 +30,10 @@ runs:
         --output "${HOME}/bin/jam"
       chmod +x "${HOME}/bin/jam"
 
-  - name: Update Buildpack
+  - name: Update Dependencies
     shell: bash
     run: |
       #!/usr/bin/env bash
       set -eu
-      jam update-buildpack \
+      jam update-dependencies \
         --buildpack-file "${PWD}/buildpack.toml" \
-        --package-file "${PWD}/package.toml"
