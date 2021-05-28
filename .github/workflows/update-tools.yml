@@ -66,6 +66,18 @@ jobs:
                              --arg hugo "${HUGO_VERSION}" \
                              '{ pack: $pack, jam: $jam, hugo: $hugo }' > ./language-family/scripts/.util/tools.json
 
+    - name: Update buildpack/update tools.json
+      env:
+        JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
+      run: |
+        echo null | jq -r -S --arg jam "${JAM_VERSION}" '{ jam: $jam }' > ./actions/buildpack/update/.util/tools.json
+
+    - name: Update builder/update tools.json
+      env:
+        JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
+      run: |
+        echo null | jq -r -S --arg jam "${JAM_VERSION}" '{ jam: $jam }' > ./actions/builder/update/.util/tools.json
+
     - name: Commit
       id: commit
       uses: paketo-buildpacks/github-config/actions/pull-request/create-commit@main
