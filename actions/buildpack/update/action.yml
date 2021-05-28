@@ -13,8 +13,8 @@ runs:
     run: |
       #!/usr/bin/env bash
       set -eu
-      content=`cat .util/tools.json`
-      echo "::set-output name=version::$content"
+      version=$(jq -r .jam "scripts/.util/tools.json")
+      echo "::set-output name=version::${version#v}"
 
   - name: Install Jam
     shell: bash

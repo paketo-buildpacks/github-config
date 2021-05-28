@@ -42,9 +42,12 @@ jobs:
 
     - name: Update builder tools.json
       env:
+        JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
       run: |
-        echo null | jq -r -S --arg pack "${PACK_VERSION}" '{ pack: $pack }' > ./builder/scripts/.util/tools.json
+        echo null | jq -r -S --arg pack "${PACK_VERSION}" \
+                             --arg jam "${JAM_VERSION}" \
+                             '{ pack: $pack, jam: $jam }' > ./builder/scripts/.util/tools.json
 
     - name: Update implementation tools.json
       env:
@@ -65,18 +68,6 @@ jobs:
                              --arg jam "${JAM_VERSION}" \
                              --arg hugo "${HUGO_VERSION}" \
                              '{ pack: $pack, jam: $jam, hugo: $hugo }' > ./language-family/scripts/.util/tools.json
-
-    - name: Update buildpack/update tools.json
-      env:
-        JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
-      run: |
-        echo null | jq -r -S --arg jam "${JAM_VERSION}" '{ jam: $jam }' > ./actions/buildpack/update/.util/tools.json
-
-    - name: Update builder/update tools.json
-      env:
-        JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
-      run: |
-        echo null | jq -r -S --arg jam "${JAM_VERSION}" '{ jam: $jam }' > ./actions/builder/update/.util/tools.json
 
     - name: Commit
       id: commit
