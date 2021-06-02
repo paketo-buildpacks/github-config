@@ -13,8 +13,8 @@ runs:
     run: |
       #!/usr/bin/env bash
       set -eu
-      # TODO: update to newest jam version when a release is cut
-      echo "::set-output name=version::0.9.0"
+      version=$(jq -r .jam "scripts/.util/tools.json")
+      echo "::set-output name=version::${version#v}"
 
   - name: Install Jam
     shell: bash
