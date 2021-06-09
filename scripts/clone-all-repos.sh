@@ -1,19 +1,34 @@
 #!/bin/bash
-set -eu
 
-readonly PROGDIR="$(cd "$(dirname "${0}")" && pwd)"
-readonly WORKSPACE="${HOME}/workspace"
+set -e
+set -u
+set -o pipefail
+
+PROGDIR="$(cd "$(dirname "${0}")" && pwd)"
+readonly PROGDIR
 
 # shellcheck source=SCRIPTDIR/.util/print.sh
 source "${PROGDIR}/.util/print.sh"
 
 function main() {
+  local workspace token
+
   while [[ "${#}" != 0 ]]; do
     case "${1}" in
       --help|-h)
         shift 1
         usage
         exit 0
+        ;;
+
+      --workspace)
+        workspace="${2}"
+        shift 2
+        ;;
+
+      --token)
+        token="${2}"
+        shift 2
         ;;
 
       "")
@@ -26,84 +41,125 @@ function main() {
     esac
   done
 
-  if [ -z "${GIT_TOKEN}" ]; then
-    util::print::error "Must set GIT_TOKEN"
+  if [[ -z "${token:-}" ]]; then
+    util::print::error "--token is a required flag"
   fi
 
-  clone_all_repos
+  if [[ -z "${workspace:-}" ]]; then
+    workspace="${HOME}/workspace"
+  fi
 
-  util::print::success "All repos cloned. Look around in ${WORKSPACE}"
+  repos::clone::all "${workspace}" "${token}"
+
+  util::print::green "All repos cloned. Look around in ${workspace}"
 }
 
 function usage() {
   cat <<-USAGE
 clone-all-repos.sh [OPTIONS]
 
-Clones relevant Paketo Buildpacks and Paketo Community repos into
-~/workspace/<org>/<repo>. Requires a \$GIT_TOKEN for Github API requests.
+Clones relevant Paketo Buildpacks and Paketo Community repos into a workspace.
 
 OPTIONS
-  --help       -h  prints the command usage
+  --help              -h  prints the command usage
+  --workspace <path>      directory where repos are cloned (defaults to "${HOME}/workspace")
+  --token <token>         GitHub token used to fetch repository details
 USAGE
 }
 
-function clone_all_repos() {
-  while read -r line; do
-    clone_team_repos ${line}
-  done < <( get_org_teams paketo-buildpacks | sort)
+function repos::clone::all() {
+  local workspace token
+  workspace="${1}"
+  token="${2}"
 
-  while read -r line; do
-    clone_team_repos ${line}
-  done < <( get_org_teams paketo-community | sort)
+  util::print::blue "Fetching GitHub teams..."
+
+  IFS=$'\n' read -r -d '' -a teams < <(
+    teams::fetch paketo-buildpacks "${token}"
+    teams::fetch paketo-community "${token}"
+
+    printf '\0' # NULL-terminate the input
+  )
+
+  util::print::green "  Found ${#teams[@]} teams"
+  util::print::break
+
+  util::print::blue "Fetching GitHub repositories..."
+
+  IFS=$'\n' read -r -d '' -a repos < <(
+    for team in "${teams[@]}"; do
+      local org name url
+      org="$(jq -r .org <<< "${team}")"
+      name="$(jq -r .slug <<< "${team}")"
+      url="$(jq -r .repositories_url <<< "${team}")"
+
+      teams::repos::fetch "${org}" "${name}" "${url}" "${token}"
+    done | sort | uniq
+
+    printf '\0' # NULL-terminate the input
+  )
+
+  util::print::green "  Found ${#repos[@]} repositories"
+  util::print::break
+
+  util::print::blue "Cloning repositories..."
+
+  for repo in "${repos[@]}"; do
+    local path url
+    path="$(jq -r .full_name <<< "${repo}")"
+    url="$(jq -r .ssh_url <<< "${repo}")"
+
+    repo::fetch "${workspace}" "${url}" "${path}"
+  done
 }
 
-function get_org_teams(){
-  local org
-
+function teams::fetch() {
+  local org token
   org="${1}"
+  token="${2}"
 
-  curl --silent \
-  -H "Accept: application/vnd.github.v3+json" \
-  -H "Authorization: token ${GIT_TOKEN}" \
-  "https://api.github.com/orgs/${org}/teams?per_page=100" \
-  | jq -r '.[] | select(.slug | (contains("java") | not) and (contains("maintainers"))) | "\(.slug) \(.repositories_url)"'
+  util::print::yellow "  Fetching teams belonging to the ${org} GitHub organization..."
+
+  curl "https://api.github.com/orgs/${org}/teams?per_page=100" \
+    --silent --location \
+    --header "Accept: application/vnd.github.v3+json" \
+    --header "Authorization: token ${token}" \
+  | jq -r -c --arg org "${org}" '.[] | select(.slug | (contains("java") | not) and (contains("maintainers"))) | { org: $org, slug, repositories_url }'
 }
 
-function clone_team_repos() {
-  local team_name repositories_url
+function teams::repos::fetch() {
+  local org team url token
+  org="${1}"
+  team="${2}"
+  url="${3}"
+  token="${4}"
 
-  team_name="${1}"
-  repositories_url="${2}"
+  util::print::yellow "  Fetching repos belonging to the @${org}/${team} GitHub team..."
 
-  repos="$(curl --silent \
-  -H "Accept: application/vnd.github.v3+json" \
-  -H "Authorization: token ${GIT_TOKEN}" \
-  "${repositories_url}" | jq -r '.[] | "\(.ssh_url) \(.full_name)"' )"
-
-  util::print::info "Cloning ${team_name} repos..."
-
-  while read -r line; do
-    clone_or_pull ${line}
-  done < <( echo "${repos}" | sort)
+  curl "${url}" \
+    --silent --location \
+    --header "Accept: application/vnd.github.v3+json" \
+    --header "Authorization: token ${token}" \
+  | jq -r -c '.[] | { full_name, ssh_url }'
 }
 
-function clone_or_pull() {
-  local ssh_url repo_path
-  ssh_url="${1}"
-  repo_path="${2}"
-
-  path="${WORKSPACE}/${repo_path}"
+function repo::fetch() {
+  local workspace url path
+  workspace="${1}"
+  url="${2}"
+  path="${workspace}/${3}"
 
   mkdir -p "$(dirname "${path}")"
 
   if [[ ! -d "${path}" ]]; then
-    echo "Cloning ${repo_path}"
-    git clone "${ssh_url}" "${path}"
-  else
-    echo "${repo_path} already cloned, updating"
+    util::print::yellow "  Cloning ${url}..."
 
-    git -C "${path}" checkout main
-    git -C "${path}" pull --rebase --autostash
+    git clone "${url}" "${path}" 2>&1 | util::print::indent | util::print::indent >&2
+  else
+    util::print::yellow "  Repository ${path} already exists, pulling..."
+
+    git -C "${path}" checkout main 2>&1 | util::print::indent | util::print::indent >&2
+    git -C "${path}" pull --rebase --autostash 2>&1 | util::print::indent | util::print::indent >&2
   fi
 }
 

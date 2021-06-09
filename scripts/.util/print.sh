@@ -7,7 +7,7 @@ function util::print::title() {
   local message
   message="${1}"
 
-  util::print::blue "${message}"
+  util::print::blue "\n${message}"
 }
 
 function util::print::info() {
@@ -47,7 +47,7 @@ function util::print::blue() {
   blue="\033[0;34m"
   reset="\033[0;39m"
 
-  echo -e "\n${blue}${message}${reset}" >&2
+  echo -e "${blue}${message}${reset}" >&2
 }
 
 function util::print::red() {
@@ -79,4 +79,8 @@ function util::print::yellow() {
 
 function util::print::break() {
   echo "" >&2
+}
+
+function util::print::indent() {
+  sed 's/^.*\\r//g' | sed 's/^/  /g'
 }
