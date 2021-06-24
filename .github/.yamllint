@@ -1,0 +1,15 @@
+# Config for https://github.com/adrienverge/yamllint
+extends: default
+
+rules:
+  comments-indentation: disable
+  document-start: disable
+  truthy: disable
+  line-length: disable
+  indentation:
+    spaces: consistent
+    indent-sequences: consistent
+    check-multi-line-strings: false
+  brackets:
+    max-spaces-inside: -1
+
