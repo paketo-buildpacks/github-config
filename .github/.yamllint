@@ -12,4 +12,3 @@ rules:
     check-multi-line-strings: false
   brackets:
     max-spaces-inside: -1
-

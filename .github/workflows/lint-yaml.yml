@@ -3,8 +3,8 @@ name: Lint YAML Changes
 on:
   pull_request:
     paths:
-      - '**.yml'
-      - '**.yaml'
+    - '**.yml'
+    - '**.yaml'
 
 jobs:
   lintYaml:
