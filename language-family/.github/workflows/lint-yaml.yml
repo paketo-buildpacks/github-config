@@ -1,10 +1,10 @@
-name: Lint YAML Changes
+name: Lint Workflows
 
 on:
   pull_request:
     paths:
-    - '**.yml'
-    - '**.yaml'
+    - '.github/**.yml'
+    - '.github/**.yaml'
 
 jobs:
   lintYaml:
@@ -27,4 +27,4 @@ jobs:
       run: pip install yamllint
 
     - name: Lint YAML files
-      run: yamllint . -c github-config/.github/.yamllint
+      run: yamllint ./.github -c github-config/.github/.yamllint
