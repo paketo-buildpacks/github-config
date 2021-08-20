@@ -24,7 +24,7 @@ runs:
       mkdir -p "${HOME}"/bin
       echo "PATH=${HOME}/bin:${PATH}" >> "${GITHUB_ENV}"
       mkdir -p "${HOME}/bin"
-      curl "https://github.com/paketo-buildpacks/packit/releases/download/v${{ steps.version.outputs.version }}/jam-linux" \
+      curl "https://github.com/paketo-buildpacks/jam/releases/download/v${{ steps.version.outputs.version }}/jam-linux" \
         --silent \
         --location \
         --output "${HOME}/bin/jam"

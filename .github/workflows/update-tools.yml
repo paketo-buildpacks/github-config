@@ -24,7 +24,7 @@ jobs:
       uses: paketo-buildpacks/github-config/actions/tools/latest@main
       with:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-        repo: paketo-buildpacks/packit
+        repo: paketo-buildpacks/jam
 
     - name: Fetch Latest pack
       id: latest-pack
