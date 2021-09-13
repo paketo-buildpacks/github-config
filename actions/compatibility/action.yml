@@ -1,4 +1,4 @@
-name: 'Update buildpack.toml version compatibility table'
+name: 'Update .NET Core SDK buildpack.toml version compatibility table'
 
 description: |
   This action updates the buildpack.toml runtime/SDK compatibility table.
