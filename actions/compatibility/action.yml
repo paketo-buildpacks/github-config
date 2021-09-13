@@ -1,0 +1,26 @@
+name: 'Update buildpack.toml version compatibility table'
+
+description: |
+  This action updates the buildpack.toml runtime/SDK compatibility table.
+
+inputs:
+  buildpack_file:
+    description: 'Buildpack.toml file path'
+    required: true
+  sdk_version:
+    description: '.NET Core SDK version'
+    required: true
+  output_dir:
+    description: 'Path to put created artifact'
+    required: true
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--buildpack-toml"
+  - ${{ inputs.buildpack_file }}
+  - "--sdk-version"
+  - ${{ inputs.sdk_version }}
+  - "--output-dir"
+  - ${{ inputs.output_dir }}
