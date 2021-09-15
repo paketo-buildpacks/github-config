@@ -4,7 +4,6 @@ go 1.16
 
 require (
 	github.com/BurntSushi/toml v0.4.1
-	github.com/Masterminds/semver v1.5.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cloudfoundry/buildpacks-ci v0.0.0-20210830160740-41a17bec95b7
 	github.com/mitchellh/mapstructure v1.4.1

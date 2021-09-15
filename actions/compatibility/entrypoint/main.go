@@ -13,7 +13,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	msemver "github.com/Masterminds/semver"
 	"github.com/blang/semver"
 	"github.com/cloudfoundry/buildpacks-ci/tasks/cnb/helpers"
 	"github.com/mitchellh/mapstructure"
@@ -146,12 +145,12 @@ func getReleaseChannel() (Channel, error) {
 
 	// if the explicit release JSON file isn't passed in, look up the version-specific JSON file from the official release.json URI
 	if flags.releasesJSONPath == "" {
-		semverSdkVersion, err := msemver.NewVersion(flags.sdkVersion)
+		semverSdkVersion, err := semver.New(flags.sdkVersion)
 		if err != nil {
 			return Channel{}, fmt.Errorf("failed to parse SDK version into semantic version: %w", err)
 		}
 
-		url := fmt.Sprintf("https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/%d.%d/releases.json", semverSdkVersion.Major(), semverSdkVersion.Minor())
+		url := fmt.Sprintf("https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/%d.%d/releases.json", semverSdkVersion.Major, semverSdkVersion.Minor)
 		fmt.Printf("getting releases from %s", url)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
