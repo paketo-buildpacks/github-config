@@ -1,21 +1,19 @@
 package main_test
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 
-	"github.com/BurntSushi/toml"
-	"github.com/cloudfoundry/buildpacks-ci/tasks/cnb/helpers"
 	"github.com/mitchellh/mapstructure"
 	. "github.com/onsi/gomega"
 	. "github.com/paketo-buildpacks/github-config/actions/compatibility/entrypoint"
+	"github.com/paketo-buildpacks/packit/cargo"
 	"github.com/sclevine/spec"
 )
-
-var entrypoint string
 
 func TestSDKCompatibilityTableUpdate(t *testing.T) {
 	spec.Run(t, "SDKCompatibilityTableUpdate", func(t *testing.T, context spec.G, it spec.S) {
@@ -39,13 +37,17 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 
 		context("with empty buildpack.toml", func() {
 			it("add version of sdk dependency", func() {
-				buildpackTOML := helpers.BuildpackTOML{Metadata: helpers.Metadata{}}
+				buildpackTOML := cargo.Config{
+					API:       "0.2",
+					Buildpack: cargo.ConfigBuildpack{},
+					Metadata:  cargo.ConfigMetadata{},
+				}
 				runTask(buildpackTOML, releasesJSON, "2.1.803", outputDir)
 
 				outputBuildpackToml := decodeBuildpackTOML(outputDir)
 
 				var compatibilityTable []RuntimeToSDK
-				err = mapstructure.Decode(outputBuildpackToml.Metadata["runtime-to-sdks"], &compatibilityTable)
+				err = json.Unmarshal([]byte(outputBuildpackToml.Metadata.Unstructured["runtime-to-sdks"].(json.RawMessage)), &compatibilityTable)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(compatibilityTable).To(Equal([]RuntimeToSDK{
 					{
@@ -59,10 +61,12 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 
 		context("with version that doesn't exist in buildpack.toml", func() {
 			it("add version of sdk dependency and sorts versions", func() {
-				buildpackTOML := helpers.BuildpackTOML{
-					Metadata: helpers.Metadata{
-						helpers.RuntimeToSDKsKey: []RuntimeToSDK{
-							{RuntimeVersion: "2.1.14", SDKs: []string{"2.1.607"}},
+				buildpackTOML := cargo.Config{
+					Metadata: cargo.ConfigMetadata{
+						Unstructured: map[string]interface{}{
+							"runtime-to-sdks": []RuntimeToSDK{
+								{RuntimeVersion: "2.1.14", SDKs: []string{"2.1.607"}},
+							},
 						},
 					},
 				}
@@ -72,7 +76,7 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 				outputBuildpackToml := decodeBuildpackTOML(outputDir)
 
 				var compatibilityTable []RuntimeToSDK
-				err = mapstructure.Decode(outputBuildpackToml.Metadata["runtime-to-sdks"], &compatibilityTable)
+				err = json.Unmarshal([]byte(outputBuildpackToml.Metadata.Unstructured["runtime-to-sdks"].(json.RawMessage)), &compatibilityTable)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(compatibilityTable).To(Equal([]RuntimeToSDK{
@@ -89,9 +93,9 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 
 			context("the runtime version is not one of the two latest supported versions", func() {
 				it("does not add to the compatibility table", func() {
-					buildpackTOML := helpers.BuildpackTOML{
-						Metadata: helpers.Metadata{
-							helpers.DependenciesKey: []helpers.Dependency{
+					buildpackTOML := cargo.Config{
+						Metadata: cargo.ConfigMetadata{
+							Dependencies: []cargo.ConfigMetadataDependency{
 								{ID: "dotnet-sdk", Version: "2.1.801"},
 							},
 						},
@@ -103,9 +107,9 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 
 					outputBuildpackToml := decodeBuildpackTOML(outputDir)
 
-					var dependencies []helpers.Dependency
+					var dependencies []cargo.ConfigMetadataDependency
 
-					err = mapstructure.Decode(outputBuildpackToml.Metadata["dependencies"], &dependencies)
+					err = mapstructure.Decode(outputBuildpackToml.Metadata.Unstructured["dependencies"], &dependencies)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(dependencies).To(BeEmpty())
 				})
@@ -114,16 +118,18 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 
 		context("runtime version is present in buildpack.toml", func() {
 			it("include only one latest version of sdk dependency", func() {
-				buildpackTOML := helpers.BuildpackTOML{
-					Metadata: helpers.Metadata{
-						helpers.DependenciesKey: []helpers.Dependency{
+				buildpackTOML := cargo.Config{
+					Metadata: cargo.ConfigMetadata{
+						Dependencies: []cargo.ConfigMetadataDependency{
 							{ID: "dotnet-sdk", Version: "1.1.801"},
 							{ID: "dotnet-sdk", Version: "2.1.606"},
 							{ID: "dotnet-sdk", Version: "2.1.607"},
 						},
-						helpers.RuntimeToSDKsKey: []RuntimeToSDK{
-							{RuntimeVersion: "1.1.13", SDKs: []string{"1.1.801"}},
-							{RuntimeVersion: "2.1.14", SDKs: []string{"2.1.606"}},
+						Unstructured: map[string]interface{}{
+							"runtime-to-sdks": []RuntimeToSDK{
+								{RuntimeVersion: "1.1.13", SDKs: []string{"1.1.801"}},
+								{RuntimeVersion: "2.1.14", SDKs: []string{"2.1.606"}},
+							},
 						},
 					},
 				}
@@ -133,7 +139,7 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 				outputBuildpackToml := decodeBuildpackTOML(outputDir)
 
 				var compatibilityTable []RuntimeToSDK
-				err = mapstructure.Decode(outputBuildpackToml.Metadata["runtime-to-sdks"], &compatibilityTable)
+				err = json.Unmarshal([]byte(outputBuildpackToml.Metadata.Unstructured["runtime-to-sdks"].(json.RawMessage)), &compatibilityTable)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(compatibilityTable).To(Equal(
 					[]RuntimeToSDK{
@@ -147,11 +153,11 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 						},
 					}))
 
-				var dependencies []helpers.Dependency
-				err = mapstructure.Decode(outputBuildpackToml.Metadata["dependencies"], &dependencies)
+				var dependencies []cargo.ConfigMetadataDependency
+				err = mapstructure.Decode(outputBuildpackToml.Metadata.Dependencies, &dependencies)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(dependencies).To(Equal([]helpers.Dependency{
+				Expect(dependencies).To(Equal([]cargo.ConfigMetadataDependency{
 					{ID: "dotnet-sdk", Version: "1.1.801"},
 					{ID: "dotnet-sdk", Version: "2.1.607"},
 				}))
@@ -160,16 +166,18 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 
 		context("runtime version is not present in buildpack.toml", func() {
 			it("include only two latest versions of runtime dependency", func() {
-				buildpackTOML := helpers.BuildpackTOML{
-					Metadata: helpers.Metadata{
-						helpers.DependenciesKey: []helpers.Dependency{
+				buildpackTOML := cargo.Config{
+					Metadata: cargo.ConfigMetadata{
+						Dependencies: []cargo.ConfigMetadataDependency{
 							{ID: "dotnet-sdk", Version: "2.1.605"},
 							{ID: "dotnet-sdk", Version: "2.1.606"},
 							{ID: "dotnet-sdk", Version: "2.1.801"},
 						},
-						helpers.RuntimeToSDKsKey: []RuntimeToSDK{
-							{RuntimeVersion: "2.1.13", SDKs: []string{"2.1.605"}},
-							{RuntimeVersion: "2.1.14", SDKs: []string{"2.1.606"}},
+						Unstructured: map[string]interface{}{
+							"runtime-to-sdks": []RuntimeToSDK{
+								{RuntimeVersion: "2.1.13", SDKs: []string{"2.1.605"}},
+								{RuntimeVersion: "2.1.14", SDKs: []string{"2.1.606"}},
+							},
 						},
 					},
 				}
@@ -179,7 +187,7 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 				outputBuildpackToml := decodeBuildpackTOML(outputDir)
 
 				var compatibilityTable []RuntimeToSDK
-				err = mapstructure.Decode(outputBuildpackToml.Metadata["runtime-to-sdks"], &compatibilityTable)
+				err = json.Unmarshal([]byte(outputBuildpackToml.Metadata.Unstructured["runtime-to-sdks"].(json.RawMessage)), &compatibilityTable)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(compatibilityTable).To(Equal(
@@ -194,27 +202,28 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 						},
 					}))
 
-				var dependencies []helpers.Dependency
-				err = mapstructure.Decode(outputBuildpackToml.Metadata["dependencies"], &dependencies)
+				var dependencies []cargo.ConfigMetadataDependency
+				err = mapstructure.Decode(outputBuildpackToml.Metadata.Dependencies, &dependencies)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(dependencies).To(Equal(
-					[]helpers.Dependency{
-						{ID: "dotnet-sdk", Version: "2.1.606"},
-						{ID: "dotnet-sdk", Version: "2.1.801"},
-					}))
+				Expect(dependencies).To(Equal([]cargo.ConfigMetadataDependency{
+					{ID: "dotnet-sdk", Version: "2.1.606"},
+					{ID: "dotnet-sdk", Version: "2.1.801"},
+				}))
 			})
 		})
 
 		context("dotnet runtime already has latest sdk depedency", func() {
 			context("the sdk is the latest version", func() {
 				it("does not update or remove from buildpack.toml", func() {
-					buildpackTOML := helpers.BuildpackTOML{
-						Metadata: helpers.Metadata{
-							helpers.DependenciesKey: []helpers.Dependency{
+					buildpackTOML := cargo.Config{
+						Metadata: cargo.ConfigMetadata{
+							Dependencies: []cargo.ConfigMetadataDependency{
 								{ID: "dotnet-sdk", Version: "2.1.607"},
 							},
-							helpers.RuntimeToSDKsKey: []RuntimeToSDK{
-								{RuntimeVersion: "2.1.14", SDKs: []string{"2.1.607"}},
+							Unstructured: map[string]interface{}{
+								"runtime-to-sdks": []RuntimeToSDK{
+									{RuntimeVersion: "2.1.14", SDKs: []string{"2.1.607"}},
+								},
 							},
 						},
 					}
@@ -224,7 +233,7 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 					outputBuildpackToml := decodeBuildpackTOML(outputDir)
 
 					var compatibilityTable []RuntimeToSDK
-					err = mapstructure.Decode(outputBuildpackToml.Metadata["runtime-to-sdks"], &compatibilityTable)
+					err = json.Unmarshal([]byte(outputBuildpackToml.Metadata.Unstructured["runtime-to-sdks"].(json.RawMessage)), &compatibilityTable)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(compatibilityTable).To(Equal(
 						[]RuntimeToSDK{
@@ -234,34 +243,34 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 							},
 						}))
 
-					var dependencies []helpers.Dependency
-					err = mapstructure.Decode(outputBuildpackToml.Metadata["dependencies"], &dependencies)
+					var dependencies []cargo.ConfigMetadataDependency
+					err = mapstructure.Decode(outputBuildpackToml.Metadata.Dependencies, &dependencies)
+
 					Expect(err).NotTo(HaveOccurred())
-					Expect(dependencies).To(Equal(
-						[]helpers.Dependency{
-							{ID: "dotnet-sdk", Version: "2.1.607"},
-						}))
+					Expect(dependencies).To(Equal([]cargo.ConfigMetadataDependency{
+						{ID: "dotnet-sdk", Version: "2.1.607"},
+					}))
 				})
 			})
 		})
 
 		it("should keep the integrity of the rest of the toml", func() {
-			buildpackTOML := helpers.BuildpackTOML{
+			buildpackTOML := cargo.Config{
 				API: "0.2",
-				Metadata: helpers.Metadata{
-					helpers.IncludeFilesKey: []string{"bin/build", "bin/detect", "buildpack.toml", "go.mod", "go.sum"},
-					helpers.PrePackageKey:   "./scripts/build.sh",
-					helpers.DependenciesKey: []helpers.Dependency{
+				Metadata: cargo.ConfigMetadata{
+					Dependencies: []cargo.ConfigMetadataDependency{
 						{ID: "dotnet-sdk", Version: "2.1.607"},
 						{ID: "dotnet-sdk", Version: "2.1.802"},
 						{ID: "dotnet-sdk", Version: "2.1.803"},
 					},
-					helpers.RuntimeToSDKsKey: []RuntimeToSDK{
-						{RuntimeVersion: "2.1.14", SDKs: []string{"2.1.607"}},
-						{RuntimeVersion: "2.1.15", SDKs: []string{"2.1.802"}},
+					Unstructured: map[string]interface{}{
+						"runtime-to-sdks": []RuntimeToSDK{
+							{RuntimeVersion: "2.1.14", SDKs: []string{"2.1.607"}},
+							{RuntimeVersion: "2.1.15", SDKs: []string{"2.1.802"}},
+						},
 					},
 				},
-				Stacks: []helpers.Stack{
+				Stacks: []cargo.ConfigStack{
 					{ID: "org.cloudfoundry.stacks.cflinuxfs3"},
 					{ID: "io.buildpacks.stacks.bionic"},
 				},
@@ -271,21 +280,22 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 
 			outputBuildpackToml := decodeBuildpackTOML(outputDir)
 			Expect("0.2").To(Equal(outputBuildpackToml.API))
-			Expect("./scripts/build.sh").To(Equal(outputBuildpackToml.Metadata[helpers.PrePackageKey]))
 			Expect(len(outputBuildpackToml.Stacks)).To(Equal(2))
 		})
 
 		context("failure cases", func() {
 			context("the sdk version is not in the releases page", func() {
 				it("errors out", func() {
-					buildpackTOML := helpers.BuildpackTOML{
-						Metadata: helpers.Metadata{
-							helpers.DependenciesKey: []helpers.Dependency{
+					buildpackTOML := cargo.Config{
+						Metadata: cargo.ConfigMetadata{
+							Dependencies: []cargo.ConfigMetadataDependency{
 								{ID: "dotnet-sdk", Version: "2.1.606"},
 								{ID: "dotnet-sdk", Version: "2.1.607"},
 							},
-							helpers.RuntimeToSDKsKey: []RuntimeToSDK{
-								{RuntimeVersion: "2.1.14", SDKs: []string{"2.1.607"}},
+							Unstructured: map[string]interface{}{
+								"runtime-to-sdks": []RuntimeToSDK{
+									{RuntimeVersion: "2.1.14", SDKs: []string{"2.1.607"}},
+								},
 							},
 						},
 					}
@@ -299,14 +309,18 @@ func TestSDKCompatibilityTableUpdate(t *testing.T) {
 	})
 }
 
-func decodeBuildpackTOML(outputDir string) helpers.BuildpackTOML {
-	var buildpackTOML helpers.BuildpackTOML
-	_, err := toml.DecodeFile(filepath.Join(outputDir, "buildpack.toml"), &buildpackTOML)
+func decodeBuildpackTOML(outputDir string) cargo.Config {
+	var buildpackTOML cargo.Config
+	file, err := os.Open(filepath.Join(outputDir, "buildpack.toml"))
 	Expect(err).NotTo(HaveOccurred())
+	err = cargo.DecodeConfig(file, &buildpackTOML)
+	Expect(err).NotTo(HaveOccurred())
+
+	defer file.Close()
 	return buildpackTOML
 }
 
-func runTask(buildpackTOML helpers.BuildpackTOML, releasesJSON, sdkVersion, outputDir string) string {
+func runTask(buildpackTOML cargo.Config, releasesJSON, sdkVersion, outputDir string) string {
 	buildpackTOMLContents := setupOutputDirectory(outputDir, buildpackTOML)
 
 	taskCmd := exec.Command(
@@ -323,7 +337,7 @@ func runTask(buildpackTOML helpers.BuildpackTOML, releasesJSON, sdkVersion, outp
 	return string(taskOutput)
 }
 
-func runTaskError(buildpackTOML helpers.BuildpackTOML, releasesJSON, sdkVersion, outputDir string) (string, error) {
+func runTaskError(buildpackTOML cargo.Config, releasesJSON, sdkVersion, outputDir string) (string, error) {
 	buildpackTOMLContents := setupOutputDirectory(outputDir, buildpackTOML)
 
 	taskCmd := exec.Command(
@@ -339,10 +353,16 @@ func runTaskError(buildpackTOML helpers.BuildpackTOML, releasesJSON, sdkVersion,
 	return string(taskOutput), err
 }
 
-func setupOutputDirectory(outputDir string, buildpackTOML helpers.BuildpackTOML) string {
+func setupOutputDirectory(outputDir string, buildpackTOML cargo.Config) string {
 	Expect(os.RemoveAll(outputDir)).To(Succeed())
 	Expect(os.Mkdir(outputDir, 0755)).To(Succeed())
-	Expect(buildpackTOML.WriteToFile(filepath.Join(outputDir, "buildpack.toml"))).To(Succeed())
+
+	buildpackTOMLFile, err := os.Create(filepath.Join(outputDir, "buildpack.toml"))
+	Expect(err).ToNot(HaveOccurred())
+	defer buildpackTOMLFile.Close()
+
+	cargo.EncodeConfig(buildpackTOMLFile, buildpackTOML)
+	Expect(err).ToNot(HaveOccurred())
 
 	buildpackTOMLContents, err := ioutil.ReadFile(filepath.Join(outputDir, "buildpack.toml"))
 	Expect(err).NotTo(HaveOccurred())

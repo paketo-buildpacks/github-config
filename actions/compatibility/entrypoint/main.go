@@ -11,10 +11,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/BurntSushi/toml"
+	"github.com/paketo-buildpacks/packit/cargo"
 
 	"github.com/blang/semver"
-	"github.com/cloudfoundry/buildpacks-ci/tasks/cnb/helpers"
 	"github.com/mitchellh/mapstructure"
 	_ "github.com/pkg/errors"
 )
@@ -31,8 +30,8 @@ var (
 )
 
 type RuntimeToSDK struct {
-	RuntimeVersion string   `toml:"runtime-version" mapstructure:"runtime-version"`
-	SDKs           []string `toml:"sdks"`
+	RuntimeVersion string   `toml:"runtime-version" json:"runtime-version"`
+	SDKs           []string `toml:"sdks" json:"sdks"`
 }
 
 type Channel struct {
@@ -79,11 +78,10 @@ func main() {
 }
 
 func updateCompatibilityTable() error {
-	buildpackTOML := helpers.BuildpackTOML{}
-	if _, err := toml.Decode(flags.buildpackTOML, &buildpackTOML); err != nil {
+	buildpackTOML := cargo.Config{}
+	if err := cargo.DecodeConfig(strings.NewReader(flags.buildpackTOML), &buildpackTOML); err != nil {
 		return fmt.Errorf("failed to load buildpack toml: %w", err)
 	}
-
 	supported, err := checkIfSupportedPatchVersion()
 	if err != nil {
 		return err
@@ -91,7 +89,7 @@ func updateCompatibilityTable() error {
 
 	versionToRemove := flags.sdkVersion
 	if supported {
-		versionToRemove, err = addSDKToRuntime(buildpackTOML, flags.sdkVersion, flags.runtimeVersion)
+		versionToRemove, buildpackTOML, err = addSDKToRuntime(buildpackTOML, flags.sdkVersion, flags.runtimeVersion)
 		if err != nil {
 			return fmt.Errorf("failed to add sdk to runtime mapping: %w", err)
 		}
@@ -99,10 +97,18 @@ func updateCompatibilityTable() error {
 		fmt.Println("this runtime patch version is not supported. only the two latest versions are supported")
 	}
 
-	if err := removeUnusedSDK(buildpackTOML, versionToRemove); err != nil {
+	buildpackTOML, err = removeUnusedSDK(buildpackTOML, versionToRemove)
+	if err != nil {
 		return fmt.Errorf("failed to removed unused sdk: %w", err)
 	}
-	if err := buildpackTOML.WriteToFile(filepath.Join(flags.outputDir, "buildpack.toml")); err != nil {
+
+	buildpackTOMLFile, err := os.Create(filepath.Join(flags.outputDir, "buildpack.toml"))
+	if err != nil {
+		return fmt.Errorf("failed to open buildpack.toml at: %s", flags.outputDir)
+	}
+	defer buildpackTOMLFile.Close()
+
+	if err := cargo.EncodeConfig(buildpackTOMLFile, buildpackTOML); err != nil {
 		return fmt.Errorf("failed to update buildpack toml: %w", err)
 	}
 
@@ -212,18 +218,20 @@ func isSupportedRuntime(runtimeToSDK RuntimeToSDK, channelVersion string, latest
 		runtimeToSDK.RuntimeVersion != secondLatestRuntime)
 }
 
-func addSDKToRuntime(buildpackTOML helpers.BuildpackTOML, sdkVersion, runtimeVersion string) (string, error) {
+func addSDKToRuntime(buildpackTOML cargo.Config, sdkVersion, runtimeVersion string) (string, cargo.Config, error) {
 	var versionToRemove string
 	var inputs []RuntimeToSDK
 
-	err := mapstructure.Decode(buildpackTOML.Metadata[helpers.RuntimeToSDKsKey], &inputs)
-	if err != nil {
-		return "cannot decode runtime to sdk keys from buildpacks TOML", err
+	if buildpackTOML.Metadata.Unstructured != nil {
+		err := json.Unmarshal([]byte(buildpackTOML.Metadata.Unstructured["runtime-to-sdks"].(json.RawMessage)), &inputs)
+		if err != nil {
+			return "cannot decode runtime to sdk keys from buildpacks TOML", buildpackTOML, err
+		}
 	}
 
-	versionToRemove, inputs, err = removeUnsupportedRuntime(inputs)
+	versionToRemove, inputs, err := removeUnsupportedRuntime(inputs)
 	if err != nil {
-		return "cannot remove unsupported runtime from buildpacks TOML", err
+		return "cannot remove unsupported runtime from buildpacks TOML", buildpackTOML, err
 	}
 
 	runtimeExists := false
@@ -232,7 +240,7 @@ func addSDKToRuntime(buildpackTOML helpers.BuildpackTOML, sdkVersion, runtimeVer
 			var updatedSDK string
 			updatedSDK, versionToRemove, err = checkSDK(sdkVersion, runtimeToSDK.SDKs[0])
 			if err != nil {
-				return "", err
+				return "", buildpackTOML, err
 			}
 			runtimeToSDK.SDKs[0] = updatedSDK
 			runtimeExists = true
@@ -252,8 +260,10 @@ func addSDKToRuntime(buildpackTOML helpers.BuildpackTOML, sdkVersion, runtimeVer
 		return firstRuntime.LT(secondRuntime)
 	})
 
-	buildpackTOML.Metadata[helpers.RuntimeToSDKsKey] = inputs
-	return versionToRemove, nil
+	buildpackTOML.Metadata.Unstructured = make(map[string]interface{})
+	buildpackTOML.Metadata.Unstructured["runtime-to-sdks"] = inputs
+
+	return versionToRemove, buildpackTOML, nil
 }
 
 func checkSDK(callingSDK, existingSDK string) (string, string, error) {
@@ -278,11 +288,11 @@ func checkSDK(callingSDK, existingSDK string) (string, string, error) {
 	return updatedSDK, versionToRemove, nil
 }
 
-func removeUnusedSDK(buildpackTOML helpers.BuildpackTOML, sdkVersion string) error {
-	var dependencies []helpers.Dependency
-	err := mapstructure.Decode(buildpackTOML.Metadata[helpers.DependenciesKey], &dependencies)
+func removeUnusedSDK(buildpackTOML cargo.Config, sdkVersion string) (cargo.Config, error) {
+	var dependencies []cargo.ConfigMetadataDependency
+	err := mapstructure.Decode(buildpackTOML.Metadata.Dependencies, &dependencies)
 	if err != nil {
-		return err
+		return buildpackTOML, err
 	}
 	for i, dependency := range dependencies {
 		if dependency.Version == sdkVersion {
@@ -290,6 +300,6 @@ func removeUnusedSDK(buildpackTOML helpers.BuildpackTOML, sdkVersion string) err
 			break
 		}
 	}
-	buildpackTOML.Metadata[helpers.DependenciesKey] = dependencies
-	return nil
+	buildpackTOML.Metadata.Dependencies = dependencies
+	return buildpackTOML, nil
 }
