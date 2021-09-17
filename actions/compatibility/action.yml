@@ -5,7 +5,7 @@ description: |
 
 inputs:
   buildpack_file:
-    description: 'Buildpack.toml file path'
+    description: 'Path to the buildpack.toml file'
     required: true
   sdk_version:
     description: '.NET Core SDK version'

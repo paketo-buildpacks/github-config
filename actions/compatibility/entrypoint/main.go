@@ -52,7 +52,7 @@ type Release struct {
 func main() {
 	var err error
 
-	flag.StringVar(&flags.buildpackTOML, "buildpack-toml", "", "contents of buildpack.toml")
+	flag.StringVar(&flags.buildpackTOML, "buildpack-toml", "", "path to input buildpack.toml file")
 	flag.StringVar(&flags.outputDir, "output-dir", "", "directory to write buildpack.toml to")
 	flag.StringVar(&flags.sdkVersion, "sdk-version", "", "version of sdk")
 	flag.StringVar(&flags.releasesJSONPath, "releases-json-path", "", "path to dotnet releases.json")
@@ -79,7 +79,14 @@ func main() {
 
 func updateCompatibilityTable() error {
 	buildpackTOML := cargo.Config{}
-	if err := cargo.DecodeConfig(strings.NewReader(flags.buildpackTOML), &buildpackTOML); err != nil {
+
+	file, err := os.Open(flags.buildpackTOML)
+	if err != nil {
+		return fmt.Errorf("failed to open buildpack.toml file: %w", err)
+	}
+
+	defer file.Close()
+	if err = cargo.DecodeConfig(file, &buildpackTOML); err != nil {
 		return fmt.Errorf("failed to load buildpack toml: %w", err)
 	}
 	supported, err := checkIfSupportedPatchVersion()

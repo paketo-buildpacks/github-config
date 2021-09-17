@@ -2,7 +2,6 @@ package main_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -321,11 +320,11 @@ func decodeBuildpackTOML(outputDir string) cargo.Config {
 }
 
 func runTask(buildpackTOML cargo.Config, releasesJSON, sdkVersion, outputDir string) string {
-	buildpackTOMLContents := setupOutputDirectory(outputDir, buildpackTOML)
+	setupOutputDirectory(outputDir, buildpackTOML)
 
 	taskCmd := exec.Command(
 		"go", "run", "main.go",
-		"--buildpack-toml", buildpackTOMLContents,
+		"--buildpack-toml", filepath.Join(outputDir, "buildpack.toml"),
 		"--releases-json-path", releasesJSON,
 		"--sdk-version", sdkVersion,
 		"--output-dir", outputDir,
@@ -338,11 +337,11 @@ func runTask(buildpackTOML cargo.Config, releasesJSON, sdkVersion, outputDir str
 }
 
 func runTaskError(buildpackTOML cargo.Config, releasesJSON, sdkVersion, outputDir string) (string, error) {
-	buildpackTOMLContents := setupOutputDirectory(outputDir, buildpackTOML)
+	setupOutputDirectory(outputDir, buildpackTOML)
 
 	taskCmd := exec.Command(
 		"go", "run", "main.go",
-		"--buildpack-toml", buildpackTOMLContents,
+		"--buildpack-toml", filepath.Join(outputDir, "buildpack.toml"),
 		"--releases-json-path", releasesJSON,
 		"--sdk-version", sdkVersion,
 		"--output-dir", outputDir,
@@ -353,7 +352,7 @@ func runTaskError(buildpackTOML cargo.Config, releasesJSON, sdkVersion, outputDi
 	return string(taskOutput), err
 }
 
-func setupOutputDirectory(outputDir string, buildpackTOML cargo.Config) string {
+func setupOutputDirectory(outputDir string, buildpackTOML cargo.Config) {
 	Expect(os.RemoveAll(outputDir)).To(Succeed())
 	Expect(os.Mkdir(outputDir, 0755)).To(Succeed())
 
@@ -361,10 +360,6 @@ func setupOutputDirectory(outputDir string, buildpackTOML cargo.Config) string {
 	Expect(err).ToNot(HaveOccurred())
 	defer buildpackTOMLFile.Close()
 
-	cargo.EncodeConfig(buildpackTOMLFile, buildpackTOML)
+	err = cargo.EncodeConfig(buildpackTOMLFile, buildpackTOML)
 	Expect(err).ToNot(HaveOccurred())
-
-	buildpackTOMLContents, err := ioutil.ReadFile(filepath.Join(outputDir, "buildpack.toml"))
-	Expect(err).NotTo(HaveOccurred())
-	return string(buildpackTOMLContents)
 }
