@@ -9,8 +9,10 @@ To run the code locally:
 1. `cd github-config/actions/compatibility/entrypoint`
 2. Run:
 ```
-go run main.go --buildpack-toml "$(cat <full path to your buildpack.toml>)" --sdk-version <new-sdk-version to add> --output-dir <directory to output new buildpack.toml>
+go run main.go --buildpack-toml <path to your buildpack.toml> --sdk-version <new-sdk-version to add> --output-dir <directory to output new buildpack.toml>
 ```
+And you may pass an optional `--releases-json-path" flag with a path to a local .NET Core releases.json file that specifies the SDK to runtime compatibilities. If this flag is not passed, the default .NET Core path will be used for the given SDK version line.
+
 3. Check out the new buildpack.toml
 
 In keeping with the logic of the old code, the passed in SDK version must be one of the two newest SDK versions available for the given version line.
