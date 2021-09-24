@@ -38,6 +38,23 @@ function main() {
     exit 1
   fi
 
+  local jam_version
+  jam_version="$(
+    curl "https://api.github.com/repos/paketo-buildpacks/jam/releases/latest" \
+      --header "Authorization: token ${token}" \
+      --location \
+      --silent \
+    | jq -r -S .tag_name
+  )"
+
+  mkdir -p "${HOME}"/bin
+  export PATH="${HOME}/bin:${PATH}"
+  curl "https://github.com/paketo-buildpacks/jam/releases/download/${jam_version}/jam-linux" \
+    --silent \
+    --location \
+    --output "${HOME}/bin/jam"
+  chmod +x "${HOME}/bin/jam"
+
   local content
   content="$(
     jam summarize \
