@@ -85,7 +85,7 @@ function image::pull::lifecycle() {
   name="${1}"
 
   lifecycle_image="index.docker.io/buildpacksio/lifecycle:$(
-    pack inspect-builder "${name}" --output json \
+    pack builder inspect "${name}" --output json \
       | jq -r '.local_info.lifecycle.version'
   )"
 
