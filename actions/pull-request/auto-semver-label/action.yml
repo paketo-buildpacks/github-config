@@ -1,0 +1,49 @@
+name: Auto-label SemVer
+description: |
+  Checks author and files changed in a PR to automatically determine the size of the change (patch/minor/major)
+
+runs:
+  using: "composite"
+  steps:
+  - name: Checkout main branch
+    uses: actions/checkout@v2
+    with:
+      ref: main
+  - name: Clear semver label
+    shell: bash
+    run: |
+      gh pr edit "${{ github.event.number }}" --remove-label "semver:patch"
+      gh pr edit "${{ github.event.number }}" --remove-label "semver:minor"
+      gh pr edit "${{ github.event.number }}" --remove-label "semver:major"
+  - name: Check files changed
+    id: changes
+    shell: bash
+    run: |
+      while read -r changed; do
+          echo "File changed: ${changed}"
+          # scan through an allow list. does each element of the changed files match something in the allow list?
+          safe=0
+          while read -r file; do
+            if [[ "${changed}" =~ "${file}" ]]; then
+              echo "${changed} is on the patch allowlist"
+              safe=1
+              break
+            fi
+          done < "${GITHUB_WORKSPACE}/.github/.patch_files"
+
+          if [ "${safe}" -eq "0" ]; then
+            echo "Files changed that aren't on the patch allowlist"
+            echo "::set-output name=label::"
+            exit 0
+          fi
+
+      done < <(gh api /repos/"${{ github.repository }}"/pulls/"${{ github.event.number }}"/files --jq '.[].filename')
+
+      echo "All changes are patches."
+      echo "::set-output name=label::patch"
+  - name: Add patch label
+    shell: bash
+    run: |
+      if [[ "${{ steps.changes.outputs.label}}" == "patch" ]]; then
+        gh pr edit "${{ github.event.number }}" --add-label "semver:patch"
+      fi
