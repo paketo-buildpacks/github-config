@@ -1,4 +1,4 @@
-name: Auto-label SemVer
+name: Auto-label PR with Semver Size
 description: |
   Checks author and files changed in a PR to automatically determine the size of the change (patch/minor/major)
 
@@ -9,13 +9,13 @@ runs:
     uses: actions/checkout@v2
     with:
       ref: main
-  - name: Clear semver label
+  - name: Clear Semver Label
     shell: bash
     run: |
       gh pr edit "${{ github.event.number }}" --remove-label "semver:patch"
       gh pr edit "${{ github.event.number }}" --remove-label "semver:minor"
       gh pr edit "${{ github.event.number }}" --remove-label "semver:major"
-  - name: Check files changed
+  - name: Check Files Changed
     id: changes
     shell: bash
     run: |
@@ -41,7 +41,7 @@ runs:
 
       echo "All changes are patches."
       echo "::set-output name=label::patch"
-  - name: Add patch label
+  - name: Add Semver Label
     shell: bash
     run: |
       if [[ "${{ steps.changes.outputs.label}}" == "patch" ]]; then
