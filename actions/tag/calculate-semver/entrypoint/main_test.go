@@ -247,7 +247,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/ghijklm/pulls"))
 
-				Expect(buffer).To(gbytes.Say(`::set-output name=tag::v1.2.4`))
+				Expect(buffer).To(gbytes.Say(`::set-output name=tag::1.2.4`))
 			})
 		})
 
@@ -275,7 +275,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-minor-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-minor-repo/commits/ghijklm/pulls"))
 
-				Expect(buffer).To(gbytes.Say(`::set-output name=tag::v1.3.0`))
+				Expect(buffer).To(gbytes.Say(`::set-output name=tag::1.3.0`))
 			})
 		})
 
@@ -303,7 +303,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-major-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-major-repo/commits/ghijklm/pulls"))
 
-				Expect(buffer).To(gbytes.Say(`::set-output name=tag::v2.0.0`))
+				Expect(buffer).To(gbytes.Say(`::set-output name=tag::2.0.0`))
 			})
 		})
 
@@ -328,7 +328,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-unreleased-repo"))
 				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-unreleased-repo/releases/latest"))
 
-				Expect(buffer).To(gbytes.Say(`::set-output name=tag::v0.0.1`))
+				Expect(buffer).To(gbytes.Say(`::set-output name=tag::0.0.1`))
 			})
 		})
 
@@ -354,7 +354,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-no-new-commits-repo/releases/latest"))
 				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-no-new-commits-repo/compare/v1.2.3...main"))
 
-				Expect(buffer).To(gbytes.Say(`::set-output name=tag::v1.2.4`))
+				Expect(buffer).To(gbytes.Say(`::set-output name=tag::1.2.4`))
 			})
 		})
 

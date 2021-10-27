@@ -21,5 +21,3 @@ runs:
   - ${{ inputs.repo }}
   - "--token"
   - ${{ inputs.token }}
-  - "--previous-release-version"
-  - ${{ inputs.previous_release_version }}

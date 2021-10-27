@@ -19,19 +19,19 @@ type Commit struct {
 	SHA string `json:"sha"`
 }
 
-type PullRequest struct {
-	Number int     `json:"number"`
-	Labels []Label `json:"labels"`
+type Config struct {
+	Endpoint string
+	Repo     string
+	Token    string
 }
 
 type Label struct {
 	Name string `json:"name"`
 }
 
-type Config struct {
-	Endpoint string
-	Repo     string
-	Token    string
+type PullRequest struct {
+	Number int     `json:"number"`
+	Labels []Label `json:"labels"`
 }
 
 const (
@@ -80,9 +80,9 @@ func main() {
 		fail(err)
 	}
 
+	// there are no releases on the repo
 	if prevVersion == nil {
-		next, _ := semver.NewVersion("v0.0.1")
-		fmt.Printf("::set-output name=tag::v%s", next.String())
+		fmt.Println("::set-output name=tag::0.0.1")
 		os.Exit(0)
 	}
 
@@ -90,7 +90,7 @@ func main() {
 	if err != nil {
 		fail(err)
 	}
-	// roll up changes
+
 	largestChange := PATCH
 	for _, v := range PRsWithSizes {
 		if v > largestChange {
@@ -99,7 +99,7 @@ func main() {
 	}
 
 	next := calculateNextSemver(*prevVersion, largestChange)
-	fmt.Printf("::set-output name=tag::v%s", next.String())
+	fmt.Printf("::set-output name=tag::%s", next.String())
 }
 
 func fail(err error) {
@@ -128,7 +128,6 @@ func getLatestVersion(client *http.Client, config Config) (*semver.Version, erro
 	var latestRelease struct {
 		TagName string `json:"tag_name"`
 	}
-
 	err = json.NewDecoder(resp.Body).Decode(&latestRelease)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode latest release: %w", err)
@@ -143,7 +142,6 @@ func getLatestVersion(client *http.Client, config Config) (*semver.Version, erro
 
 func getPRsSinceLastRelease(client *http.Client, config Config, previous *semver.Version) (map[int]int, error) {
 	PRsWithSizes := map[int]int{}
-	// get commits since that release
 	uri := fmt.Sprintf("%s/repos/%s/compare/%s...main", config.Endpoint, config.Repo, previous.Original())
 	resp, err := client.Get(uri)
 	if err != nil {
@@ -159,13 +157,11 @@ func getPRsSinceLastRelease(client *http.Client, config Config, previous *semver
 	var comparison struct {
 		Commits []Commit `json:"commits"`
 	}
-
 	err = json.NewDecoder(resp.Body).Decode(&comparison)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse commits since release response: %w", err)
 	}
 
-	// get PRs affiliated with those commits
 	for _, commit := range comparison.Commits {
 		uri = fmt.Sprintf("%s/repos/%s/commits/%s/pulls", config.Endpoint, config.Repo, commit.SHA)
 		resp, err = client.Get(uri)
@@ -180,14 +176,12 @@ func getPRsSinceLastRelease(client *http.Client, config Config, previous *semver
 		}
 
 		var commitPRs []PullRequest
-
 		err = json.NewDecoder(resp.Body).Decode(&commitPRs)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse commit PRs response: %w", err)
 		}
 
 		for _, pr := range commitPRs {
-			// get labels on those PRs
 			for _, label := range pr.Labels {
 				if _, ok := PRsWithSizes[pr.Number]; ok && isSemverLabel(label.Name) {
 					return nil, fmt.Errorf("PR %d has multiple semver labels", pr.Number)
