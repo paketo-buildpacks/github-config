@@ -1,0 +1,32 @@
+name: Auto-label PR with Semver Size
+description: |
+  Checks author and files changed in a PR to automatically determine the size
+  of the change (patch/minor/major). Set $GITHUB_TOKEN when using the action so that
+  the gh CLI can authenticate.
+
+runs:
+  using: "composite"
+  steps:
+  - name: Checkout main branch
+    uses: actions/checkout@v2
+    with:
+      ref: main
+  - name: Clear Semver Label
+    shell: bash
+    run: |
+      gh pr edit "${{ github.event.number }}" --remove-label "semver:patch"
+      gh pr edit "${{ github.event.number }}" --remove-label "semver:minor"
+      gh pr edit "${{ github.event.number }}" --remove-label "semver:major"
+  - name: Check Files Changed
+    id: changes
+    shell: bash
+    run: |
+      ${{ github.action_path }}/check-files-changed.sh --repo "${{ github.repository }}" \
+      --number "${{ github.event.number }}" \
+      --patchfiles "${GITHUB_WORKSPACE}/.github/.patch_files"
+  - name: Add Semver Label
+    shell: bash
+    run: |
+      if [[ "${{ steps.changes.outputs.label}}" == "patch" ]]; then
+        gh pr edit "${{ github.event.number }}" --add-label "semver:patch"
+      fi
