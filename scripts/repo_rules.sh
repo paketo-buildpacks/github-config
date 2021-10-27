@@ -136,6 +136,10 @@ function rules() {
     valid=1
   fi
 
+  if ! rules::checks::labels "$(jq '.required_status_checks.contexts | index("Ensure Minimal Semver Labels")' <<< "${json}")"; then
+    valid=1
+  fi
+
   if ! rules::history::linear "$(jq .required_linear_history.enabled <<< "${json}")"; then
     valid=1
   fi
@@ -213,6 +217,16 @@ function rules::checks::integration() {
 
   if [[ -z "${status_checks_int}" || "${status_checks_int}" == "null" ]]; then
     util::print::yellow 'Merging: Required status checks do not contain Integration Tests'
+    return 1
+  fi
+}
+
+function rules::checks::labels() {
+  local status_checks_labels
+  status_checks_labels="${1}"
+
+  if [[ -z "${status_checks_labels}" || "${status_checks_labels}" == "null" ]]; then
+    util::print::yellow 'Merging: Required status checks do not contain "Ensure Minimal Semver Labels"'
     return 1
   fi
 }
