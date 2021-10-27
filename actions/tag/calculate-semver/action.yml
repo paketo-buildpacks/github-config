@@ -1,0 +1,25 @@
+name: 'Calculate Next SemVer Version'
+
+description: |
+  Calculates the next SemVer version for a release based on the labels of pull
+  requests that are included in the release.
+inputs:
+  repo:
+    description: 'Repository whose next release version will be determined'
+    required: true
+  token:
+    description: 'Github Access Token used to make the request'
+    required: true
+outputs:
+  tag:
+    description: 'The next tag version for the repo, according to semver'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--repo"
+  - ${{ inputs.repo }}
+  - "--token"
+  - ${{ inputs.token }}
+  - "--previous-release-version"
+  - ${{ inputs.previous_release_version }}
