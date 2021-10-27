@@ -123,13 +123,7 @@ func TestEntrypoint(t *testing.T) {
 				case "/repos/some-org/some-patch-repo/commits/ghijklm/pulls":
 					w.WriteHeader(http.StatusOK)
 					fmt.Fprintln(w, `[
-					{ "number" : 2,
-						"labels" : [
-						{ "name" : "semver:patch"},
-						{ "name" : "otherLabel" }
-						]
-					},
-					{ "number" : 3,
+					{ "number" : 1,
 						"labels" : [
 						{ "name" : "semver:patch"},
 						{ "name" : "otherLabel" }
@@ -149,15 +143,9 @@ func TestEntrypoint(t *testing.T) {
 				case "/repos/some-org/some-minor-repo/commits/ghijklm/pulls":
 					w.WriteHeader(http.StatusOK)
 					fmt.Fprintln(w, `[
-					{ "number" : 2,
-						"labels" : [
-						{ "name" : "semver:minor"},
-						{ "name" : "otherLabel" }
-						]
-					},
 					{ "number" : 3,
 						"labels" : [
-						{ "name" : "semver:patch"},
+						{ "name" : "semver:minor"},
 						{ "name" : "otherLabel" }
 						]
 					}]`)
@@ -178,12 +166,6 @@ func TestEntrypoint(t *testing.T) {
 					{ "number" : 2,
 						"labels" : [
 						{ "name" : "semver:minor"},
-						{ "name" : "otherLabel" }
-						]
-					},
-					{ "number" : 3,
-						"labels" : [
-						{ "name" : "semver:patch"},
 						{ "name" : "otherLabel" }
 						]
 					}]`)

@@ -183,19 +183,14 @@ func getPRsSinceLastRelease(client *http.Client, config Config, previous *semver
 
 		for _, pr := range commitPRs {
 			for _, label := range pr.Labels {
-				if _, ok := PRsWithSizes[pr.Number]; ok && isSemverLabel(label.Name) {
-					return nil, fmt.Errorf("PR %d has multiple semver labels", pr.Number)
-				}
-				switch label.Name {
-				case "semver:patch":
-					PRsWithSizes[pr.Number] = PATCH
-				case "semver:minor":
-					PRsWithSizes[pr.Number] = MINOR
-				case "semver:major":
-					PRsWithSizes[pr.Number] = MAJOR
-				default:
+				newSize, err := labelToSize(label.Name)
+				if err != nil {
 					continue
 				}
+				if prevSize, ok := PRsWithSizes[pr.Number]; ok && prevSize != newSize {
+					return nil, fmt.Errorf("PR %d has multiple semver labels", pr.Number)
+				}
+				PRsWithSizes[pr.Number] = newSize
 			}
 			if _, ok := PRsWithSizes[pr.Number]; !ok {
 				return nil, fmt.Errorf("PR %d has no semver label", pr.Number)
@@ -207,6 +202,19 @@ func getPRsSinceLastRelease(client *http.Client, config Config, previous *semver
 
 func isSemverLabel(label string) bool {
 	return label == "semver:patch" || label == "semver:minor" || label == "semver:major"
+}
+
+func labelToSize(label string) (int, error) {
+	switch label {
+	case "semver:patch":
+		return PATCH, nil
+	case "semver:minor":
+		return MINOR, nil
+	case "semver:major":
+		return MAJOR, nil
+	default:
+		return -1, fmt.Errorf("not a semver label")
+	}
 }
 
 func calculateNextSemver(previous semver.Version, largestChange int) semver.Version {
