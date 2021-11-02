@@ -32,6 +32,16 @@ function main() {
     esac
   done
 
+  set +e
+  gh auth status
+  retVal=$?
+  if [ $retVal -ne 0 ]; then
+    echo "No Github credentials provided. Skipping labeling."
+    echo "::set-output name=label::"
+    exit 0
+  fi
+  set -e
+
   while read -r changed; do
     echo "File changed: ${changed}"
     # scan through an allow list. does each element of the changed files match something in the allow list?
