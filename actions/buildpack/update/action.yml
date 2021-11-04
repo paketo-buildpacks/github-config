@@ -3,6 +3,14 @@ name: 'Update buildpack.toml with new buildpack versions'
 description: |
   This action updates the buildpack.toml with any new buildpack versions.
 
+inputs:
+  buildpack_toml_path:
+    description: 'Relative path to buildpack.toml'
+    default: 'buildpack.toml'
+  package_toml_path:
+    description: 'Relative path to package.toml'
+    default: 'package.toml'
+
 runs:
   using: 'composite'
   steps:
@@ -36,5 +44,5 @@ runs:
       #!/usr/bin/env bash
       set -eu
       jam update-buildpack \
-        --buildpack-file "${PWD}/buildpack.toml" \
-        --package-file "${PWD}/package.toml"
+        --buildpack-file "${PWD}/${{ inputs.buildpack_toml_path }}" \
+        --package-file "${PWD}/${{ inputs.package_toml_path }}"
