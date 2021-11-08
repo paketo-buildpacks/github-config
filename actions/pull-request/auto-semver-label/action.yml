@@ -11,22 +11,41 @@ runs:
     uses: actions/checkout@v2
     with:
       ref: main
+  - name: Check gh auth
+    id: auth
+    shell: bash
+    run: |
+      set +e
+      gh auth status
+      retVal=$?
+      if [ $retVal -ne 0 ]; then
+        echo "No Github credentials provided."
+        echo "::set-output name=status::false"
+        exit 0
+      fi
+        echo "::set-output name=status::true"
   - name: Clear Semver Label
     shell: bash
     run: |
-      gh pr edit "${{ github.event.number }}" --remove-label "semver:patch"
-      gh pr edit "${{ github.event.number }}" --remove-label "semver:minor"
-      gh pr edit "${{ github.event.number }}" --remove-label "semver:major"
+      if [[ "${{ steps.auth.outputs.status }}" == "true" ]]; then
+        gh pr edit "${{ github.event.number }}" --remove-label "semver:patch"
+        gh pr edit "${{ github.event.number }}" --remove-label "semver:minor"
+        gh pr edit "${{ github.event.number }}" --remove-label "semver:major"
+      fi
   - name: Check Files Changed
     id: changes
     shell: bash
     run: |
-      ${{ github.action_path }}/check-files-changed.sh --repo "${{ github.repository }}" \
-      --number "${{ github.event.number }}" \
-      --patchfiles "${GITHUB_WORKSPACE}/.github/.patch_files"
+      if [[ "${{ steps.auth.outputs.status }}" == "true" ]]; then
+        ${{ github.action_path }}/check-files-changed.sh --repo "${{ github.repository }}" \
+        --number "${{ github.event.number }}" \
+        --patchfiles "${GITHUB_WORKSPACE}/.github/.patch_files"
+      fi
   - name: Add Semver Label
     shell: bash
     run: |
-      if [[ "${{ steps.changes.outputs.label}}" == "patch" ]]; then
-        gh pr edit "${{ github.event.number }}" --add-label "semver:patch"
+      if [[ "${{ steps.auth.outputs.status }}" == "true" ]]; then
+        if [[ "${{ steps.changes.outputs.label}}" == "patch" ]]; then
+          gh pr edit "${{ github.event.number }}" --add-label "semver:patch"
+        fi
       fi
