@@ -3,6 +3,6 @@ module github.com/paketo-buildpacks/github-config/actions/pull-request/download-
 go 1.16
 
 require (
-	github.com/onsi/gomega v1.16.0
+	github.com/onsi/gomega v1.17.0
 	github.com/sclevine/spec v1.4.0
 )
