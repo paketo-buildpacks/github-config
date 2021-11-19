@@ -33,32 +33,45 @@ jobs:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
         repo: buildpacks/pack
 
+    - name: Fetch Latest create-package
+      id: latest-create-package
+      uses: paketo-buildpacks/github-config/actions/tools/latest@main
+      with:
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        repo: paketo-buildpacks/libpak
+
     - name: Update builder tools.json
       env:
         JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
+        CREATE_PACKAGE_VERSION: ${{ steps.latest-create-package.outputs.version }}
       run: |
         echo null | jq -r -S --arg pack "${PACK_VERSION}" \
                              --arg jam "${JAM_VERSION}" \
-                             '{ pack: $pack, jam: $jam }' > ./builder/scripts/.util/tools.json
+                             --arg createpackage "${CREATE_PACKAGE_VERSION}" \
+                             '{ pack: $pack, jam: $jam, createpackage: $createpackage }' > ./builder/scripts/.util/tools.json
 
     - name: Update implementation tools.json
       env:
         JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
+        CREATE_PACKAGE_VERSION: ${{ steps.latest-create-package.outputs.version }}
       run: |
         echo null | jq -r -S --arg pack "${PACK_VERSION}" \
                              --arg jam "${JAM_VERSION}" \
-                             '{ pack: $pack, jam: $jam }' > ./implementation/scripts/.util/tools.json
+                             --arg createpackage "${CREATE_PACKAGE_VERSION}" \
+                             '{ pack: $pack, jam: $jam, createpackage: $createpackage }' > ./implementation/scripts/.util/tools.json
 
     - name: Update language-family tools.json
       env:
         JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
+        CREATE_PACKAGE_VERSION: ${{ steps.latest-create-package.outputs.version }}
       run: |
         echo null | jq -r -S --arg pack "${PACK_VERSION}" \
                              --arg jam "${JAM_VERSION}" \
-                             '{ pack: $pack, jam: $jam }' > ./language-family/scripts/.util/tools.json
+                             --arg createpackage "${CREATE_PACKAGE_VERSION}" \
+                             '{ pack: $pack, jam: $jam, createpackage: $createpackage }' > ./language-family/scripts/.util/tools.json
 
     - name: Commit
       id: commit
