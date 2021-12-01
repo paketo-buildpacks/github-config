@@ -1,19 +1,22 @@
-name: 'Create Language Family Release Notes'
+name: 'Create Buildpack Repo Release Notes'
 
 description: |
-  Creates release notes for a language family
+  Creates release notes for a buildpack repo
 
 inputs:
   repo:
-    description: 'Repository that will have draft release reset'
+    description: 'Repository to create draft release'
     required: true
   token:
     description: 'Github Access Token used to make the request'
     required: true
+  buildpackage_path:
+    description: 'Relative path to the .cnb buildpackage'
+    default: 'build/buildpackage.cnb'
 
 outputs:
   release_body:
-    description: Generated detailed release notes for the language family
+    description: Generated detailed release notes for the buildpack repo
 
 runs:
   using: 'docker'
@@ -23,3 +26,5 @@ runs:
   - ${{ inputs.repo }}
   - "--token"
   - ${{ inputs.token }}
+  - "--buildpackage-path"
+  - ${{ inputs.buildpackage_path }}
