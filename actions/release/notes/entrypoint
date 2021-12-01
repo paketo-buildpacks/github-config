@@ -64,7 +64,6 @@ function main() {
   content="$(
     jam summarize \
       --buildpack "${GITHUB_WORKSPACE}/${buildpackage_path}" \
-buildpackage_path
       --format markdown
   )"
 
