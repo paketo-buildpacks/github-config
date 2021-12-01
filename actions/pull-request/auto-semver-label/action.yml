@@ -24,14 +24,6 @@ runs:
         exit 0
       fi
         echo "::set-output name=status::true"
-  - name: Clear Semver Label
-    shell: bash
-    run: |
-      if [[ "${{ steps.auth.outputs.status }}" == "true" ]]; then
-        gh pr edit "${{ github.event.number }}" --remove-label "semver:patch"
-        gh pr edit "${{ github.event.number }}" --remove-label "semver:minor"
-        gh pr edit "${{ github.event.number }}" --remove-label "semver:major"
-      fi
   - name: Check Files Changed
     id: changes
     shell: bash
@@ -40,6 +32,14 @@ runs:
         ${{ github.action_path }}/check-files-changed.sh --repo "${{ github.repository }}" \
         --number "${{ github.event.number }}" \
         --patchfiles "${GITHUB_WORKSPACE}/.github/.patch_files"
+      fi
+  - name: Clear Semver Label
+    shell: bash
+    run: |
+      if [[ "${{ steps.auth.outputs.status }}" == "true" ]]; then
+        gh pr edit "${{ github.event.number }}" --remove-label "semver:patch"
+        gh pr edit "${{ github.event.number }}" --remove-label "semver:minor"
+        gh pr edit "${{ github.event.number }}" --remove-label "semver:major"
       fi
   - name: Add Semver Label
     shell: bash
