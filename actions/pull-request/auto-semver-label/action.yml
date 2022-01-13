@@ -37,9 +37,11 @@ runs:
     shell: bash
     run: |
       if [[ "${{ steps.auth.outputs.status }}" == "true" ]]; then
-        gh pr edit "${{ github.event.number }}" --remove-label "semver:patch"
-        gh pr edit "${{ github.event.number }}" --remove-label "semver:minor"
-        gh pr edit "${{ github.event.number }}" --remove-label "semver:major"
+        if [ -n "${{ steps.changes.outputs.label }}" ]; then
+          gh pr edit "${{ github.event.number }}" --remove-label "semver:patch"
+          gh pr edit "${{ github.event.number }}" --remove-label "semver:minor"
+          gh pr edit "${{ github.event.number }}" --remove-label "semver:major"
+        fi
       fi
   - name: Add Semver Label
     shell: bash
