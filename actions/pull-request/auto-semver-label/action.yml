@@ -24,13 +24,14 @@ runs:
         exit 0
       fi
         echo "::set-output name=status::true"
-  - name: Check Files Changed
+  - name: Check For Auto-labelable Changes
     id: changes
     shell: bash
     run: |
       if [[ "${{ steps.auth.outputs.status }}" == "true" ]]; then
         ${{ github.action_path }}/check-files-changed.sh --repo "${{ github.repository }}" \
         --number "${{ github.event.number }}" \
+        --author "${{ github.event.pull_request.user.login }}" \
         --patchfiles "${GITHUB_WORKSPACE}/.github/.patch_files"
       fi
   - name: Clear Semver Label
