@@ -3,7 +3,7 @@ set -eu
 set -o pipefail
 
 function main() {
-  local repo number patchfiles
+  local repo number author patchfiles
 
   while [ "${#}" != 0 ]; do
     case "${1}" in
@@ -14,6 +14,11 @@ function main() {
 
       --number)
         number="${2}"
+        shift 2
+        ;;
+
+      --author)
+        author="${2}"
         shift 2
         ;;
 
@@ -31,6 +36,12 @@ function main() {
         exit 1
     esac
   done
+
+  if [[ "${author}" == "dependabot[bot]" ]]; then
+    echo "PR author is dependabot. Labeling as patch."
+    echo "::set-output name=label::patch"
+    exit 0
+  fi
 
   set +e
   gh auth status
@@ -52,7 +63,8 @@ function main() {
 
   while read -r changed; do
     echo "File changed: ${changed}"
-    # scan through an allow list. does each element of the changed files match something in the allow list?
+    # scan through an allow list. does each element of the changed files match
+    # something in the allow list?
     safe=0
     while read -r file; do
       if [[ "${changed}" =~ ${file} ]]; then
