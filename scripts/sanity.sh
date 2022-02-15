@@ -32,7 +32,6 @@ function sanity::check() {
   done
 
   sanity::check::rule::directories "${dir}"
-  sanity::check::rule::repo_names "${dir}"
 }
 
 function usage() {
@@ -52,33 +51,15 @@ function sanity::check::rule::directories() {
   dir="${1}"
 
   for cnbdir in 'implementation' 'language-family' ; do
-    if [[ ! -d "${dir}"/"${cnbdir}" ]]; then
+    if [[ ! -d "${dir}/${cnbdir}" ]]; then
       echo "${cnbdir} dir not found"
       exit  1
     fi
 
-    if [[ -n "$(find "${dir}/${cnbdir}" \! -type d -depth 1)" ]]; then
+    if [[ -n "$(find "${dir}/${cnbdir}" -maxdepth 1 \! -type d)" ]]; then
       echo "All files in ${cnbdir}/ must be directories. Exiting."
       exit 1
     fi
-  done
-}
-
-# Rule: Data files must be single line records of repo names
-function sanity::check::rule::repo_names() {
-  local dir
-  dir="${1}"
-
-  for datafile in 'implementation-cnbs' 'language-family-cnbs' ; do
-    lnum=1
-    while read -r line; do
-      if [[ ! "${line}" =~ paketo-(buildpacks|community)/[A-Za-z0-9_.-] ]]; then
-          echo "Invalid data file ${datafile}. (line: ${lnum})"
-          exit 1
-      fi
-
-      lnum=$((lnum+1))
-    done < "${dir}/.github/data/${datafile}"
   done
 }
 
