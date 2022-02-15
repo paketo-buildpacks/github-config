@@ -47,9 +47,7 @@ jobs:
         CREATE_PACKAGE_VERSION: ${{ steps.latest-create-package.outputs.version }}
       run: |
         echo null | jq -r -S --arg pack "${PACK_VERSION}" \
-                             --arg jam "${JAM_VERSION}" \
-                             --arg createpackage "${CREATE_PACKAGE_VERSION}" \
-                             '{ pack: $pack, jam: $jam, createpackage: $createpackage }' > ./builder/scripts/.util/tools.json
+                             '{ pack: $pack }' > ./builder/scripts/.util/tools.json
 
     - name: Update implementation tools.json
       env:
@@ -70,8 +68,7 @@ jobs:
       run: |
         echo null | jq -r -S --arg pack "${PACK_VERSION}" \
                              --arg jam "${JAM_VERSION}" \
-                             --arg createpackage "${CREATE_PACKAGE_VERSION}" \
-                             '{ pack: $pack, jam: $jam, createpackage: $createpackage }' > ./language-family/scripts/.util/tools.json
+                             '{ pack: $pack, jam: $jam }' > ./language-family/scripts/.util/tools.json
 
     - name: Commit
       id: commit
