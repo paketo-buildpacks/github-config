@@ -23,6 +23,7 @@ type Config struct {
 	Endpoint string
 	Repo     string
 	Token    string
+	RefName  string
 }
 
 type Label struct {
@@ -46,6 +47,7 @@ func main() {
 	flag.StringVar(&config.Endpoint, "endpoint", "https://api.github.com", "Specifies endpoint for sending requests")
 	flag.StringVar(&config.Repo, "repo", "", "Specifies repo for sending requests")
 	flag.StringVar(&config.Token, "token", "", "Github Authorization Token")
+	flag.StringVar(&config.RefName, "ref-name", "", "Ref name of the branch this action is running on")
 	flag.Parse()
 
 	if config.Repo == "" {
@@ -54,6 +56,10 @@ func main() {
 
 	if config.Token == "" {
 		fail(errors.New(`missing required input "token"`))
+	}
+
+	if config.RefName == "" {
+		fail(errors.New(`missing required input "ref-name"`))
 	}
 
 	ctx := context.Background()
@@ -142,7 +148,7 @@ func getLatestVersion(client *http.Client, config Config) (*semver.Version, erro
 
 func getPRsSinceLastRelease(client *http.Client, config Config, previous *semver.Version) (map[int]int, error) {
 	PRsWithSizes := map[int]int{}
-	uri := fmt.Sprintf("%s/repos/%s/compare/%s...main", config.Endpoint, config.Repo, previous.Original())
+	uri := fmt.Sprintf("%s/repos/%s/compare/%s...%s", config.Endpoint, config.Repo, previous.Original(), config.RefName)
 	resp, err := client.Get(uri)
 	if err != nil {
 		return nil, err

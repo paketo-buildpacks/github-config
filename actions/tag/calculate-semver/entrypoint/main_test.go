@@ -92,21 +92,21 @@ func TestEntrypoint(t *testing.T) {
 					fmt.Fprintln(w, `{ "tag_name": "sentimental_version" }`)
 
 				case
-					"/repos/some-org/some-major-repo/compare/v1.2.3...main",
-					"/repos/some-org/some-minor-repo/compare/v1.2.3...main",
-					"/repos/some-org/some-patch-repo/compare/v1.2.3...main":
+					"/repos/some-org/some-major-repo/compare/v1.2.3...some-ref-name",
+					"/repos/some-org/some-minor-repo/compare/v1.2.3...some-ref-name",
+					"/repos/some-org/some-patch-repo/compare/v1.2.3...some-ref-name":
 					w.WriteHeader(http.StatusOK)
 					fmt.Fprintln(w, `{ "commits" : [{ "sha" : "abcdef"}, { "sha" : "ghijklm" }]}`)
 
 				case
-					"/repos/some-org/some-broken-pulls-repo/compare/v1.2.3...main",
-					"/repos/some-org/some-malformed-pulls-repo/compare/v1.2.3...main",
-					"/repos/some-org/some-many-label-repo/compare/v1.2.3...main",
-					"/repos/some-org/some-no-label-repo/compare/v1.2.3...main":
+					"/repos/some-org/some-broken-pulls-repo/compare/v1.2.3...some-ref-name",
+					"/repos/some-org/some-malformed-pulls-repo/compare/v1.2.3...some-ref-name",
+					"/repos/some-org/some-many-label-repo/compare/v1.2.3...some-ref-name",
+					"/repos/some-org/some-no-label-repo/compare/v1.2.3...some-ref-name":
 					w.WriteHeader(http.StatusOK)
 					fmt.Fprintln(w, `{ "commits" : [{ "sha" : "abcdef"}] }`)
 
-				case "/repos/some-org/some-no-new-commits-repo/compare/v1.2.3...main":
+				case "/repos/some-org/some-no-new-commits-repo/compare/v1.2.3...some-ref-name":
 					w.WriteHeader(http.StatusOK)
 					fmt.Fprintln(w, `{ "commits" : []}`)
 
@@ -186,14 +186,14 @@ func TestEntrypoint(t *testing.T) {
 						{ "name" : "semver:major" }]}]`)
 
 				case
-					"/repos/some-org/some-broken-commits-repo/compare/v1.2.3...main",
+					"/repos/some-org/some-broken-commits-repo/compare/v1.2.3...some-ref-name",
 					"/repos/some-org/some-broken-pulls-repo/commits/abcdef/pulls",
 					"/repos/some-org/some-broken-release-repo/releases/latest":
 					w.WriteHeader(http.StatusInternalServerError)
 					fmt.Fprintln(w, `{ "message": "Internal Error" }`)
 
 				case
-					"/repos/some-org/some-malformed-commits-repo/compare/v1.2.3...main",
+					"/repos/some-org/some-malformed-commits-repo/compare/v1.2.3...some-ref-name",
 					"/repos/some-org/some-malformed-pulls-repo/commits/abcdef/pulls",
 					"/repos/some-org/some-malformed-release-repo/releases/latest":
 					w.WriteHeader(http.StatusOK)
@@ -212,6 +212,7 @@ func TestEntrypoint(t *testing.T) {
 					"--endpoint", api.URL,
 					"--repo", "some-org/some-patch-repo",
 					"--token", "some-github-token",
+					"--ref-name", "some-ref-name",
 				)
 
 				buffer := gbytes.NewBuffer()
@@ -225,7 +226,7 @@ func TestEntrypoint(t *testing.T) {
 
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-patch-repo"))
 				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-patch-repo/releases/latest"))
-				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-patch-repo/compare/v1.2.3...main"))
+				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-patch-repo/compare/v1.2.3...some-ref-name"))
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/ghijklm/pulls"))
 
@@ -240,6 +241,7 @@ func TestEntrypoint(t *testing.T) {
 					"--endpoint", api.URL,
 					"--repo", "some-org/some-minor-repo",
 					"--token", "some-github-token",
+					"--ref-name", "some-ref-name",
 				)
 
 				buffer := gbytes.NewBuffer()
@@ -253,7 +255,7 @@ func TestEntrypoint(t *testing.T) {
 
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-minor-repo"))
 				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-minor-repo/releases/latest"))
-				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-minor-repo/compare/v1.2.3...main"))
+				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-minor-repo/compare/v1.2.3...some-ref-name"))
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-minor-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-minor-repo/commits/ghijklm/pulls"))
 
@@ -268,6 +270,7 @@ func TestEntrypoint(t *testing.T) {
 					"--endpoint", api.URL,
 					"--repo", "some-org/some-major-repo",
 					"--token", "some-github-token",
+					"--ref-name", "some-ref-name",
 				)
 
 				buffer := gbytes.NewBuffer()
@@ -281,7 +284,7 @@ func TestEntrypoint(t *testing.T) {
 
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-major-repo"))
 				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-major-repo/releases/latest"))
-				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-major-repo/compare/v1.2.3...main"))
+				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-major-repo/compare/v1.2.3...some-ref-name"))
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-major-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-major-repo/commits/ghijklm/pulls"))
 
@@ -296,6 +299,7 @@ func TestEntrypoint(t *testing.T) {
 					"--endpoint", api.URL,
 					"--repo", "some-org/some-unreleased-repo",
 					"--token", "some-github-token",
+					"--ref-name", "some-ref-name",
 				)
 
 				buffer := gbytes.NewBuffer()
@@ -321,6 +325,7 @@ func TestEntrypoint(t *testing.T) {
 					"--endpoint", api.URL,
 					"--repo", "some-org/some-no-new-commits-repo",
 					"--token", "some-github-token",
+					"--ref-name", "some-ref-name",
 				)
 
 				buffer := gbytes.NewBuffer()
@@ -334,7 +339,7 @@ func TestEntrypoint(t *testing.T) {
 
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-no-new-commits-repo"))
 				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-no-new-commits-repo/releases/latest"))
-				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-no-new-commits-repo/compare/v1.2.3...main"))
+				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-no-new-commits-repo/compare/v1.2.3...some-ref-name"))
 
 				Expect(buffer).To(gbytes.Say(`::set-output name=tag::1.2.4`))
 			})
@@ -347,6 +352,7 @@ func TestEntrypoint(t *testing.T) {
 						entrypoint,
 						"--endpoint", api.URL,
 						"--token", "some-github-token",
+						"--ref-name", "some-ref-name",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -366,6 +372,7 @@ func TestEntrypoint(t *testing.T) {
 						entrypoint,
 						"--endpoint", api.URL,
 						"--repo", "some-org/some-repo",
+						"--ref-name", "some-ref-name",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -379,6 +386,26 @@ func TestEntrypoint(t *testing.T) {
 				})
 			})
 
+			context("when missing the ref-name flag", func() {
+				it("prints an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--endpoint", api.URL,
+						"--repo", "some-org/some-repo",
+						"--token", "some-github-token",
+					)
+
+					buffer := gbytes.NewBuffer()
+
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+
+					Expect(buffer).To(gbytes.Say(`Error: missing required input "ref-name"`))
+				})
+			})
+
 			context("when endpoint is malformed", func() {
 				it("prints an error and exits non-zero", func() {
 					command := exec.Command(
@@ -386,6 +413,7 @@ func TestEntrypoint(t *testing.T) {
 						"--endpoint", "%%%",
 						"--repo", "some-org/some-repo",
 						"--token", "some-github-token",
+						"--ref-name", "some-ref-name",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -406,6 +434,7 @@ func TestEntrypoint(t *testing.T) {
 						"--endpoint", api.URL,
 						"--repo", "some-org/some-fake-repo",
 						"--token", "some-github-token",
+						"--ref-name", "some-ref-name",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -426,6 +455,7 @@ func TestEntrypoint(t *testing.T) {
 						"--endpoint", api.URL,
 						"--repo", "some-org/some-broken-release-repo",
 						"--token", "some-github-token",
+						"--ref-name", "some-ref-name",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -446,6 +476,7 @@ func TestEntrypoint(t *testing.T) {
 						"--endpoint", api.URL,
 						"--repo", "some-org/some-malformed-release-repo",
 						"--token", "some-github-token",
+						"--ref-name", "some-ref-name",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -466,6 +497,7 @@ func TestEntrypoint(t *testing.T) {
 						"--endpoint", api.URL,
 						"--repo", "some-org/some-non-semver-release-repo",
 						"--token", "some-github-token",
+						"--ref-name", "some-ref-name",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -486,6 +518,7 @@ func TestEntrypoint(t *testing.T) {
 						"--endpoint", api.URL,
 						"--repo", "some-org/some-broken-commits-repo",
 						"--token", "some-github-token",
+						"--ref-name", "some-ref-name",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -506,6 +539,7 @@ func TestEntrypoint(t *testing.T) {
 						"--endpoint", api.URL,
 						"--repo", "some-org/some-malformed-commits-repo",
 						"--token", "some-github-token",
+						"--ref-name", "some-ref-name",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -526,6 +560,7 @@ func TestEntrypoint(t *testing.T) {
 						"--endpoint", api.URL,
 						"--repo", "some-org/some-broken-pulls-repo",
 						"--token", "some-github-token",
+						"--ref-name", "some-ref-name",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -546,6 +581,7 @@ func TestEntrypoint(t *testing.T) {
 						"--endpoint", api.URL,
 						"--repo", "some-org/some-malformed-pulls-repo",
 						"--token", "some-github-token",
+						"--ref-name", "some-ref-name",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -566,6 +602,7 @@ func TestEntrypoint(t *testing.T) {
 						"--endpoint", api.URL,
 						"--repo", "some-org/some-no-label-repo",
 						"--token", "some-github-token",
+						"--ref-name", "some-ref-name",
 					)
 
 					buffer := gbytes.NewBuffer()
@@ -586,6 +623,7 @@ func TestEntrypoint(t *testing.T) {
 						"--endpoint", api.URL,
 						"--repo", "some-org/some-many-label-repo",
 						"--token", "some-github-token",
+						"--ref-name", "some-ref-name",
 					)
 
 					buffer := gbytes.NewBuffer()
