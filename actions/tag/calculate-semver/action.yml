@@ -21,3 +21,5 @@ runs:
   - ${{ inputs.repo }}
   - "--token"
   - ${{ inputs.token }}
+  - "--ref-name"
+  - ${{ inputs.ref-name }}
