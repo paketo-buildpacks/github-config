@@ -10,6 +10,9 @@ inputs:
   token:
     description: 'Github Access Token used to make the request'
     required: true
+  ref-name:
+    description: 'Name of branch that initiated the action'
+    required: true
 outputs:
   tag:
     description: 'The next tag version for the repo, according to semver'
