@@ -9,13 +9,15 @@ runs:
 
   - name: Choose Jam Version
     id: version
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     shell: bash
     run: |
       #!/usr/bin/env bash
       set -eu
       version="$(
         curl "https://api.github.com/repos/paketo-buildpacks/jam/releases/latest" \
-          --header "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          --header "Authorization: token ${GITHUB_TOKEN}" \
           --location \
           --silent \
         | jq -r -S .tag_name
