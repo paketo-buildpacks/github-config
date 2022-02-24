@@ -3,6 +3,11 @@ name: 'Generate Builder.toml'
 description: |
   This action updates the builder.toml with any new dependency versions.
 
+inputs:
+  token:
+    description: 'Github Access Token used to make the request'
+    required: true
+
 runs:
   using: 'composite'
   steps:
@@ -17,7 +22,7 @@ runs:
       set -eu
       version="$(
         curl "https://api.github.com/repos/paketo-buildpacks/jam/releases/latest" \
-          --header "Authorization: token ${GITHUB_TOKEN}" \
+          --header "Authorization: token ${{ inputs.token }}" \
           --location \
           --silent \
         | jq -r -S .tag_name
