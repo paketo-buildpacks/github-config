@@ -14,8 +14,6 @@ runs:
 
   - name: Choose Jam Version
     id: version
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     shell: bash
     run: |
       #!/usr/bin/env bash
