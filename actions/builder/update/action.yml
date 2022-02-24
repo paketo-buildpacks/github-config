@@ -15,7 +15,7 @@ runs:
       set -eu
       version="$(
         curl "https://api.github.com/repos/paketo-buildpacks/jam/releases/latest" \
-          --header "Authorization: token ${GITHUB_TOKEN}" \
+          --header "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
           --location \
           --silent \
         | jq -r -S .tag_name
