@@ -13,7 +13,13 @@ runs:
     run: |
       #!/usr/bin/env bash
       set -eu
-      version=$(jq -r .jam "scripts/.util/tools.json")
+      version="$(
+        curl "https://api.github.com/repos/paketo-buildpacks/jam/releases/latest" \
+          --header "Authorization: token ${GITHUB_TOKEN}" \
+          --location \
+          --silent \
+        | jq -r -S .tag_name
+      )"
       echo "::set-output name=version::${version#v}"
 
   - name: Install Jam
