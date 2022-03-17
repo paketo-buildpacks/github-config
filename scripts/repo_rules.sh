@@ -136,7 +136,7 @@ function rules() {
     valid=1
   fi
 
-  if ! rules::checks::labels "$(jq '.required_status_checks.contexts | index("Label PR")' <<< "${json}")"; then
+  if ! rules::checks::labels "$(jq '.required_status_checks.contexts | index("Ensure Minimal Semver Labels")' <<< "${json}")"; then
     valid=1
   fi
 
