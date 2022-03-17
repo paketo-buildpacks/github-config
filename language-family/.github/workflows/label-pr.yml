@@ -10,6 +10,8 @@ on:
     - labeled
     - unlabeled
 
+concurrency: pr_labels_${{ github.event.number }}
+
 jobs:
   autolabel:
     name: Label PR
