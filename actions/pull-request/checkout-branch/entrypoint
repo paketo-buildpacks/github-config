@@ -22,6 +22,7 @@ function main() {
     esac
   done
 
+  git config --global --add safe.directory "${GITHUB_WORKSPACE}"
   git fetch origin
   if git branch -a | grep "${branch}"; then
     git checkout -b "${branch}" "origin/${branch}"
