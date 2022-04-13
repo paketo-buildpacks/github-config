@@ -32,6 +32,7 @@ function main() {
 
   echo "Approving PR ${number}"
 
+  git config --global --add safe.directory "${GITHUB_WORKSPACE}"
   pushd "${GITHUB_WORKSPACE}" > /dev/null || true
     gh pr review "${number}" --approve
   popd > /dev/null || true
