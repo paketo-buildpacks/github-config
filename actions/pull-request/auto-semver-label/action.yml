@@ -28,6 +28,7 @@ runs:
     id: changes
     shell: bash
     run: |
+      git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       if [[ "${{ steps.auth.outputs.status }}" == "true" ]]; then
         ${{ github.action_path }}/check-files-changed.sh --repo "${{ github.repository }}" \
         --number "${{ github.event.number }}" \

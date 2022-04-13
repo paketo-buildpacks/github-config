@@ -32,6 +32,7 @@ function main() {
 
   echo "Rebasing PR ${number}"
 
+  git config --global --add safe.directory "${GITHUB_WORKSPACE}"
   pushd "${GITHUB_WORKSPACE}" > /dev/null || true
     gh api "repos/${GITHUB_REPOSITORY}/pulls/${number}/update-branch" \
       -X PUT \
