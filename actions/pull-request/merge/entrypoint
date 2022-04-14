@@ -31,6 +31,8 @@ function main() {
   echo "${token}" | gh auth login --with-token
 
   echo "Merging PR ${number}"
+  
+  git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
   pushd "${GITHUB_WORKSPACE}" > /dev/null || true
     gh pr merge "${number}" --rebase --delete-branch=false

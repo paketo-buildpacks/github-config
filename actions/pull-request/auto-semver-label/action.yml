@@ -11,6 +11,9 @@ runs:
     uses: actions/checkout@v2
     with:
       ref: main
+  - name: Fix git Permissions Issue
+    shell: bash
+    run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
   - name: Check gh auth
     id: auth
     shell: bash
