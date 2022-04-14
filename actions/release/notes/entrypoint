@@ -60,8 +60,6 @@ function main() {
     --output "${HOME}/bin/jam"
   chmod +x "${HOME}/bin/jam"
 
-  git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-
   local content
   content="$(
     jam summarize \
