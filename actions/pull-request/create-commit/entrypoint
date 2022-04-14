@@ -47,6 +47,7 @@ function main() {
     esac
   done
 
+  git config --global --add safe.directory "${GITHUB_WORKSPACE}"
   if [ -n "$keyid" ] && [ -n "$key" ]; then
     mkdir -p ~/.gnupg/
     printf "quiet" > ~/.gnupg/options
