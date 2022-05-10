@@ -10,6 +10,9 @@ inputs:
   package_toml_path:
     description: 'Relative path to package.toml'
     default: 'package.toml'
+  no_cnb_registry:
+    description: 'Turn off using CNB registry URIs in package.toml'
+    default: 'false'
 
 runs:
   using: 'composite'
@@ -43,6 +46,7 @@ runs:
     run: |
       #!/usr/bin/env bash
       set -eu
-      jam update-buildpack \
-        --buildpack-file "${PWD}/${{ inputs.buildpack_toml_path }}" \
-        --package-file "${PWD}/${{ inputs.package_toml_path }}"
+        jam update-buildpack \
+          --buildpack-file "${PWD}/${{ inputs.buildpack_toml_path }}" \
+          --package-file "${PWD}/${{ inputs.package_toml_path }}" \
+          --no-cnb-registry="${{ inputs.no_cnb_registry }}"
