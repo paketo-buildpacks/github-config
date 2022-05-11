@@ -3,7 +3,7 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"net/http"
 	"net/url"
@@ -72,7 +72,7 @@ func getPullRequestCommits(pullRequest PullRequest, serverURI string) ([]Commit,
 		return nil, fmt.Errorf("failed to make http GET request for commits: %s", err)
 	}
 
-	body, _ := ioutil.ReadAll(response.Body)
+	body, _ := io.ReadAll(response.Body)
 	pullRequestCommits := []Commit{}
 
 	err = json.Unmarshal(body, &pullRequestCommits)

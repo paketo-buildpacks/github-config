@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -110,7 +110,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(dispatchRequest.Method).To(Equal("POST"))
 				Expect(dispatchRequest.URL.Path).To(Equal("/repos/some-org/some-repo/dispatches"))
 
-				body, err := ioutil.ReadAll(dispatchRequest.Body)
+				body, err := io.ReadAll(dispatchRequest.Body)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(body)).To(MatchJSON(`{
 				"event_type": "some-event",
@@ -155,7 +155,7 @@ func TestEntrypoint(t *testing.T) {
 					Expect(dispatchRequest.Method).To(Equal("POST"))
 					Expect(dispatchRequest.URL.Path).To(Equal("/repos/some-org/some-other-repo/dispatches"))
 
-					body, err := ioutil.ReadAll(dispatchRequest.Body)
+					body, err := io.ReadAll(dispatchRequest.Body)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(string(body)).To(MatchJSON(`{
 				"event_type": "some-event",
