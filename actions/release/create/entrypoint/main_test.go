@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -159,7 +159,7 @@ func TestEntrypoint(t *testing.T) {
 			Expect(requests[0].Method).To(Equal("POST"))
 			Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-repo/releases"))
 
-			content, err := ioutil.ReadAll(requests[0].Body)
+			content, err := io.ReadAll(requests[0].Body)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(content)).To(MatchJSON(`{
 				"tag_name": "some-tag",
@@ -172,7 +172,7 @@ func TestEntrypoint(t *testing.T) {
 			Expect(requests[1].Method).To(Equal("PATCH"))
 			Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-repo/releases/1"))
 
-			content, err = ioutil.ReadAll(requests[1].Body)
+			content, err = io.ReadAll(requests[1].Body)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(content)).To(MatchJSON(`{
 				"draft": false
@@ -209,7 +209,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[0].Method).To(Equal("POST"))
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-repo/releases"))
 
-				content, err := ioutil.ReadAll(requests[0].Body)
+				content, err := io.ReadAll(requests[0].Body)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(content)).To(MatchJSON(`{
 					"tag_name": "some-tag",
@@ -249,7 +249,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[0].Method).To(Equal("POST"))
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-repo/releases"))
 
-				content, err := ioutil.ReadAll(requests[0].Body)
+				content, err := io.ReadAll(requests[0].Body)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(content)).To(MatchJSON(`{
 					"tag_name": "some-tag",
@@ -261,7 +261,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[1].Method).To(Equal("PATCH"))
 				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-repo/releases/1"))
 
-				content, err = ioutil.ReadAll(requests[1].Body)
+				content, err = io.ReadAll(requests[1].Body)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(content)).To(MatchJSON(`{
 				"draft": false
@@ -278,13 +278,13 @@ func TestEntrypoint(t *testing.T) {
 
 			it.Before(func() {
 				var err error
-				tmpDir, err = ioutil.TempDir("", "assets")
+				tmpDir, err = os.MkdirTemp("", "assets")
 				Expect(err).NotTo(HaveOccurred())
 
-				err = ioutil.WriteFile(filepath.Join(tmpDir, "some-asset"), []byte("some-contents"), 0644)
+				err = os.WriteFile(filepath.Join(tmpDir, "some-asset"), []byte("some-contents"), 0644)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = ioutil.WriteFile(filepath.Join(tmpDir, "other-asset"), []byte("other-contents"), 0644)
+				err = os.WriteFile(filepath.Join(tmpDir, "other-asset"), []byte("other-contents"), 0644)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -329,7 +329,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[0].Method).To(Equal("POST"))
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-repo/releases"))
 
-				content, err := ioutil.ReadAll(requests[0].Body)
+				content, err := io.ReadAll(requests[0].Body)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(content)).To(MatchJSON(`{
 					"tag_name": "some-tag",
@@ -346,7 +346,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[1].Header.Get("Content-Type")).To(Equal("some-content-type"))
 				Expect(requests[1].ContentLength).To(Equal(int64(13)))
 
-				content, err = ioutil.ReadAll(requests[1].Body)
+				content, err = io.ReadAll(requests[1].Body)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(content)).To(Equal("some-contents"))
 
@@ -357,7 +357,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[2].Header.Get("Content-Type")).To(Equal("other-content-type"))
 				Expect(requests[2].ContentLength).To(Equal(int64(14)))
 
-				content, err = ioutil.ReadAll(requests[2].Body)
+				content, err = io.ReadAll(requests[2].Body)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(content)).To(Equal("other-contents"))
 
@@ -673,10 +673,10 @@ func TestEntrypoint(t *testing.T) {
 
 				it.Before(func() {
 					var err error
-					tmpDir, err = ioutil.TempDir("", "assets")
+					tmpDir, err = os.MkdirTemp("", "assets")
 					Expect(err).NotTo(HaveOccurred())
 
-					err = ioutil.WriteFile(filepath.Join(tmpDir, "some-asset"), []byte("some-contents"), 0644)
+					err = os.WriteFile(filepath.Join(tmpDir, "some-asset"), []byte("some-contents"), 0644)
 					Expect(err).NotTo(HaveOccurred())
 				})
 
@@ -719,10 +719,10 @@ func TestEntrypoint(t *testing.T) {
 
 				it.Before(func() {
 					var err error
-					tmpDir, err = ioutil.TempDir("", "assets")
+					tmpDir, err = os.MkdirTemp("", "assets")
 					Expect(err).NotTo(HaveOccurred())
 
-					err = ioutil.WriteFile(filepath.Join(tmpDir, "some-asset"), []byte("some-contents"), 0644)
+					err = os.WriteFile(filepath.Join(tmpDir, "some-asset"), []byte("some-contents"), 0644)
 					Expect(err).NotTo(HaveOccurred())
 				})
 

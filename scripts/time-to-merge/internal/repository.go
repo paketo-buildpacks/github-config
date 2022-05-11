@@ -3,7 +3,7 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -45,7 +45,7 @@ func GetOrgRepos(org string, serverURI string) ([]Repository, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to make http request for repositories: %s", err)
 	}
-	body, _ := ioutil.ReadAll(response.Body)
+	body, _ := io.ReadAll(response.Body)
 
 	repos := []Repository{}
 	err = json.Unmarshal(body, &repos)
@@ -112,7 +112,7 @@ func getClosedPullRequests(repo Repository, serverURI string) ([]PullRequest, er
 		return nil, fmt.Errorf("failed to make http request for closed PRs: %s", err)
 	}
 
-	body, _ := ioutil.ReadAll(response.Body)
+	body, _ := io.ReadAll(response.Body)
 	pullRequests := []PullRequest{}
 	err = json.Unmarshal(body, &pullRequests)
 
