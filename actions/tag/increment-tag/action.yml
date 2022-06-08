@@ -6,6 +6,10 @@ description: |
 inputs:
   current_version:
     description: 'If set will override script and use this version as the tag'
+  allow_head_tagged:
+    description: 'If set to "true", allow re-tagging a git commit that already has a tag'
+    required: false
+    default: 'false'
 
 outputs:
   tag:
@@ -17,3 +21,5 @@ runs:
   args:
   - --current-version
   - ${{ inputs.current_version }}
+  - --allow-head-tagged
+  - ${{ inputs.allow_head_tagged }}
