@@ -7,7 +7,9 @@ set -eu
 set -o pipefail
 
 main() {
-  local current_version
+  local current_version allow_head_tagged
+  current_version=""
+  allow_head_tagged="false"
 
   while [ "${#}" != 0 ]; do
     case "${1}" in
@@ -16,9 +18,9 @@ main() {
         shift 2
         ;;
 
-      "")
-        current_version=""
-        shift
+      --allow-head-tagged)
+        allow_head_tagged="${2}"
+        shift 2
         ;;
 
       *)
@@ -28,15 +30,24 @@ main() {
   done
 
   git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-  if git describe --exact-match --tags HEAD > /dev/null 2>&1; then
-    echo "error: HEAD has already been tagged"
-    exit 1
+
+  if [ "${allow_head_tagged}" = "false" ]; then
+    if git describe --exact-match --tags HEAD > /dev/null 2>&1; then
+      echo "error: HEAD has already been tagged"
+      exit 1
+    fi
   fi
 
   if [ -n "${current_version}" ]; then
     tag="${current_version}"
   else
-    previous="$(git describe --tags --match "v[0-9]*" "$(git rev-list --tags --max-count=1)" || echo "v0.0.0")"
+    if [[ -z "$(git rev-list --tags --max-count=1)" ]]; then
+      echo "There are no previous tags"
+      previous="v0.0.0"
+    else
+      # List all tags of HEAD, sorted in ascending semver order; use the last one
+      previous="$(git tag --sort "version:refname" --points-at "$(git rev-list --tags --max-count=1)" | tail -n 1)"
+    fi
     tag="$(printf "%s" "$previous" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')"
   fi
 
