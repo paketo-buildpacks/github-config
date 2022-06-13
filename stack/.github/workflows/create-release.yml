@@ -2,7 +2,7 @@ name: Create Release
 
 on:
   schedule:
-  - cron: '*/10 * * * *' # every 10 minutes
+  - cron: '*/10 * * * *'  # every 10 minutes
   push:
     branches:
     - main
@@ -125,9 +125,9 @@ jobs:
     needs: [stack_files_changed]
     if: ${{ needs.stack_files_changed.outputs.stack_files_changed == 'true' }}
     steps:
-      - name: Run if stack files changed
-        run: |
-          echo "stack files have changed"
+    - name: Run if stack files changed
+      run: |
+        echo "stack files have changed"
 
   create_stack:
     name: Create Stack
@@ -289,9 +289,9 @@ jobs:
     needs: [packages_changed]
     if: ${{ needs.packages_changed.outputs.packages_changed == 'true' }}
     steps:
-      - name: Run if packages changed
-        run: |
-          echo "packages have changed"
+    - name: Run if packages changed
+      run: |
+        echo "packages have changed"
 
   test:
     name: Acceptance Test
@@ -330,9 +330,9 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{github.event.inputs.force == 'true'}}
     steps:
-      - name: Signal force release creation
-        run: |
-          echo "Force release creation input set to true"
+    - name: Signal force release creation
+      run: |
+        echo "Force release creation input set to true"
 
   release:
     name: Release
