@@ -410,7 +410,7 @@ jobs:
 
         # Strip off 'stack' suffix from repo name
         # some-name-stack --> some-name
-        registry_repo=$(echo "${repo}" | sed 's/\-stack$//')
+        registry_repo="${repo//-stack/}"
         echo "::set-output name=registry_repo_name::${registry_repo}"
 
 
