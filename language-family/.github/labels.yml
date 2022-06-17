@@ -31,3 +31,6 @@
 - name: "failure:release"
   description: An issue filed automatically when a release workflow run fails
   color: f00a0a
+- name: "failure:push"
+  description: An issue filed automatically when a push buildpackage workflow run fails
+  color: f00a0a
