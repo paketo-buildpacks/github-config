@@ -83,7 +83,7 @@ jobs:
         # Extract distro from repo name:
         # paketo-buildpacks/jammy-tiny-stack --> jammy
         distro="$(echo "${{ github.repository }}" | sed 's/^.*\///' | sed 's/\-.*$//')"
-        echo "Ubunto distribution: ${distro}"
+        echo "Ubuntu distribution: ${distro}"
         printf "::set-output name=distro::%s\n" "${distro}"
 
     - name: Get New USNs
@@ -515,22 +515,16 @@ jobs:
     needs: [poll_usns, create_stack, diff, test, release, packages_changed, stack_files_changed]
     if: ${{ always() && needs.poll_usns.result == 'failure' || needs.create_stack.result == 'failure' || needs.diff.result == 'failure' || needs.test.result == 'failure' || needs.release.result == 'failure' || needs.packages_changed.result == 'failure' || needs.stack_files_changed.result == 'failure' }}
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-
-    - name: File Issue
-      run: |
-        gh auth status
-
-        release_issue=$(gh issue list --json number --label release-issue --jq .[0].number)
-        if [ -z "${release_issue}" ]; \
-        then gh issue create \
-        --title "Failure: create-release workflow" \
-        --label "release-issue" \
-        --body "[Create release workflow](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}) failed to run. Please take a look to ensure CVE patches can be released. (cc @paketo-buildpacks/stacks-maintainers)" \
-        -R ${{github.repository}}; \
-        else gh issue comment "${release_issue}" --body "Another failure occurred: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"; \
-        fi
-        echo "${release_issue}"
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+    - name: File Failure Alert Issue
+      uses: paketo-buildpacks/github-config/actions/issue/file@main
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        repo: ${{ github.repository }}
+        label: "failure:release"
+        comment_if_exists: true
+        issue_title: "Failure: Create Release workflow"
+        issue_body: |
+          Create Release workflow [failed](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}).
+          Please take a look to ensure CVE patches can be released. (cc @paketo-buildpacks/stacks-maintainers).
+        comment_body: |
+          Another failure occurred: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
