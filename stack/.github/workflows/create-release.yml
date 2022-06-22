@@ -449,15 +449,7 @@ jobs:
         run_packages_added: ${{ needs.diff.outputs.run_added }}
         run_packages_modified: ${{ needs.diff.outputs.run_modified }}
         patched_usns: ${{ needs.poll_usns.outputs.usns }}
-
-    - name: Get Repository Name
-      id: repo_name
-      run: |
-        full=${{ github.repository }}
-        # Strip off the org and slash from repo name
-        # paketo-buildpacks/repo-name --> repo-name
-        repo=$(echo "${full}" | sed 's/^.*\///')
-        echo "::set-output name=repo_name::${repo}"
+    # TODO add job that gathers release assets
 
     - name: Create Release (with patched USNs)
       if: ${{ steps.write_usns.outputs.usns != '' }}
@@ -474,27 +466,27 @@ jobs:
           [
             {
               "path": "build.oci",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
+              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
               "content_type": "application/gzip"
             },
             {
               "path": "run.oci",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
+              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
               "content_type": "application/gzip"
             },
             {
               "path": "${{ env.BUILD_RECEIPT_FILENAME }}",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.BUILD_RECEIPT_FILENAME }}",
+              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.BUILD_RECEIPT_FILENAME }}",
               "content_type": "text/plain"
             },
             {
               "path": "${{ env.RUN_RECEIPT_FILENAME }}",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.RUN_RECEIPT_FILENAME }}",
+              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.RUN_RECEIPT_FILENAME }}",
               "content_type": "text/plain"
             },
             {
               "path": "${{ steps.write_usns.outputs.usns }}",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.PATCHED_USNS_FILENAME }}",
+              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.PATCHED_USNS_FILENAME }}",
               "content_type": "text/plain"
             }
           ]
@@ -514,22 +506,22 @@ jobs:
           [
             {
               "path": "build.oci",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
+              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
               "content_type": "application/gzip"
             },
             {
               "path": "run.oci",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
+              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
               "content_type": "application/gzip"
             },
             {
               "path": "${{ env.BUILD_RECEIPT_FILENAME }}",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.BUILD_RECEIPT_FILENAME }}",
+              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.BUILD_RECEIPT_FILENAME }}",
               "content_type": "text/plain"
             },
             {
               "path": "${{ env.RUN_RECEIPT_FILENAME }}",
-              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.RUN_RECEIPT_FILENAME }}",
+              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.RUN_RECEIPT_FILENAME }}",
               "content_type": "text/plain"
             }
           ]

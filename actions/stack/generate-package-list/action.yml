@@ -21,20 +21,7 @@ runs:
       #!/usr/bin/env bash
       set -euo pipefail
 
-      # From a line like:
-      # ii  binutils-common:amd64     2.38-3ubuntu1                           amd64        Common files for the GNU assembler, linker and binary utilities
-      # Extracts binutils-common
-      build=$(awk '{if ($1 == "ii" ) print $2}' "${{ inputs.build_receipt }}" | sed -E 's/\:.*$//g')
-      run=$(awk '{if ($1 == "ii" ) print $2}' "${{ inputs.run_receipt }}" | sed -E 's/\:.*$//g')
-
-      packages=$(jq --null-input --compact-output '[]')
-
-      while IFS= read -r pkg; do
-        packages=$(echo "${packages}" | jq --compact-output --arg "p" "${pkg}" '. += [$p]')
-      done <<< "${build}"
-
-      while IFS= read -r pkg; do
-        packages=$(echo "${packages}" | jq --compact-output --arg "p" "${pkg}" '. += [$p]')
-      done <<< "${run}"
+      packages=$(jq  '.components[] |  .name' "${{ inputs.build_receipt }}" "${{ inputs.run_receipt }}" \
+        | jq --null-input --compact-output '[inputs]')
 
       printf "::set-output name=packages::%s\n" "${packages}"

@@ -33,9 +33,8 @@ type USN struct {
 }
 
 type CVE struct {
-	Description string `json:"description"`
-	Title       string `json:"title"`
-	URL         string `json:"url"`
+	Title string `json:"title"`
+	URL   string `json:"url"`
 }
 
 func main() {
@@ -274,67 +273,20 @@ func extractCVEs(usnBody string, usnURL url.URL) ([]CVE, error) {
 			Path:   cve[1],
 		}
 
-		description, err := getCVEDescription(cveURL.String())
-		if err != nil {
-			return nil, fmt.Errorf("error getting description for CVE %s: %w", cve[2], err)
-		}
-
 		cveArray = append(cveArray, CVE{
-			Title:       cve[3],
-			URL:         cveURL.String(),
-			Description: description,
+			Title: cve[3],
+			URL:   cveURL.String(),
 		})
 	}
 
 	for _, lp := range lps {
-		description, err := getLPDescription(lp[1])
-		if err != nil {
-			return nil, fmt.Errorf("error getting description for launchpad bug %s: %w", lp[2], err)
-		}
-
 		cveArray = append(cveArray, CVE{
-			Title:       lp[2],
-			URL:         lp[1],
-			Description: description,
+			Title: lp[2],
+			URL:   lp[1],
 		})
 	}
 
 	return cveArray, nil
-}
-
-func getCVEDescription(url string) (string, error) {
-	body, code, err := get(url)
-	if err != nil {
-		return "", err
-	}
-
-	if code != http.StatusOK {
-		return "", nil
-	}
-
-	re := regexp.MustCompile(`Published: <strong.*?<p>(.*?)</p>`)
-	desc := re.FindStringSubmatch(body)
-	if len(desc) >= 2 {
-		description := desc[1]
-		return strings.TrimSpace(description), nil
-	}
-
-	return "", nil
-}
-
-func getLPDescription(url string) (string, error) {
-	body, code, err := get(url)
-	if err != nil {
-		return "", err
-	}
-
-	if code != http.StatusOK {
-		return "", nil
-	}
-
-	re := regexp.MustCompile(`"edit-title">.*?<span.*?>(.*?)</span>`)
-	title := re.FindStringSubmatch(body)
-	return strings.TrimSpace(title[1]), nil
 }
 
 func getPackageNameFromHTML(listItem string) string {

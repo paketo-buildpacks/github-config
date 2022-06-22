@@ -16,15 +16,17 @@ import (
 var tString string
 
 type Package struct {
-	Name         string `json:"name"`
-	Version      string `json:"version"`
-	Architecture string `json:"architecture"`
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	PURL    string `json:"purl"`
 }
 
 type ModifiedPackage struct {
 	Name            string `json:"name"`
 	PreviousVersion string `json:"previousVersion"`
 	CurrentVersion  string `json:"currentVersion"`
+	PreviousPURL    string `json:"previousPurl"`
+	CurrentPURL     string `json:"currentPurl"`
 }
 
 type USN struct {
@@ -65,27 +67,27 @@ func main() {
 
 	err := json.Unmarshal([]byte(fixEmptyArray(config.PatchedJSON)), &contents.PatchedArray)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed unmarshalling patched USNs: %s", err.Error())
 	}
 
 	err = json.Unmarshal([]byte(fixEmptyArray(config.BuildPackagesAddedJSON)), &contents.BuildAdded)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed unmarshalling build packages added: %s", err.Error())
 	}
 
 	err = json.Unmarshal([]byte(fixEmptyArray(config.BuildPackagesModifiedJSON)), &contents.BuildModified)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed unmarshalling build packages modified: %s", err.Error())
 	}
 
 	err = json.Unmarshal([]byte(fixEmptyArray(config.RunPackagesAddedJSON)), &contents.RunAdded)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed unmarshalling run packages added: %s", err.Error())
 	}
 
 	err = json.Unmarshal([]byte(fixEmptyArray(config.RunPackagesModifiedJSON)), &contents.RunModified)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed unmarshalling run packages modified: %s", err.Error())
 	}
 
 	contents.BuildImage = config.BuildImage
@@ -93,13 +95,13 @@ func main() {
 
 	t, err := template.New("template.md").Parse(tString)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to create release notes template: %s", err.Error())
 	}
 
 	b := bytes.NewBuffer(nil)
 	err = t.Execute(b, contents)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to execute release notes template: %s", err.Error())
 	}
 
 	fmt.Println(b.String())

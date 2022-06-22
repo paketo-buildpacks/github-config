@@ -15,8 +15,8 @@ No USNs patched in this release.
 ### Added
 {{- if ne (len .BuildAdded) 0 }}
 ```
-{{ range .BuildAdded }}
-{{- .Name }} {{ .Version }}
+{{- range .BuildAdded }}
+{{ .Name }} {{ .Version }} (PURL: {{ .PURL }})
 {{- end }}
 ```
 {{- else }}
@@ -26,8 +26,8 @@ No packages added.
 ### Modified
 {{- if ne (len .BuildModified) 0 }}
 ```
-{{ range .BuildModified }}
-{{- .Name }} {{ .CurrentVersion }} (previously {{ .PreviousVersion }})
+{{- range .BuildModified }}
+{{ .Name }} {{ .PreviousVersion }} ==> {{ .CurrentVersion }} (PURL: {{ .PreviousPURL }} ==> {{ .CurrentPURL }})
 {{- end }}
 ```
 {{- else }}
@@ -38,8 +38,8 @@ No packages modified.
 ### Added
 {{- if ne (len .RunAdded) 0 }}
 ```
-{{ range .RunAdded }}
-{{- .Name }} {{ .Version }}
+{{- range .RunAdded }}
+{{ .Name }} {{ .Version }} (PURL: {{ .PURL }})
 {{- end }}
 ```
 {{- else }}
@@ -49,8 +49,8 @@ No packages added.
 ### Modified
 {{- if ne (len .RunModified) 0 }}
 ```
-{{ range .RunModified }}
-{{- .Name }} {{ .CurrentVersion }} (previously {{ .PreviousVersion }})
+{{- range .RunModified }}
+{{ .Name }} {{ .PreviousVersion }} ==> {{ .CurrentVersion }} (PURL: {{ .PreviousPURL }} ==> {{ .CurrentPURL }})
 {{- end }}
 ```
 {{- else }}

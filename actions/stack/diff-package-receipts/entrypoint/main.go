@@ -1,27 +1,30 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strings"
 )
 
-type Package struct {
-	Name         string `json:"name"`
-	Version      string `json:"version"`
-	Architecture string `json:"architecture"`
+type CycloneDXPackageList struct {
+	Components []CycloneDXComponent `json:"components"`
 }
 
-type ModifiedPackage struct {
+type CycloneDXComponent struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	PURL    string `json:"purl"`
+}
+
+type ModifiedCycloneDXComponent struct {
 	Name            string `json:"name"`
 	PreviousVersion string `json:"previousVersion"`
 	CurrentVersion  string `json:"currentVersion"`
+	PreviousPURL    string `json:"previousPurl"`
+	CurrentPURL     string `json:"currentPurl"`
 }
 
 func main() {
@@ -67,8 +70,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var added, removed []Package
-	var modified []ModifiedPackage
+	var added, removed []CycloneDXComponent
+	var modified []ModifiedCycloneDXComponent
 	for prevName, prevPackage := range previous {
 		if _, ok := current[prevName]; !ok {
 			// package in previous but not in current
@@ -77,12 +80,14 @@ func main() {
 		}
 		// package appears in both previous and current
 		curPackage := current[prevName]
-		if prevPackage.Version != curPackage.Version || prevPackage.Architecture != curPackage.Architecture {
+		if prevPackage.Version != curPackage.Version || prevPackage.PURL != curPackage.PURL {
 			// package metadata has changed
-			modified = append(modified, ModifiedPackage{
+			modified = append(modified, ModifiedCycloneDXComponent{
 				Name:            curPackage.Name,
 				PreviousVersion: prevPackage.Version,
-				CurrentVersion:  curPackage.Version,
+				CurrentVersion:  prevPackage.Version,
+				PreviousPURL:    prevPackage.PURL,
+				CurrentPURL:     curPackage.PURL,
 			})
 		}
 	}
@@ -128,7 +133,13 @@ func main() {
 	}
 	fmt.Println("Modified packages:")
 	for _, pkg := range modified {
-		fmt.Printf("%s %s => %s\n", pkg.Name, pkg.PreviousVersion, pkg.CurrentVersion)
+		fmt.Printf("%[1]s %s (PURL: %s) => %[1]s %s (PURL: %s)\n",
+			pkg.Name,
+			pkg.PreviousVersion,
+			pkg.PreviousPURL,
+			pkg.CurrentVersion,
+			pkg.CurrentPURL,
+		)
 	}
 
 	fmt.Printf("::set-output name=added::%s\n", string(addedJSON))
@@ -136,36 +147,24 @@ func main() {
 	fmt.Printf("::set-output name=modified::%s\n", string(modifiedJSON))
 }
 
-func parsePackagesFromFile(path string) (map[string]Package, error) {
+func parsePackagesFromFile(path string) (map[string]CycloneDXComponent, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to open %s: %w", path, err)
 	}
 	defer f.Close()
 
-	scanner := bufio.NewScanner(f)
-	re := regexp.MustCompile(`\S+\s+`)
-	packages := make(map[string]Package)
-
-	for scanner.Scan() {
-		if !strings.HasPrefix(scanner.Text(), "ii") {
-			continue
-		}
-		matches := re.FindAllString(scanner.Text(), -1)
-		if len(matches) < 4 {
-			fmt.Println(scanner.Text())
-			return nil, fmt.Errorf("failed to parse line in %s", path)
-		}
-		name := strings.Split(strings.TrimSpace(matches[1]), ":")[0]
-		packages[name] = Package{
-			Name:         name,
-			Version:      strings.TrimSpace(matches[2]),
-			Architecture: strings.TrimSpace(matches[3]),
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
+	dec := json.NewDecoder(f)
+	var c CycloneDXPackageList
+	err = dec.Decode(&c)
+	if err != nil {
 		return nil, err
 	}
+
+	packages := make(map[string]CycloneDXComponent)
+	for _, component := range c.Components {
+		packages[component.Name] = component
+	}
+
 	return packages, nil
 }
