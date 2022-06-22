@@ -18,8 +18,8 @@ function main() {
   local build run buildReceipt runReceipt
   build="${BUILD_DIR}/build.oci"
   run="${BUILD_DIR}/run.oci"
-  buildReceipt="${BUILD_DIR}/build-receipt.txt"
-  runReceipt="${BUILD_DIR}/run-receipt.txt"
+  buildReceipt="${BUILD_DIR}/build-receipt.cyclonedx.json"
+  runReceipt="${BUILD_DIR}/run-receipt.cyclonedx.json"
 
   while [[ "${#}" != 0 ]]; do
     case "${1}" in
@@ -88,7 +88,8 @@ USAGE
 }
 
 function tools::install() {
-  util::tools::skopeo::check
+  util::tools::syft::install \
+    --directory "${BIN_DIR}"
 }
 
 function receipts::generate() {
@@ -97,39 +98,10 @@ function receipts::generate() {
   archive="${1}"
   output="${2}"
 
-  util::print::title "Generating package receipt for ${archive}"
+  util::print::title "Generating package SBOM for ${archive}"
 
-  util::print::info "Moving ${archive} onto the docker daemon"
-  skopeo copy oci-archive://"${archive}" docker-daemon:receipts-stack:latest
-
-  set +e
-  docker run --rm receipts-stack:latest which dpkg &> /dev/null
-  hasDpkg=$?
-  set -e
-
-  if [[ "${hasDpkg}" == 0 ]]; then
-  util::print::info "Gathering package list using dkpg -l"
-    docker run --rm receipts-stack:latest dpkg -l > "${output}"
-  else
-    util::print::info "Gathering package list using package control file contents"
-    container_id="$(docker create receipts-stack:latest sleep)"
-    docker cp "${container_id}":/var/lib/dpkg/status.d /tmp/tiny-pkgs
-    docker rm -v "${container_id}"
-
-    printf "                   Name                              Version                            Architecture\n" > "${output}"
-    printf "+++-===================================-===================================-===================================\n" >> "${output}"
-
-    for pkg in /tmp/tiny-pkgs/* ; do
-      name="$(cat "${pkg}" | grep ^Package: | cut -d ' ' -f2)"
-      version="$(cat "${pkg}" | grep ^Version: | cut -d ' ' -f2)"
-      arch="$(cat "${pkg}" | grep ^Architecture: | cut -d ' ' -f2)"
-      printf "ii  %-35s %-35s %-35s\n" "${name}" "${version}" "${arch}" >> "${output}"
-    done
-    rm -rf /tmp/tiny-pkgs
-  fi
-
-  util::print::info "Cleaning up ${archive} from the docker daemon"
-  docker rmi -f receipts-stack:latest
+  util::print::info "Generating CycloneDX package SBOM using syft"
+  syft packages "${archive}" --output cyclonedx-json --file "${output}"
 }
 
 main "${@:-}"

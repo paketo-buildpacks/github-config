@@ -21,7 +21,10 @@ on:
         - 'false'
 
 concurrency: release
-
+env:
+  BUILD_RECEIPT_FILENAME: "build-receipt.cyclonedx.json"
+  RUN_RECEIPT_FILENAME: "run-receipt.cyclonedx.json"
+  PATCHED_USNS_FILENAME: "patched-usns.json"
 jobs:
   poll_usns:
     name: Poll USNs
@@ -33,20 +36,20 @@ jobs:
       id: previous_build
       uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
       with:
-        asset_pattern: "build-receipt.txt"
+        asset_pattern: "${{ env.BUILD_RECEIPT_FILENAME }}"
         search_depth: 1
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/build-receipt.txt"
+        output_path: "/github/workspace/${{ env.BUILD_RECEIPT_FILENAME }}"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Find and Download Previous Run Receipt
       id: previous_run
       uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
       with:
-        asset_pattern: "run-receipt.txt"
+        asset_pattern: "${{ env.RUN_RECEIPT_FILENAME }}"
         search_depth: 1
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/run-receipt.txt"
+        output_path: "/github/workspace/${{ env.RUN_RECEIPT_FILENAME }}"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Get Package List
@@ -54,24 +57,24 @@ jobs:
       if: ${{ steps.previous_build.outputs.output_path != '' && steps.previous_run.outputs.output_path != '' }}
       uses: paketo-buildpacks/github-config/actions/stack/generate-package-list@main
       with:
-        build_receipt: "${{ github.workspace }}/build-receipt.txt"
-        run_receipt: "${{ github.workspace }}/run-receipt.txt"
+        build_receipt: "${{ github.workspace }}/${{ env.BUILD_RECEIPT_FILENAME }}"
+        run_receipt: "${{ github.workspace }}/${{ env.RUN_RECEIPT_FILENAME }}"
 
     - name: Find and Download Previous Patched USNs
       id: download_patched
       uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
       with:
-        asset_pattern: "patched-usns.json"
+        asset_pattern: "${{ env.PATCHED_USNS_FILENAME }}"
         search_depth: "-1"   # Search all releases
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/patched-usns.json"
+        output_path: "/github/workspace/${{ env.PATCHED_USNS_FILENAME }}"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Output Patched USNs as JSON String
       id: patched
       if: ${{ steps.download_patched.outputs.output_path != '' }}
       run: |
-        patched=$(jq --compact-output . < "${GITHUB_WORKSPACE}/patched-usns.json")
+        patched=$(jq --compact-output . < "${GITHUB_WORKSPACE}/${{ env.PATCHED_USNS_FILENAME }}")
         printf "::set-output name=patched::%s\n" "${patched}"
 
     - name: Get Stack Distribution Name
@@ -146,10 +149,10 @@ jobs:
       run: |
         scripts/receipts.sh --build-archive "${GITHUB_WORKSPACE}/build/build.oci" \
                             --run-archive "${GITHUB_WORKSPACE}/build/run.oci" \
-                            --build-receipt build-receipt.txt \
-                            --run-receipt run-receipt.txt
-        echo "::set-output name=build_receipt::build-receipt.txt"
-        echo "::set-output name=run_receipt::run-receipt.txt"
+                            --build-receipt ${{ env.BUILD_RECEIPT_FILENAME }} \
+                            --run-receipt ${{ env.RUN_RECEIPT_FILENAME }}
+        echo "::set-output name=build_receipt::${{ env.BUILD_RECEIPT_FILENAME }}"
+        echo "::set-output name=run_receipt::${{ env.RUN_RECEIPT_FILENAME }}"
 
     - name: Upload run image
       uses: actions/upload-artifact@v3
@@ -195,37 +198,58 @@ jobs:
       with:
         name: current-run-receipt
 
+    - name: Check for Previous Releases
+      id: check_previous
+      run: |
+        gh auth status
+        # shellcheck disable=SC2046
+        if [ $(gh api "/repos/${{ github.repository }}/releases" | jq -r 'length') -eq 0 ]; then
+          echo "::set-output name=exists::false"
+          exit 0
+        fi
+        echo "::set-output name=exists::true"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Write Empty Previous Receipts
+      if: ${{ steps.check_previous.outputs.exists == 'false' }}
+      run: |
+        echo '{"components":[]}' > "${{ github.workspace }}/previous-${{ env.BUILD_RECEIPT_FILENAME }}"
+        echo '{"components":[]}' > "${{ github.workspace }}/previous-${{ env.RUN_RECEIPT_FILENAME }}"
+
     - name: Find and Download Previous Build Receipt
+      if: ${{ steps.check_previous.outputs.exists == 'true' }}
       uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
       with:
-        asset_pattern: "build-receipt.txt"
+        asset_pattern: "${{ env.BUILD_RECEIPT_FILENAME }}"
         search_depth: 1
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/previous-build-receipt.txt"
+        output_path: "/github/workspace/previous-${{ env.BUILD_RECEIPT_FILENAME }}"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Find and Download Previous Run Receipt
+      if: ${{ steps.check_previous.outputs.exists == 'true' }}
       uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
       with:
-        asset_pattern: "run-receipt.txt"
+        asset_pattern: "${{ env.RUN_RECEIPT_FILENAME }}"
         search_depth: 1
         repo: ${{ github.repository }}
-        output_path: "/github/workspace/previous-run-receipt.txt"
+        output_path: "/github/workspace/previous-${{ env.RUN_RECEIPT_FILENAME }}"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Compare Build Packages
       id: build_diff
       uses: paketo-buildpacks/github-config/actions/stack/diff-package-receipts@main
       with:
-        previous: "/github/workspace/previous-build-receipt.txt"
-        current: "/github/workspace/build-receipt.txt"
+        previous: "/github/workspace/previous-${{ env.BUILD_RECEIPT_FILENAME }}"
+        current: "/github/workspace/${{ env.BUILD_RECEIPT_FILENAME }}"
 
     - name: Compare Run Packages
       id: run_diff
       uses: paketo-buildpacks/github-config/actions/stack/diff-package-receipts@main
       with:
-        previous: "/github/workspace/previous-run-receipt.txt"
-        current: "/github/workspace/run-receipt.txt"
+        previous: "/github/workspace/previous-${{ env.RUN_RECEIPT_FILENAME }}"
+        current: "/github/workspace/${{ env.RUN_RECEIPT_FILENAME }}"
 
     - name: Fail If Packages Removed
       run: |
@@ -396,7 +420,7 @@ jobs:
         jq . <<< "${USNS}" > "${USNS_PATH}"
         echo "::set-output name=usns::${USNS_PATH}"
       env:
-        USNS_PATH: "patched-usns.json"
+        USNS_PATH: "${{ env.PATCHED_USNS_FILENAME }}"
         USNS: ${{ needs.poll_usns.outputs.usns }}
 
     - name: Get Repository Name
@@ -426,6 +450,15 @@ jobs:
         run_packages_modified: ${{ needs.diff.outputs.run_modified }}
         patched_usns: ${{ needs.poll_usns.outputs.usns }}
 
+    - name: Get Repository Name
+      id: repo_name
+      run: |
+        full=${{ github.repository }}
+        # Strip off the org and slash from repo name
+        # paketo-buildpacks/repo-name --> repo-name
+        repo=$(echo "${full}" | sed 's/^.*\///')
+        echo "::set-output name=repo_name::${repo}"
+
     - name: Create Release (with patched USNs)
       if: ${{ steps.write_usns.outputs.usns != '' }}
       uses: paketo-buildpacks/github-config/actions/release/create@main
@@ -441,27 +474,27 @@ jobs:
           [
             {
               "path": "build.oci",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
               "content_type": "application/gzip"
             },
             {
               "path": "run.oci",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
               "content_type": "application/gzip"
             },
             {
-              "path": "build-receipt.txt",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.txt",
+              "path": "${{ env.BUILD_RECEIPT_FILENAME }}",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.BUILD_RECEIPT_FILENAME }}",
               "content_type": "text/plain"
             },
             {
-              "path": "run-receipt.txt",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
+              "path": "${{ env.RUN_RECEIPT_FILENAME }}",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.RUN_RECEIPT_FILENAME }}",
               "content_type": "text/plain"
             },
             {
               "path": "${{ steps.write_usns.outputs.usns }}",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-patched-usns.json",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.PATCHED_USNS_FILENAME }}",
               "content_type": "text/plain"
             }
           ]
@@ -481,22 +514,22 @@ jobs:
           [
             {
               "path": "build.oci",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
               "content_type": "application/gzip"
             },
             {
               "path": "run.oci",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
               "content_type": "application/gzip"
             },
             {
-              "path": "build-receipt.txt",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-build-receipt.txt",
+              "path": "${{ env.BUILD_RECEIPT_FILENAME }}",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.BUILD_RECEIPT_FILENAME }}",
               "content_type": "text/plain"
             },
             {
-              "path": "run-receipt.txt",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-run-receipt.txt",
+              "path": "${{ env.RUN_RECEIPT_FILENAME }}",
+              "name": "${{ steps.repo_name.outputs.repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.RUN_RECEIPT_FILENAME }}",
               "content_type": "text/plain"
             }
           ]

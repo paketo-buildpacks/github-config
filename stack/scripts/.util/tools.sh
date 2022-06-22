@@ -108,6 +108,53 @@ function util::tools::pack::install() {
   fi
 }
 
+function util::tools::syft::install() {
+  local dir
+  while [[ "${#}" != 0 ]]; do
+    case "${1}" in
+      --directory)
+        dir="${2}"
+        shift 2
+        ;;
+
+      *)
+        util::print::error "unknown argument \"${1}\""
+    esac
+  done
+
+  mkdir -p "${dir}"
+  util::tools::path::export "${dir}"
+
+  local os
+  case "$(uname)" in
+    "Darwin")
+      os="darwin"
+      ;;
+
+    "Linux")
+      os="linux"
+      ;;
+
+    *)
+      echo "Unknown OS \"$(uname)\""
+      exit 1
+  esac
+
+  if [[ ! -f "${dir}/syft" ]]; then
+    local version
+    version="$(jq -r .syft "$(dirname "${BASH_SOURCE[0]}")/tools.json")"
+
+    util::print::title "Installing syft ${version}"
+    curl "https://github.com/anchore/syft/releases/download/${version}/syft_${version#v}_${os}_amd64.tar.gz" \
+      --silent \
+      --location \
+      --output /tmp/syft.tgz
+    tar xzf /tmp/syft.tgz -C "${dir}"
+    chmod +x "${dir}/syft"
+    rm /tmp/syft.tgz
+  fi
+}
+
 function util::tools::skopeo::check () {
   if ! command -v  skopeo &> /dev/null ; then
       util::print::error "skopeo could not be found. Please install skopeo before proceeding."
