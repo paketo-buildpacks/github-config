@@ -449,10 +449,55 @@ jobs:
         run_packages_added: ${{ needs.diff.outputs.run_added }}
         run_packages_modified: ${{ needs.diff.outputs.run_modified }}
         patched_usns: ${{ needs.poll_usns.outputs.usns }}
-    # TODO add job that gathers release assets
 
-    - name: Create Release (with patched USNs)
-      if: ${{ steps.write_usns.outputs.usns != '' }}
+    - name: Setup Release Assets
+      id: assets
+      run: |
+        assets="$(jq --null-input --compact-output \
+          --arg tag "${{ steps.tag.outputs.tag }}" \
+          --arg repo "${{ steps.repo_name.outputs.github_repo_name }}" \
+          --arg build_receipt "${{ env.BUILD_RECEIPT_FILENAME }}" \
+          --arg run_receipt "${{ env.RUN_RECEIPT_FILENAME }}" \
+          '[
+            {
+              "path": "build.oci",
+              "name": ($repo + "-" + $tag + "-" + "build.oci"),
+              "content_type": "application/gzip"
+            },
+            {
+              "path": "run.oci",
+              "name": ($repo + "-" + $tag + "-" + "run.oci"),
+              "content_type": "application/gzip"
+            },
+            {
+              "path": $build_receipt,
+              "name": ($repo + "-" + $tag + "-" + $build_receipt),
+              "content_type": "text/plain"
+            },
+            {
+              "path": $run_receipt,
+              "name": ($repo + "-" + $tag + "-" + $run_receipt),
+              "content_type": "text/plain"
+            }]')"
+
+        if [ -n "${{ steps.write_usns.outputs.usns }}" ]; then
+          assets="$(jq --compact-output \
+            --arg tag "${{ steps.tag.outputs.tag }}" \
+            --arg repo "${{ steps.repo_name.outputs.github_repo_name }}" \
+            --arg usn_path "${{ steps.write_usns.outputs.usns }}" \
+            --arg usn_name "${{ env.PATCHED_USNS_FILENAME }}" \
+            '. += [
+            {
+              "path": $usn_path,
+              "name": ($repo + "-" + $tag + "-" + $usn_name),
+              "content_type": "text/plain"
+            }
+          ]' <<< "${assets}")"
+        fi
+
+        printf "::set-output name=assets::%s\n" "${assets}"
+
+    - name: Create Release
       uses: paketo-buildpacks/github-config/actions/release/create@main
       with:
         repo: ${{ github.repository }}
@@ -462,69 +507,7 @@ jobs:
         name: v${{ steps.tag.outputs.tag }}
         body: ${{ steps.notes.outputs.release_body }}
         draft: false
-        assets: |
-          [
-            {
-              "path": "build.oci",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
-              "content_type": "application/gzip"
-            },
-            {
-              "path": "run.oci",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
-              "content_type": "application/gzip"
-            },
-            {
-              "path": "${{ env.BUILD_RECEIPT_FILENAME }}",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.BUILD_RECEIPT_FILENAME }}",
-              "content_type": "text/plain"
-            },
-            {
-              "path": "${{ env.RUN_RECEIPT_FILENAME }}",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.RUN_RECEIPT_FILENAME }}",
-              "content_type": "text/plain"
-            },
-            {
-              "path": "${{ steps.write_usns.outputs.usns }}",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.PATCHED_USNS_FILENAME }}",
-              "content_type": "text/plain"
-            }
-          ]
-
-    - name: Create Release (without patched USNs)
-      if: ${{ steps.write_usns.outputs.usns == '' }}
-      uses: paketo-buildpacks/github-config/actions/release/create@main
-      with:
-        repo: ${{ github.repository }}
-        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-        tag_name: v${{ steps.tag.outputs.tag }}
-        target_commitish: ${{ github.sha }}
-        name: v${{ steps.tag.outputs.tag }}
-        body: ${{ steps.notes.outputs.release_body }}
-        draft: false
-        assets: |
-          [
-            {
-              "path": "build.oci",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-build.oci",
-              "content_type": "application/gzip"
-            },
-            {
-              "path": "run.oci",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-run.oci",
-              "content_type": "application/gzip"
-            },
-            {
-              "path": "${{ env.BUILD_RECEIPT_FILENAME }}",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.BUILD_RECEIPT_FILENAME }}",
-              "content_type": "text/plain"
-            },
-            {
-              "path": "${{ env.RUN_RECEIPT_FILENAME }}",
-              "name": "${{ steps.repo_name.outputs.github_repo_name }}-${{ steps.tag.outputs.tag }}-${{ env.RUN_RECEIPT_FILENAME }}",
-              "content_type": "text/plain"
-            }
-          ]
+        assets: ${{ steps.assets.outputs.assets }}
 
   failure:
     name: Alert on Failure
