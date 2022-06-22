@@ -1,0 +1,74 @@
+name: 'File Issue'
+
+description: |
+  Files an issue on the provided repo with the provided body. If
+  'comment_if_exists' is true, the action will add a comment
+  to the previously-filed automated issue.
+
+inputs:
+  token:
+    description: 'Token used to authenticate user account'
+    required: true
+  repo:
+    description: 'Github repository'
+    required: true
+  label:
+    description: |
+      Label used to distinguish preexisting auto-created issues. Required if
+      comment_if_exists is true'. Note: Label must already be created on the
+      repository.
+    required: false
+  comment_if_exists:
+    description: 'If an issue already exists on the repo with the provided label, comment on the existing issue'
+    required: false
+    default: "false"
+  issue_title:
+    description: 'Title to use when filing issue'
+    required: true
+  issue_body:
+    description: '(Markdown) content of issue to file'
+    required: true
+  comment_body:
+    description: '(Markdown) content of comment to add to preexisting issue. Required if comment_if_exists is true'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+  - name: File Issue
+    shell: bash
+    env:
+      GITHUB_TOKEN: ${{ inputs.token }}
+    run: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      gh auth status
+
+      release_issue=""
+      if [[ "${{ inputs.comment_if_exists }}" == "true" ]]; then
+        if [ -z "${{ inputs.label }}" ]; then
+          echo "must provide 'label' as input when 'comment_if_exists' is true"
+          exit 1
+        fi
+
+        if [ -z "${{ inputs.comment_body }}" ]; then
+          echo "must provide 'comment_body' as input when 'comment_if_exists' is true"
+          exit 1
+        fi
+
+        release_issue=$(gh issue list --repo "${{ inputs.repo }}" --json number --label "${{ inputs.label }}" --jq .[0].number)
+
+        if [ -n "${release_issue}" ]; then
+          gh issue comment "${release_issue}" \
+            --body "${{ inputs.comment_body }}" \
+            --repo "${{ inputs.repo }}"
+          exit 0
+        fi
+      fi
+
+      gh issue create \
+        --title "${{ inputs.issue_title }}" \
+        --label "${{ inputs.label }}" \
+        --body "${{ inputs.issue_body }}" \
+        --repo "${{ inputs.repo }}"
