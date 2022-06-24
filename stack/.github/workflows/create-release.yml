@@ -12,7 +12,7 @@ on:
         description: 'Version of the release to cut (e.g. 1.2.3)'
         required: false
       force:
-        description: 'Release stack even if change validator does not detect changes'
+        description: 'Release stack even if change validator does not detect changes, or a package is removed'
         required: true
         type: choice
         default: 'false'
