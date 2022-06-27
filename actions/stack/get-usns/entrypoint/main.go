@@ -13,7 +13,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
+	backoff "github.com/cenkalti/backoff/v4"
 	"github.com/mmcdole/gofeed"
 )
 
@@ -195,14 +197,25 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, er
 			return nil, fmt.Errorf("error parsing URL of USN %s: %w", item.Title, err)
 		}
 
-		usnBody, code, err := get(usnURL.String())
-		if err != nil {
-			return nil, fmt.Errorf("error getting USN: %w", err)
-		}
+		var usnBody string
+		var code int
 
-		if code != http.StatusOK {
-			return nil, fmt.Errorf("unexpected status code getting USN: %d", code)
-		}
+		err = backoff.RetryNotify(func() error {
+			usnBody, code, err = get(usnURL.String())
+			if err != nil {
+				return fmt.Errorf("error getting USN: %w", err)
+			}
+			if code != http.StatusOK {
+				return fmt.Errorf("unexpected status code getting USN: %d", code)
+			}
+			return nil
+		},
+			backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 3),
+			func(err error, t time.Duration) {
+				fmt.Println(err)
+				fmt.Printf("Retrying in %s seconds\n", t)
+			},
+		)
 
 		feedUSNs = append(feedUSNs, USN{
 			ID:               id,
