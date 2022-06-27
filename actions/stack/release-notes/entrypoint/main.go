@@ -41,8 +41,10 @@ func main() {
 		RunImage                  string
 		BuildPackagesAddedJSON    string
 		BuildPackagesModifiedJSON string
+		BuildPackagesRemovedJSON  string
 		RunPackagesAddedJSON      string
 		RunPackagesModifiedJSON   string
+		RunPackagesRemovedJSON    string
 		PatchedJSON               string
 	}
 
@@ -51,16 +53,20 @@ func main() {
 	flag.StringVar(&config.PatchedJSON, "patched-usns", "", "JSON Array of patched USNs")
 	flag.StringVar(&config.BuildPackagesAddedJSON, "build-added", "", "JSON Array of packages added to build image")
 	flag.StringVar(&config.BuildPackagesModifiedJSON, "build-modified", "", "JSON Array of packages modified in build image")
+	flag.StringVar(&config.BuildPackagesRemovedJSON, "build-removed", "", "JSON Array of packages removed in build image")
 	flag.StringVar(&config.RunPackagesAddedJSON, "run-added", "", "JSON Array of packages added to run image")
 	flag.StringVar(&config.RunPackagesModifiedJSON, "run-modified", "", "JSON Array of packages modified in run image")
+	flag.StringVar(&config.RunPackagesRemovedJSON, "run-removed", "", "JSON Array of packages removed in run image")
 	flag.Parse()
 
 	var contents struct {
 		PatchedArray  []USN
 		BuildAdded    []Package
 		BuildModified []ModifiedPackage
+		BuildRemoved  []Package
 		RunAdded      []Package
 		RunModified   []ModifiedPackage
+		RunRemoved    []Package
 		BuildImage    string
 		RunImage      string
 	}
@@ -80,6 +86,11 @@ func main() {
 		log.Fatalf("failed unmarshalling build packages modified: %s", err.Error())
 	}
 
+	err = json.Unmarshal([]byte(fixEmptyArray(config.BuildPackagesRemovedJSON)), &contents.BuildRemoved)
+	if err != nil {
+		log.Fatalf("failed unmarshalling build packages removed: %s", err.Error())
+	}
+
 	err = json.Unmarshal([]byte(fixEmptyArray(config.RunPackagesAddedJSON)), &contents.RunAdded)
 	if err != nil {
 		log.Fatalf("failed unmarshalling run packages added: %s", err.Error())
@@ -88,6 +99,11 @@ func main() {
 	err = json.Unmarshal([]byte(fixEmptyArray(config.RunPackagesModifiedJSON)), &contents.RunModified)
 	if err != nil {
 		log.Fatalf("failed unmarshalling run packages modified: %s", err.Error())
+	}
+
+	err = json.Unmarshal([]byte(fixEmptyArray(config.RunPackagesRemovedJSON)), &contents.RunRemoved)
+	if err != nil {
+		log.Fatalf("failed unmarshalling run packages removed: %s", err.Error())
 	}
 
 	contents.BuildImage = config.BuildImage
