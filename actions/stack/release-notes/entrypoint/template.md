@@ -34,6 +34,17 @@ No packages added.
 No packages modified.
 {{- end }}
 
+### Removed
+{{- if ne (len .BuildRemoved) 0 }}
+```
+{{- range .BuildRemoved }}
+{{ .Name }} {{ .Version }} (PURL: {{ .PURL }})
+{{- end }}
+```
+{{- else }}
+No packages removed.
+{{- end }}
+
 ## Run Image Package Changes
 ### Added
 {{- if ne (len .RunAdded) 0 }}
@@ -55,4 +66,15 @@ No packages added.
 ```
 {{- else }}
 No packages modified.
+{{- end }}
+
+### Removed
+{{- if ne (len .RunRemoved) 0 }}
+```
+{{- range .RunRemoved }}
+{{ .Name }} {{ .Version }} (PURL: {{ .PURL }})
+{{- end }}
+```
+{{- else }}
+No packages removed.
 {{- end }}

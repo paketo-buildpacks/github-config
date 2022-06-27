@@ -20,11 +20,17 @@ inputs:
   build_packages_modified:
     description: 'JSON array of packages modified "{ name: name, previousVersion: 1.2.3, currentVersion: 1.2.4 }"'
     required: false
+  build_packages_removed_with_force:
+    description: 'JSON array of packages removed with user-provided force "{ name: name, version: 1.2.3}"'
+    required: false
   run_packages_added:
     description: 'JSON array of packages added "{ name: name, version: 1.2.3 }"'
     required: false
   run_packages_modified:
     description: 'JSON array of packages modified "{ name: name, previousVersion: 1.2.3, currentVersion: 1.2.4 }"'
+    required: false
+  run_packages_removed_with_force:
+    description: 'JSON array of packages removed with user-provided force "{ name: name, version: 1.2.3}"'
     required: false
   patched_usns:
     description: 'JSON array of objects "{ name: USN name, url: USN URL, description: USN description}"'
@@ -44,7 +50,11 @@ runs:
   - "${{ inputs.build_packages_added }}"
   - "--build-modified"
   - "${{ inputs.build_packages_modified }}"
+  - "--build-removed"
+  - "${{ inputs.build_packages_removed_with_force }}"
   - "--run-added"
   - "${{ inputs.run_packages_added }}"
   - "--run-modified"
   - "${{ inputs.run_packages_modified }}"
+  - "--run-removed"
+  - "${{ inputs.run_packages_removed_with_force }}"
