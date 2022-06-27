@@ -85,8 +85,8 @@ func main() {
 			modified = append(modified, ModifiedCycloneDXComponent{
 				Name:            curPackage.Name,
 				PreviousVersion: prevPackage.Version,
-				CurrentVersion:  prevPackage.Version,
 				PreviousPURL:    prevPackage.PURL,
+				CurrentVersion:  curPackage.Version,
 				CurrentPURL:     curPackage.PURL,
 			})
 		}
