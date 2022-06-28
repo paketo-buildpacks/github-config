@@ -60,7 +60,7 @@ jobs:
         if [[ ${registry_repo} == "bionic"-* ]];
           # Strip the final part from a repo name after the `-`
           # bionic-tiny --> tiny
-          variant=$(echo ${registry_repo} | sed 's/^[^-]*-//')
+          variant="${registry_repo#bionic-}"
 
           sudo skopeo copy "oci-archive:${GITHUB_WORKSPACE}/build.oci" "docker://${DOCKERHUB_ORG}/build:${{ steps.event.outputs.tag }}-${variant}"
           sudo skopeo copy "oci-archive:${GITHUB_WORKSPACE}/build.oci" "docker://${DOCKERHUB_ORG}/build:${{ steps.event.outputs.tag }}-${variant}-cnb"
