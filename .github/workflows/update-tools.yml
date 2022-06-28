@@ -42,14 +42,23 @@ jobs:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
         repo: paketo-buildpacks/libpak
 
+    - name: Fetch Latest syft
+      id: latest-syft
+      uses: paketo-buildpacks/github-config/actions/tools/latest@main
+      with:
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        repo: anchore/syft
+
     - name: Update builder tools.json
       env:
         JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
         CREATE_PACKAGE_VERSION: ${{ steps.latest-create-package.outputs.version }}
       run: |
-        echo null | jq -r -S --arg pack "${PACK_VERSION}" \
-                             '{ pack: $pack }' > ./builder/scripts/.util/tools.json
+        jq --null-input \
+           --sort-keys \
+           --arg pack "${PACK_VERSION}" \
+           '{ pack: $pack }' > ./builder/scripts/.util/tools.json
 
     - name: Update implementation tools.json
       env:
@@ -57,10 +66,12 @@ jobs:
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
         CREATE_PACKAGE_VERSION: ${{ steps.latest-create-package.outputs.version }}
       run: |
-        echo null | jq -r -S --arg pack "${PACK_VERSION}" \
-                             --arg jam "${JAM_VERSION}" \
-                             --arg createpackage "${CREATE_PACKAGE_VERSION}" \
-                             '{ pack: $pack, jam: $jam, createpackage: $createpackage }' > ./implementation/scripts/.util/tools.json
+        jq --null-input \
+           --sort-keys \
+           --arg pack "${PACK_VERSION}" \
+           --arg jam "${JAM_VERSION}" \
+           --arg createpackage "${CREATE_PACKAGE_VERSION}" \
+           '{ pack: $pack, jam: $jam, createpackage: $createpackage }' > ./implementation/scripts/.util/tools.json
 
     - name: Update language-family tools.json
       env:
@@ -68,9 +79,24 @@ jobs:
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
         CREATE_PACKAGE_VERSION: ${{ steps.latest-create-package.outputs.version }}
       run: |
-        echo null | jq -r -S --arg pack "${PACK_VERSION}" \
-                             --arg jam "${JAM_VERSION}" \
-                             '{ pack: $pack, jam: $jam }' > ./language-family/scripts/.util/tools.json
+        jq --null-input \
+           --sort-keys \
+           --arg pack "${PACK_VERSION}" \
+           --arg jam "${JAM_VERSION}" \
+           '{ pack: $pack, jam: $jam }' > ./language-family/scripts/.util/tools.json
+
+    - name: Update stack tools.json
+      env:
+        JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
+        PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
+        SYFT_VERSION: ${{ steps.latest-syft.outputs.version }}
+      run: |
+        jq --null-input \
+           --sort-keys \
+           --arg pack "${PACK_VERSION}" \
+           --arg jam "${JAM_VERSION}" \
+           --arg syft "${SYFT_VERSION}" \
+           '{ pack: $pack, jam: $jam, syft: $syft }' > ./stack/scripts/.util/tools.json
 
     - name: Commit
       id: commit
