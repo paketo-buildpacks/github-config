@@ -58,6 +58,7 @@ jobs:
         #    paketobuildpacks/{build/run}:{version}-{variant}
         #    paketobuildpacks/{build/run}:{version}-{variant}-cnb
         if [[ ${registry_repo} == "bionic"-* ]];
+          then
           # Strip the final part from a repo name after the `-`
           # bionic-tiny --> tiny
           variant="${registry_repo#bionic-}"
