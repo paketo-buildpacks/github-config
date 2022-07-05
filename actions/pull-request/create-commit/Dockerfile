@@ -1,10 +1,9 @@
 FROM alpine
 
-RUN apk add \
+RUN apk add --no-cache \
     bash \
     git \
-    gnupg \
-  && rm -rf /var/cache/apk/*
+    gnupg
 
 COPY entrypoint /entrypoint
 ENTRYPOINT ["/entrypoint"]
