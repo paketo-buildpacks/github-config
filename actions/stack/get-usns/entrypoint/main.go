@@ -9,8 +9,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -172,10 +170,23 @@ func addCVEs(usn *USN) error {
 
 func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, error) {
 	fp := gofeed.NewParser()
-	feed, err := fp.ParseURL(rssURL)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing rss feed: %w", err)
-	}
+
+	var feed *gofeed.Feed
+	var err error
+
+	err = backoff.RetryNotify(func() error {
+		feed, err = fp.ParseURL(rssURL)
+		if err != nil && strings.Contains(fmt.Sprint(err), "504") {
+			return fmt.Errorf("error parsing rss feed: %w", err)
+		}
+		return nil
+	},
+		backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 3),
+		func(err error, t time.Duration) {
+			fmt.Println(err)
+			fmt.Printf("Retrying in %s seconds\n", t)
+		},
+	)
 
 	fmt.Println("Looking for new USNs...")
 	var feedUSNs []USN
