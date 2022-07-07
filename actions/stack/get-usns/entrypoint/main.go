@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"html"
@@ -15,8 +16,9 @@ import (
 	"strings"
 	"time"
 
-	backoff "github.com/cenkalti/backoff/v4"
 	"github.com/mmcdole/gofeed"
+
+	backoff "github.com/cenkalti/backoff/v4"
 )
 
 var distroToVersionRegex map[string]string = map[string]string{
@@ -172,9 +174,29 @@ func addCVEs(usn *USN) error {
 
 func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, error) {
 	fp := gofeed.NewParser()
-	feed, err := fp.ParseURL(rssURL)
+
+	var feed *gofeed.Feed
+	var err error
+
+	err = backoff.RetryNotify(func() error {
+		feed, err = fp.ParseURL(rssURL)
+		if err == nil {
+			return nil
+		}
+		var httpError gofeed.HTTPError
+		if errors.As(err, &httpError) {
+			return fmt.Errorf("error parsing rss feed: %w", err)
+		}
+		return &backoff.PermanentError{Err: err}
+	},
+		backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 3),
+		func(err error, t time.Duration) {
+			log.Println(err)
+			log.Printf("Retrying in %s seconds\n", t)
+		},
+	)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing rss feed: %w", err)
+		log.Fatal(err)
 	}
 
 	fmt.Println("Looking for new USNs...")
