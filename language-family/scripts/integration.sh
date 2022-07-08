@@ -63,11 +63,11 @@ function images::pull() {
   builder=""
 
   if [[ -f "${BUILDPACKDIR}/integration.json" ]]; then
-    builder="$(jq -r .builder "${BUILDPACKDIR}/integration.json")"
-  fi
+    builders="$(jq -r .builder "${BUILDPACKDIR}/integration.json")"
 
-  if [[ "${builders}" == "null" || -z "${builders}" ]]; then
-    builders="$(jq -r 'select(.builders != null) | .builders[]' "${BUILDPACKDIR}/integration.json")"
+    if [[ "${builders}" == "null" || -z "${builders}" ]]; then
+      builders="$(jq -r 'select(.builders != null) | .builders[]' "${BUILDPACKDIR}/integration.json")"
+    fi
   fi
 
   if [[ "${builders}" == "null" || -z "${builders}" ]]; then

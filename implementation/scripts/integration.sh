@@ -82,10 +82,10 @@ function images::pull() {
 
   if [[ -f "${BUILDPACKDIR}/integration.json" ]]; then
     builders="$(jq -r .builder "${BUILDPACKDIR}/integration.json")"
-  fi
 
-  if [[ "${builders}" == "null" || -z "${builders}" ]]; then
-    builders="$(jq -r 'select(.builders != null) | .builders[]' "${BUILDPACKDIR}/integration.json")"
+    if [[ "${builders}" == "null" || -z "${builders}" ]]; then
+      builders="$(jq -r 'select(.builders != null) | .builders[]' "${BUILDPACKDIR}/integration.json")"
+    fi
   fi
 
   if [[ "${builders}" == "null" || -z "${builders}" ]]; then
