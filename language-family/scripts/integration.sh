@@ -46,10 +46,10 @@ function main() {
 
   tools::install
 
-  local builders=""
   if [ ${#builderArray[@]} -eq 0 ]; then
     util::print::title "No builders provided. Finding builders in integration.json..."
 
+    local builders
     builders="$(util::builders::list "${BUILDPACKDIR}/integration.json" | jq -r '.[]' )"
 
     # shellcheck disable=SC2206
