@@ -60,12 +60,16 @@ function main() {
   # shellcheck disable=SC2068
   images::pull ${builderArray[@]}
 
+  testout=$(mktemp)
   for builder in "${builderArray[@]}"; do
     util::print::title "Setting default pack builder image..."
     pack config default-builder "${builder}"
 
     tests::run "${builder}"
   done
+
+  util::tools::tests::checkfocus "${testout}"
+  util::print::success "** GO Test Succeeded with all builders**"
 }
 
 function usage() {
@@ -116,12 +120,10 @@ function tests::run() {
   util::print::title "Run Buildpack Runtime Integration Tests"
   util::print::info "Using ${1} as builder..."
 
-  testout=$(mktemp)
   pushd "${BUILDPACKDIR}" > /dev/null
     #shellcheck disable=SC2068
     if GOMAXPROCS="${GOMAXPROCS:-4}" go test -count=1 -timeout 0 ./integration/... -v -run Integration | tee "${testout}"; then
-      util::tools::tests::checkfocus "${testout}"
-      util::print::success "** GO Test Succeeded with ${1}**"
+      util::print::info "** GO Test Succeeded with ${1}**"
     else
       util::print::error "** GO Test Failed with ${1}**"
     fi
