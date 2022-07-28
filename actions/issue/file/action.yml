@@ -60,7 +60,8 @@ runs:
         release_issue=$(gh issue list --repo "${{ inputs.repo }}" --state all --label "${{ inputs.label }}" --json number --jq .[0].number)
 
         if [ -n "${release_issue}" ]; then
-          gh issue reopen "${release_issue}"
+          gh issue reopen "${release_issue}" \
+            --repo "${{ inputs.repo }}"
           gh issue comment "${release_issue}" \
             --body "${{ inputs.comment_body }}" \
             --repo "${{ inputs.repo }}"
