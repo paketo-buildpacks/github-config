@@ -51,7 +51,7 @@ jobs:
 
     - name: Configure docker gcloud auth
       if: ${{ steps.registry-repo.outputs.name == "bionic"-* }}
-      run: gcloud auth configure-docker
+      run: gcloud auth configure-docker gcr.io
 
     - name: Push to DockerHub
       id: push
