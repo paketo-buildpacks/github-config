@@ -43,14 +43,14 @@ jobs:
         echo "::set-output name=name::$(echo "${{ github.repository }}" | sed 's/^.*\///' | sed 's/\-stack$//')"
 
     - name: Setup gcloud
-      if: ${{ steps.registry-repo.outputs.name == "bionic"-* }}
+      if: ${{ startsWith(steps.registry-repo.outputs.name, 'bionic-') }}
       uses: google-github-actions/setup-gcloud@master
       with:
         version: '270.0.0'
         service_account_key: ${{ secrets.GCR_PUSH_BOT_JSON_KEY }}
 
     - name: Configure docker gcloud auth
-      if: ${{ steps.registry-repo.outputs.name == "bionic"-* }}
+      if: ${{ startsWith(steps.registry-repo.outputs.name, 'bionic-') }}
       run: gcloud auth configure-docker gcr.io
 
     - name: Push to DockerHub
@@ -74,7 +74,8 @@ jobs:
         #    paketobuildpacks/{build/run}:{variant}-cnb
         #    paketobuildpacks/{build/run}:{variant}
         # Also push a bionic run image to GCR as a legacy run image mirror
-        if [[ ${{ steps.registry-repo.outputs.name }} == "bionic"-* ]];
+        registry_repo="${{ steps.registry-repo.outputs.name }}"
+        if [[ ${registry_repo} == "bionic"-* ]];
           then
           # Strip the final part from a repo name after the `-`
           # bionic-tiny --> tiny
