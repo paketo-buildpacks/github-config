@@ -11,6 +11,9 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
+
+	backoff "github.com/cenkalti/backoff/v4"
 )
 
 type Release struct {
@@ -121,35 +124,49 @@ func main() {
 		uri.Path = fmt.Sprintf("/repos/%s/releases/%d/assets", config.Repo, release.ID)
 		uri.RawQuery = url.Values{"name": []string{asset.Name}}.Encode()
 
-		file, err := os.Open(asset.Path)
+		err = backoff.RetryNotify(func() error {
+			file, err := os.Open(asset.Path)
+			if err != nil {
+				return fmt.Errorf("failed to open file: %w", err)
+			}
+
+			info, err := file.Stat()
+			if err != nil {
+				return fmt.Errorf("failed to stat file: %w", err)
+			}
+
+			req, err = http.NewRequest("POST", uri.String(), file)
+			if err != nil {
+				return fmt.Errorf("failed to create request: %w", err)
+			}
+
+			req.Header.Set("Authorization", fmt.Sprintf("token %s", config.Token))
+
+			req.ContentLength = info.Size()
+			req.Header.Set("Content-Type", asset.ContentType)
+
+			fmt.Printf("  Uploading asset: %s -> %s\n", asset.Path, asset.Name)
+			resp, err = http.DefaultClient.Do(req)
+			if err != nil {
+				return fmt.Errorf("failed to complete request: %w", err)
+			}
+
+			if resp.StatusCode != http.StatusCreated {
+				dump, _ := httputil.DumpResponse(resp, true)
+				return fmt.Errorf("failed to upload asset: unexpected response: %s", dump)
+			}
+
+			return nil
+		},
+			backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 3),
+			func(err error, t time.Duration) {
+				fmt.Println(err)
+				fmt.Printf("Retrying in %s seconds\n", t)
+			},
+		)
+
 		if err != nil {
-			fail(fmt.Errorf("failed to open file: %w", err))
-		}
-
-		info, err := file.Stat()
-		if err != nil {
-			fail(fmt.Errorf("failed to stat file: %w", err))
-		}
-
-		req, err = http.NewRequest("POST", uri.String(), file)
-		if err != nil {
-			fail(fmt.Errorf("failed to create request: %w", err))
-		}
-
-		req.Header.Set("Authorization", fmt.Sprintf("token %s", config.Token))
-
-		req.ContentLength = info.Size()
-		req.Header.Set("Content-Type", asset.ContentType)
-
-		fmt.Printf("  Uploading asset: %s -> %s\n", asset.Path, asset.Name)
-		resp, err = http.DefaultClient.Do(req)
-		if err != nil {
-			fail(fmt.Errorf("failed to complete request: %w", err))
-		}
-
-		if resp.StatusCode != http.StatusCreated {
-			dump, _ := httputil.DumpResponse(resp, true)
-			fail(fmt.Errorf("failed to upload asset: unexpected response: %s", dump))
+			fail(err)
 		}
 	}
 
