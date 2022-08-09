@@ -42,14 +42,6 @@ jobs:
         # paketo-buildpacks/some-name-stack --> some-name
         echo "::set-output name=name::$(echo "${{ github.repository }}" | sed 's/^.*\///' | sed 's/\-stack$//')"
 
-    - name: Login to GCR
-      if: ${{ startsWith(steps.registry-repo.outputs.name, 'bionic-') }}
-      uses: docker/login-action@v2
-      with:
-        registry: gcr.io
-        username: _json_key
-        password: ${{ secrets.GCR_PUSH_BOT_JSON_KEY }}
-
     - name: Push to DockerHub
       id: push
       env:
