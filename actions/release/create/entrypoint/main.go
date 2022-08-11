@@ -124,6 +124,8 @@ func main() {
 		uri.Path = fmt.Sprintf("/repos/%s/releases/%d/assets", config.Repo, release.ID)
 		uri.RawQuery = url.Values{"name": []string{asset.Name}}.Encode()
 
+		exponentialBackoff := backoff.NewExponentialBackOff()
+		exponentialBackoff.MaxElapsedTime = 5 * time.Minute
 		err = backoff.RetryNotify(func() error {
 			file, err := os.Open(asset.Path)
 			if err != nil {
@@ -158,10 +160,10 @@ func main() {
 
 			return nil
 		},
-			backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 3),
+			exponentialBackoff,
 			func(err error, t time.Duration) {
 				fmt.Println(err)
-				fmt.Printf("Retrying in %s seconds\n", t)
+				fmt.Printf("Retrying in %s\n", t)
 			},
 		)
 

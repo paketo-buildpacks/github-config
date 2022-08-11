@@ -178,6 +178,8 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, er
 	var feed *gofeed.Feed
 	var err error
 
+	exponentialBackoff := backoff.NewExponentialBackOff()
+	exponentialBackoff.MaxElapsedTime = 5 * time.Minute
 	err = backoff.RetryNotify(func() error {
 		feed, err = fp.ParseURL(rssURL)
 		if err == nil {
@@ -189,10 +191,10 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, er
 		}
 		return &backoff.PermanentError{Err: err}
 	},
-		backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 3),
+		exponentialBackoff,
 		func(err error, t time.Duration) {
 			log.Println(err)
-			log.Printf("Retrying in %s seconds\n", t)
+			log.Printf("Retrying in %s\n", t)
 		},
 	)
 	if err != nil {
