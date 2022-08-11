@@ -26,12 +26,13 @@ type Release struct {
 
 func main() {
 	var config struct {
-		Endpoint string
-		Repo     string
-		Token    string
-		Release  Release
-		Draft    bool
-		Assets   string
+		Endpoint       string
+		Repo           string
+		Token          string
+		Release        Release
+		Draft          bool
+		Assets         string
+		RetryTimeLimit string
 	}
 
 	flag.StringVar(&config.Endpoint, "endpoint", "https://api.github.com", "Specifies endpoint for sending requests")
@@ -43,6 +44,7 @@ func main() {
 	flag.StringVar(&config.Release.Body, "body", "", "Contents of release body")
 	flag.BoolVar(&config.Draft, "draft", false, "Sets the release as a draft")
 	flag.StringVar(&config.Assets, "assets", "", "JSON-encoded assets metadata")
+	flag.StringVar(&config.RetryTimeLimit, "retry-time-limit", "5m", "How long to retry failures for")
 	flag.Parse()
 
 	if config.Repo == "" {
@@ -65,6 +67,11 @@ func main() {
 		fail(errors.New(`missing required input "name"`))
 	}
 
+	retryTimeLimit, err := time.ParseDuration(config.RetryTimeLimit)
+	if err != nil {
+		fail(err)
+	}
+
 	var assets []struct {
 		Path        string `json:"path"`
 		Name        string `json:"name"`
@@ -80,7 +87,7 @@ func main() {
 
 	config.Release.Draft = true
 	body := bytes.NewBuffer(nil)
-	err := json.NewEncoder(body).Encode(config.Release)
+	err = json.NewEncoder(body).Encode(config.Release)
 	if err != nil {
 		fail(fmt.Errorf("failed to encode release: %w", err))
 	}
@@ -125,7 +132,7 @@ func main() {
 		uri.RawQuery = url.Values{"name": []string{asset.Name}}.Encode()
 
 		exponentialBackoff := backoff.NewExponentialBackOff()
-		exponentialBackoff.MaxElapsedTime = 5 * time.Minute
+		exponentialBackoff.MaxElapsedTime = retryTimeLimit
 		err = backoff.RetryNotify(func() error {
 			file, err := os.Open(asset.Path)
 			if err != nil {

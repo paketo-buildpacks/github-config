@@ -370,6 +370,32 @@ func TestEntrypoint(t *testing.T) {
 		})
 
 		context("failure cases", func() {
+			context("when the retry time limit is an invalid duration", func() {
+				it("prints an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--retry-time-limit", "unparsable",
+						"--repo", "some-org/some-repo",
+						"--endpoint", api.URL,
+						"--token", "some-github-token",
+						"--tag-name", "some-tag",
+						"--target-commitish", "some-commitish",
+						"--name", "some-name",
+						"--body", "some-body",
+					)
+
+					buffer := gbytes.NewBuffer()
+
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+
+					Expect(buffer).To(gbytes.Say(`Error: time: invalid duration "unparsable"`))
+				})
+
+			})
+
 			context("when missing the repo flag", func() {
 				it("prints an error and exits non-zero", func() {
 					command := exec.Command(
@@ -641,6 +667,7 @@ func TestEntrypoint(t *testing.T) {
 				it("prints an error and exits non-zero", func() {
 					command := exec.Command(
 						entrypoint,
+						"--retry-time-limit", "1s",
 						"--endpoint", api.URL,
 						"--repo", "some-org/some-repo",
 						"--token", "some-github-token",
@@ -687,6 +714,7 @@ func TestEntrypoint(t *testing.T) {
 				it("prints an error and exits non-zero", func() {
 					command := exec.Command(
 						entrypoint,
+						"--retry-time-limit", "1s",
 						"--endpoint", api.URL,
 						"--repo", "some-org/some-upload-redirect-repo",
 						"--token", "some-github-token",
@@ -733,6 +761,7 @@ func TestEntrypoint(t *testing.T) {
 				it("prints an error and exits non-zero", func() {
 					command := exec.Command(
 						entrypoint,
+						"--retry-time-limit", "1s",
 						"--endpoint", api.URL,
 						"--repo", "some-org/some-upload-error-repo",
 						"--token", "some-github-token",
