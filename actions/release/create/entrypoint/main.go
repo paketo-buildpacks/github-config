@@ -44,7 +44,7 @@ func main() {
 	flag.StringVar(&config.Release.Body, "body", "", "Contents of release body")
 	flag.BoolVar(&config.Draft, "draft", false, "Sets the release as a draft")
 	flag.StringVar(&config.Assets, "assets", "", "JSON-encoded assets metadata")
-	flag.StringVar(&config.RetryTimeLimit, "retry-time-limit", "5m", "How long to retry failures for")
+	flag.StringVar(&config.RetryTimeLimit, "retry-time-limit", "1m", "How long to retry failures for")
 	flag.Parse()
 
 	if config.Repo == "" {
