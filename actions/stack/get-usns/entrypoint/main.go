@@ -43,11 +43,12 @@ type CVE struct {
 
 func main() {
 	var config struct {
-		Distro       string
-		LastUSNsJSON string
-		Output       string
-		PackagesJSON string
-		RSSURL       string
+		Distro         string
+		LastUSNsJSON   string
+		Output         string
+		PackagesJSON   string
+		RSSURL         string
+		RetryTimeLimit string
 	}
 
 	flag.StringVar(&config.LastUSNsJSON,
@@ -71,6 +72,8 @@ func main() {
 		"",
 		"Path to output JSON file")
 
+	flag.StringVar(&config.RetryTimeLimit, "retry-time-limit", "5m", "How long to retry failures for")
+
 	flag.Parse()
 
 	if config.LastUSNsJSON == "" {
@@ -81,8 +84,13 @@ func main() {
 		config.PackagesJSON = `[]`
 	}
 
+	retryTimeLimit, err := time.ParseDuration(config.RetryTimeLimit)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	var lastUSNs []USN
-	err := json.Unmarshal([]byte(config.LastUSNsJSON), &lastUSNs)
+	err = json.Unmarshal([]byte(config.LastUSNsJSON), &lastUSNs)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -93,7 +101,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	newUSNs, err := getNewUSNsFromFeed(config.RSSURL, lastUSNs, distroToVersionRegex[config.Distro])
+	newUSNs, err := getNewUSNsFromFeed(config.RSSURL, lastUSNs, distroToVersionRegex[config.Distro], retryTimeLimit)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -172,12 +180,14 @@ func addCVEs(usn *USN) error {
 	return nil
 }
 
-func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, error) {
+func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string, retryTimeLimit time.Duration) ([]USN, error) {
 	fp := gofeed.NewParser()
 
 	var feed *gofeed.Feed
 	var err error
 
+	exponentialBackoff := backoff.NewExponentialBackOff()
+	exponentialBackoff.MaxElapsedTime = retryTimeLimit
 	err = backoff.RetryNotify(func() error {
 		feed, err = fp.ParseURL(rssURL)
 		if err == nil {
@@ -189,10 +199,10 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string) ([]USN, er
 		}
 		return &backoff.PermanentError{Err: err}
 	},
-		backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 3),
+		exponentialBackoff,
 		func(err error, t time.Duration) {
 			log.Println(err)
-			log.Printf("Retrying in %s seconds\n", t)
+			log.Printf("Retrying in %s\n", t)
 		},
 	)
 	if err != nil {
