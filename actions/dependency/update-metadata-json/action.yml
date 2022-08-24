@@ -1,0 +1,37 @@
+name: 'Modify metadata.json'
+
+description: |
+  Modifies a metadata.json file entry with SHA256 and URI fields, given an
+  entry in the file matches the version and target.
+
+inputs:
+  version:
+    description: 'dependency version'
+    required: true
+  target:
+    description: 'dependency OS target variant'
+    required: true
+  sha256:
+    description: 'dependency SHA256 to add'
+    required: true
+  uri:
+    description: 'dependency URI to add'
+    required: true
+  file:
+    description: 'metadata file to modify'
+    required: true
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--version"
+  - ${{ inputs.version }}
+  - "--target"
+  - ${{ inputs.target }}
+  - "--sha256"
+  - ${{ inputs.sha256 }}
+  - "--uri"
+  - ${{ inputs.uri }}
+  - "--file"
+  - ${{ inputs.file }}
