@@ -99,8 +99,6 @@ function rules() {
 
   json="$(
     curl "https://api.github.com/repos/${repo}/branches/${branch}/protection" \
-      --fail-with-body \
-      --show-error \
       --silent \
       --request GET \
       --header "Accept: application/vnd.github.luke-cage-preview+json" \

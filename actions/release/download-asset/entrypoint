@@ -38,8 +38,6 @@ function main() {
 
   echo "Downloading ${url}"
   curl "${url}" \
-    --fail-with-body \
-    --show-error \
     --header "Authorization: token ${token}" \
     --header "Accept: application/octet-stream" \
     --silent \
