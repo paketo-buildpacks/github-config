@@ -38,6 +38,8 @@ function main() {
   local version
   version="$(
     curl "https://api.github.com/repos/${repo}/releases/latest" \
+      --fail-with-body \
+      --show-error \
       --header "Authorization: token ${token}" \
       --silent \
       --location \
