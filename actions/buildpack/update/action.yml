@@ -36,6 +36,8 @@ runs:
       echo "PATH=${HOME}/bin:${PATH}" >> "${GITHUB_ENV}"
       mkdir -p "${HOME}/bin"
       curl "https://github.com/paketo-buildpacks/jam/releases/download/v${{ steps.version.outputs.version }}/jam-linux" \
+        --fail-with-body \
+        --show-error \
         --silent \
         --location \
         --output "${HOME}/bin/jam"

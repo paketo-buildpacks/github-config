@@ -121,6 +121,8 @@ function teams::fetch() {
   util::print::yellow "  Fetching teams belonging to the ${org} GitHub organization..."
 
   curl "https://api.github.com/orgs/${org}/teams?per_page=100" \
+    --fail-with-body \
+    --show-error \
     --silent --location \
     --header "Accept: application/vnd.github.v3+json" \
     --header "Authorization: token ${token}" \
@@ -137,6 +139,8 @@ function teams::repos::fetch() {
   util::print::yellow "  Fetching repos belonging to the @${org}/${team} GitHub team..."
 
   curl "${url}" \
+    --fail-with-body \
+    --show-error \
     --silent --location \
     --header "Accept: application/vnd.github.v3+json" \
     --header "Authorization: token ${token}" \

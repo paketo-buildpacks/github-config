@@ -46,6 +46,8 @@ function main() {
   local jam_version
   jam_version="$(
     curl "https://api.github.com/repos/paketo-buildpacks/jam/releases/latest" \
+      --fail-with-body \
+      --show-error \
       --header "Authorization: token ${token}" \
       --location \
       --silent \
@@ -55,6 +57,8 @@ function main() {
   mkdir -p "${HOME}"/bin
   export PATH="${HOME}/bin:${PATH}"
   curl "https://github.com/paketo-buildpacks/jam/releases/download/${jam_version}/jam-linux" \
+    --fail-with-body \
+    --show-error \
     --silent \
     --location \
     --output "${HOME}/bin/jam"
@@ -70,6 +74,8 @@ function main() {
   local version
   version="$(
     curl "https://api.github.com/repos/${repo}/releases/latest" \
+      --fail-with-body \
+      --show-error \
       --header "Authorization: token ${token}" \
       --location \
       --silent \
@@ -79,6 +85,8 @@ function main() {
   if [[ "${version}" != "null" ]]; then
     IFS=$'\n' read -r -d '' -a commits < <(
       curl "https://api.github.com/repos/${repo}/compare/${version}...main" \
+        --fail-with-body \
+        --show-error \
         --header "Authorization: token ${token}" \
         --location \
         --silent \
@@ -90,6 +98,8 @@ function main() {
     changes="$(
       for commit in "${commits[@]}"; do
         curl "https://api.github.com/repos/${repo}/commits/${commit}/pulls" \
+          --fail-with-body \
+          --show-error \
           --header "Accept: application/vnd.github.groot-preview+json" \
           --header "Authorization: token ${token}" \
           --location \
