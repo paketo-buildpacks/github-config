@@ -12,6 +12,8 @@ ARG gh_version=1.7.0
 RUN mkdir -p "/bin" \
       && export PATH="${PATH}:/bin" \
       && curl "https://github.com/cli/cli/releases/download/v${gh_version}/gh_${gh_version}_linux_amd64.tar.gz" \
+        --fail-with-body \
+        --show-error \
         --silent \
         --location \
         --output "/tmp/gh.tgz" \
