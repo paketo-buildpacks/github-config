@@ -58,7 +58,7 @@ runs:
 
         # if there is already an issue with the same title, then comment
         # the failure on that issue, rather than opening a new issue.
-        issue_number=$(gh issue list --repo "${{ inputs.repo }}" --state all --label "${{ inputs.label }}" --search "${{ inputs.issue_title }}" --json number --jq .[0].number)
+        issue_number=$(gh issue list --repo "${{ inputs.repo }}" --state all --label "${{ inputs.label }}" --search "${{ inputs.issue_title }} in:title" --json number --jq .[0].number)
 
         if [ -n "${issue_number}" ]; then
           gh issue reopen "${issue_number}" \
