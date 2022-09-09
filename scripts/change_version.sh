@@ -64,7 +64,7 @@ function change_draft_release_version() {
   token="${3}"
 
   util::print::info "getting current draft release..."
-  draft_id=$(curl --silent -XGET \
+  draft_id=$(curl --fail-with-body --show-error --silent -XGET \
     "https://api.github.com/repos/${repo}/releases" \
     --header "Accept: application/vnd.github.v3+json" \
     --header "Authorization: token ${token}" \
@@ -76,7 +76,7 @@ function change_draft_release_version() {
     util::print::error "this script relies on the repo having an existing draft release"
   else
     util::print::info "editing draft release..."
-    curl --silent -XPATCH \
+    curl --fail-with-body --show-error --silent -XPATCH \
       "https://api.github.com/repos/${repo}/releases/${draft_id}" \
       --header "Accept: application/vnd.github.v3+json" \
       --header "Authorization: token ${token}" \
@@ -92,6 +92,8 @@ function generate_new_draft_release() {
 
   util::print::info "kicking off release process..."
   curl \
+    --fail-with-body \
+    --show-error \
     -X POST \
     --header "Accept: application/vnd.github.v3+json" \
     --header "Authorization: token ${token}" \
