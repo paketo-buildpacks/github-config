@@ -48,6 +48,8 @@ function rules::has_unverified_commits() {
 
   IFS=" " read -r -a verified <<< "$(
     curl "https://api.github.com/repos/${repo}/pulls/${number}/commits" \
+      --fail-with-body \
+      --show-error \
       --silent \
       --location \
       --header "Authorization: token ${token}" \
@@ -56,6 +58,8 @@ function rules::has_unverified_commits() {
 
   IFS=" " read -r -a committers <<< "$(
     curl "https://api.github.com/repos/${repo}/pulls/${number}/commits" \
+      --fail-with-body \
+      --show-error \
       --silent \
       --location \
       --header "Authorization: token ${token}" \

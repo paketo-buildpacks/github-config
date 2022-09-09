@@ -5,10 +5,10 @@ description: |
 
 inputs:
   buildpack_toml_path:
-    description: 'absolute path to buildpack.toml'
+    description: 'relative or absolute path to buildpack.toml'
     default: 'buildpack.toml'
   metadata_file_path:
-    description: 'absolute path to metadata.json'
+    description: 'relative or absolute path to metadata.json'
     default: 'metadata.json'
 
 outputs:
@@ -50,7 +50,7 @@ runs:
       #!/usr/bin/env bash
       set -eu
       versions="$(
-        "${PWD}/.bin/jam" update-dependencies \
+        jam update-dependencies \
           --buildpack-file "${{ inputs.buildpack_toml_path }}" \
           --metadata-file "${{ inputs.metadata_file_path }}" \
       )"

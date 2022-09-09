@@ -38,7 +38,7 @@ function main() {
 
     local args=(
       --recursive
-      --verbose
+      -vv
       --checksum
       "${src}"
       "${dest}"
