@@ -1,0 +1,59 @@
+name: 'Update buildpack.toml with new dependencies from metadata file'
+
+description: |
+  This action updates the buildpack.toml from a metadata JSON file.
+
+inputs:
+  buildpack_toml_path:
+    description: 'relative or absolute path to buildpack.toml'
+    default: 'buildpack.toml'
+  metadata_file_path:
+    description: 'relative or absolute path to metadata.json'
+    default: 'metadata.json'
+
+outputs:
+  new-versions:
+    description: Newly added dependency versions
+    value: ${{ steps.update.outputs.new_versions }}
+
+runs:
+  using: 'composite'
+  steps:
+
+  - name: Choose Jam Version
+    id: version
+    shell: bash
+    run: |
+      #!/usr/bin/env bash
+      set -eu
+      version=$(jq -r .jam "scripts/.util/tools.json")
+      echo "::set-output name=version::${version#v}"
+
+  - name: Install Jam
+    shell: bash
+    run: |
+      #!/usr/bin/env bash
+      set -eu
+      mkdir -p "${HOME}"/bin
+      echo "PATH=${HOME}/bin:${PATH}" >> "${GITHUB_ENV}"
+      mkdir -p "${HOME}/bin"
+      curl "https://github.com/paketo-buildpacks/jam/releases/download/v${{ steps.version.outputs.version }}/jam-linux" \
+        --silent \
+        --location \
+        --output "${HOME}/bin/jam"
+      chmod +x "${HOME}/bin/jam"
+
+  - name: Update Dependencies From Metadata
+    shell: bash
+    id: update
+    run: |
+      #!/usr/bin/env bash
+      set -eu
+      versions="$(
+        jam update-dependencies \
+          --buildpack-file "${{ inputs.buildpack_toml_path }}" \
+          --metadata-file "${{ inputs.metadata_file_path }}" \
+      )"
+      versions="$(echo ${versions} | cut -d'[' -f2- | cut -d']' -f-1 | sed 's/ /, /g')"
+      echo "::set-output name=new_versions::${versions}"
+      echo "Added versions ${versions}"

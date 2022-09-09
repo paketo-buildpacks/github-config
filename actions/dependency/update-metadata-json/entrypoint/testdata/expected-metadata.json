@@ -1,0 +1,19 @@
+[
+  {
+    "id": "some-dependency",
+    "target": "different-target",
+    "version": "1.2.3"
+  },
+  {
+    "id": "some-dependency",
+    "target": "target-1",
+    "version": "9.8.7"
+  },
+  {
+    "id": "some-dependency",
+    "sha256": "target-1.2.3-sha256",
+    "target": "target-1",
+    "uri": "target-1.2.3-uri",
+    "version": "1.2.3"
+  }
+]
