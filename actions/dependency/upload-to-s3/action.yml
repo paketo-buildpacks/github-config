@@ -1,0 +1,37 @@
+name: 'Upload Dependency to S3 Bucket'
+description: |
+  Upload artifact to dependency-specific directory inside AWS S3 bucket
+
+inputs:
+  bucket-name:
+    description: AWS S3 bucket
+    required: true
+  dependency-name:
+    description: Dependency name
+    required: true
+  artifact-path:
+    description: Path to artifact
+    required: true
+
+outputs:
+  dependency-uri:
+    description: URI of uploaded dependency
+    value: ${{ steps.upload.outputs.uri }}
+
+runs:
+  using: 'composite'
+  steps:
+    - id: upload
+      shell: bash
+      run: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        filename="$(basename '${{ inputs.artifact-path }}')"
+
+        # Upload to s3://bucket/<dependency>/artifact.tgz
+        aws s3 cp '${{ inputs.artifact-path }}' "s3://${{ inputs.bucket-name }}/${{ inputs.dependency-name }}/${filename}"
+
+        # Access at https://artifacts.paketo.io/<dependency>/artifact.tgz
+        uri="https://artifacts.paketo.io/${{ inputs.dependency-name }}/${filename}"
+        echo "::set-output name=uri::${uri}"
