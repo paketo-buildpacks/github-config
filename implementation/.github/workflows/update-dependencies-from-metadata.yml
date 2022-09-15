@@ -177,6 +177,12 @@ jobs:
         with:
           name: '${{ needs.retrieve.outputs.id }}-${{ matrix.includes.version }}-${{ matrix.includes.target }}'
 
+      - name: Get artifact file name
+        id: get-file-names
+        run: |
+          echo "::set-output name=artifact-file::$(basename *.tgz)"
+          echo "::set-output name=sha256-file::$(basename *.tgz.sha256)"
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -190,11 +196,11 @@ jobs:
         with:
           bucket-name: "paketo-buildpacks"
           dependency-name: ${{ needs.retrieve.outputs.id }}
-          artifact-path: "${{ needs.retrieve.outputs.id }}-${{ matrix.includes.version }}-${{ matrix.includes.target }}.tgz"
+          artifact-path: ${{ steps.get-file-names.outputs.artifact-file }}
 
       - name: Get SHA256
         id: get-sha256
-        run: echo "::set-output name=sha256::$(cat ${{ needs.retrieve.outputs.id }}-${{ matrix.includes.version }}-${{ matrix.includes.target }}.tgz.sha256)"
+        run: echo "::set-output name=sha256::$(cat ${{ steps.get-file-names.outputs.sha256-file }})"
 
       - name: Download metadata.json
         uses: actions/download-artifact@v3
