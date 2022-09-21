@@ -41,12 +41,12 @@ func TestEntrypoint(t *testing.T) {
 		})
 
 		context("given metadata in JSON form with matching version and target", func() {
-			it("updates the SHA256 and URI fields for the appropriate JSON entry", func() {
+			it("updates the Checksum and URI fields for the appropriate JSON entry", func() {
 				command := exec.Command(
 					entrypoint,
 					"--version", "1.2.3",
 					"--target", "target-1",
-					"--sha256", "target-1.2.3-sha256",
+					"--checksum", "target-1.2.3-checksum",
 					"--uri", "target-1.2.3-uri",
 					"--file", filepath.Join(source, "metadata.json"),
 				)
@@ -58,7 +58,7 @@ func TestEntrypoint(t *testing.T) {
 				Eventually(session).Should(gexec.Exit(0), func() string { return string(buffer.Contents()) })
 
 				Expect(buffer).To(gbytes.Say("Success! Updated metadata with:"))
-				Expect(buffer).To(gbytes.Say(`"sha256": "target-1.2.3-sha256"`))
+				Expect(buffer).To(gbytes.Say(`"checksum": "target-1.2.3-checksum"`))
 				Expect(buffer).To(gbytes.Say(`"uri": "target-1.2.3-uri"`))
 
 				actualContents, err := os.ReadFile(filepath.Join(source, "metadata.json"))
@@ -82,7 +82,7 @@ func TestEntrypoint(t *testing.T) {
 					entrypoint,
 					"--version", "3.4.5",
 					"--target", "diff-target",
-					"--sha256", "target-1.2.3-sha256",
+					"--checksum", "target-1.2.3-checksum",
 					"--uri", "target-1.2.3-uri",
 					"--file", filepath.Join(source, "metadata.json"),
 				)
@@ -107,7 +107,7 @@ func TestEntrypoint(t *testing.T) {
 					command := exec.Command(
 						entrypoint,
 						"--target", "target-1",
-						"--sha256", "target-1.2.3-sha256",
+						"--checksum", "target-1.2.3-checksum",
 						"--uri", "target-1.2.3-uri",
 						"--file", filepath.Join(source, "metadata.json"),
 					)
@@ -126,7 +126,7 @@ func TestEntrypoint(t *testing.T) {
 					command := exec.Command(
 						entrypoint,
 						"--version", "1.2.3",
-						"--sha256", "target-1.2.3-sha256",
+						"--checksum", "target-1.2.3-checksum",
 						"--uri", "target-1.2.3-uri",
 						"--file", filepath.Join(source, "metadata.json"),
 					)
@@ -140,7 +140,7 @@ func TestEntrypoint(t *testing.T) {
 				})
 			})
 
-			context("when the --sha256 flag is missing", func() {
+			context("when the --checksum flag is missing", func() {
 				it("returns an error and exits non-zero", func() {
 					command := exec.Command(
 						entrypoint,
@@ -155,7 +155,7 @@ func TestEntrypoint(t *testing.T) {
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(session).Should(gexec.Exit(1), func() string { return string(buffer.Contents()) })
-					Expect(buffer).To(gbytes.Say(`missing required input "SHA256"`))
+					Expect(buffer).To(gbytes.Say(`missing required input "checksum"`))
 				})
 			})
 
@@ -165,7 +165,7 @@ func TestEntrypoint(t *testing.T) {
 						entrypoint,
 						"--version", "1.2.3",
 						"--target", "target-1",
-						"--sha256", "target-1.2.3-sha256",
+						"--checksum", "target-1.2.3-checksum",
 						"--file", filepath.Join(source, "metadata.json"),
 					)
 
@@ -184,7 +184,7 @@ func TestEntrypoint(t *testing.T) {
 						entrypoint,
 						"--version", "1.2.3",
 						"--target", "target-1",
-						"--sha256", "target-1.2.3-sha256",
+						"--checksum", "target-1.2.3-checksum",
 						"--uri", "target-1.2.3-uri",
 					)
 
@@ -207,7 +207,7 @@ func TestEntrypoint(t *testing.T) {
 						entrypoint,
 						"--version", "1.2.3",
 						"--target", "target-1",
-						"--sha256", "target-1.2.3-sha256",
+						"--checksum", "target-1.2.3-checksum",
 						"--uri", "target-1.2.3-uri",
 						"--file", filepath.Join(source, "metadata.json"),
 					)

@@ -18,16 +18,16 @@ type Dependency struct {
 
 func main() {
 	var config struct {
-		Version string
-		Target  string
-		SHA256  string
-		URI     string
-		File    string
+		Version  string
+		Target   string
+		Checksum string
+		URI      string
+		File     string
 	}
 
 	flag.StringVar(&config.Version, "version", "", "Dependency version")
 	flag.StringVar(&config.Target, "target", "", "Dependency target name")
-	flag.StringVar(&config.SHA256, "sha256", "", "Dependency SHA256 to add")
+	flag.StringVar(&config.Checksum, "checksum", "", "Dependency checksum to add")
 	flag.StringVar(&config.URI, "uri", "", "Dependency URI to add")
 	flag.StringVar(&config.File, "file", "", "Dependency metadata.json file to modify")
 	flag.Parse()
@@ -39,8 +39,8 @@ func main() {
 	if config.Target == "" {
 		fail(errors.New(`missing required input "target"`))
 	}
-	if config.SHA256 == "" {
-		fail(errors.New(`missing required input "SHA256"`))
+	if config.Checksum == "" {
+		fail(errors.New(`missing required input "checksum"`))
 	}
 	if config.URI == "" {
 		fail(errors.New(`missing required input "uri"`))
@@ -60,11 +60,11 @@ func main() {
 		fail(err)
 	}
 
-	// Find the dependency of interest and update the SHA256
+	// Find the dependency of interest and update the checksum
 	found := false
 	for _, dependency := range entries {
 		if dependency.Target == config.Target && dependency.Version == config.Version {
-			dependency.SHA256 = config.SHA256
+			dependency.Checksum = config.Checksum
 			dependency.URI = config.URI
 			found = true
 		}
@@ -95,7 +95,7 @@ func main() {
 	defer file.Close()
 
 	fmt.Println("Success! Updated metadata with:")
-	fmt.Printf(`"sha256": "%s"\n`, config.SHA256)
+	fmt.Printf(`"checksum": "%s"\n`, config.Checksum)
 	fmt.Printf(`"uri": "%s"`, config.URI)
 }
 
