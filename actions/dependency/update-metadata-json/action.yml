@@ -1,7 +1,7 @@
 name: 'Modify metadata.json'
 
 description: |
-  Modifies a metadata.json file entry with SHA256 and URI fields, given an
+  Modifies a metadata.json file entry with checksum and URI fields, given an
   entry in the file matches the version and target.
 
 inputs:
@@ -11,8 +11,8 @@ inputs:
   target:
     description: 'dependency OS target variant'
     required: true
-  sha256:
-    description: 'dependency SHA256 to add'
+  checksum:
+    description: 'dependency checksum to add'
     required: true
   uri:
     description: 'dependency URI to add'
@@ -29,8 +29,8 @@ runs:
   - ${{ inputs.version }}
   - "--target"
   - ${{ inputs.target }}
-  - "--sha256"
-  - ${{ inputs.sha256 }}
+  - "--checksum"
+  - ${{ inputs.checksum }}
   - "--uri"
   - ${{ inputs.uri }}
   - "--file"
