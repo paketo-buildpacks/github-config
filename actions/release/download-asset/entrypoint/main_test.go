@@ -29,7 +29,7 @@ func TestEntrypoint(t *testing.T) {
 	entrypoint, err := gexec.Build("github.com/paketo-buildpacks/github-config/actions/release/download-asset/entrypoint")
 	Expect(err).NotTo(HaveOccurred())
 
-	spec.Run(t, "create", func(t *testing.T, context spec.G, it spec.S) {
+	spec.Run(t, "download-asset", func(t *testing.T, context spec.G, it spec.S) {
 		var (
 			Expect     = NewWithT(t).Expect
 			Eventually = NewWithT(t).Eventually
@@ -75,7 +75,7 @@ func TestEntrypoint(t *testing.T) {
 			}))
 		})
 
-		it("creates a release", func() {
+		it("downloads a github asset", func() {
 			command := exec.Command(
 				entrypoint,
 				"--url", fmt.Sprintf("%s/some-valid-asset", api.URL),
