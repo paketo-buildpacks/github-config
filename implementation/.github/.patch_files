@@ -26,7 +26,6 @@ scripts/.util/git.sh
 scripts/.util/print.sh
 scripts/.util/tools.json
 scripts/.util/tools.sh
-scripts/build.sh
 scripts/integration.sh
 scripts/package.sh
 scripts/unit.sh
