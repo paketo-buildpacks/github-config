@@ -4,11 +4,9 @@
 .github/dependabot.yml
 .github/labels.yml
 .github/workflows/approve-bot-pr.yml
-.github/workflows/create-draft-release.yml
 .github/workflows/label-pr.yml
 .github/workflows/lint-yaml.yml
 .github/workflows/lint.yml
-.github/workflows/push-buildpackage.yml
 .github/workflows/synchronize-labels.yml
 .github/workflows/test-pull-request.yml
 .github/workflows/update-buildpack-toml.yml
@@ -22,4 +20,3 @@ scripts/.util/print.sh
 scripts/.util/tools.json
 scripts/.util/tools.sh
 scripts/integration.sh
-scripts/package.sh
