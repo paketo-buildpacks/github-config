@@ -224,7 +224,7 @@ function publish_draft_release() {
         "/repos/${full_name}/releases/${draft_release_id}" \
           | jq --raw-output .html_url
     )
-    util::print::success "release published at: ${url}"
+    util::print::green "release published at: ${url}"
   else
     util::print::yellow "not publishing release for ${full_name}"
   fi
