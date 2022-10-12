@@ -226,7 +226,7 @@ function publish_draft_release() {
     )
     util::print::success "release published at: ${url}"
   else
-    util::print::warn "not publishing release for ${full_name}"
+    util::print::yellow "not publishing release for ${full_name}"
   fi
 
   util::print::break
