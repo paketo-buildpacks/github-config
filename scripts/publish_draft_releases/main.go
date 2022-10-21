@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -12,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	semver "github.com/Masterminds/semver/v3"
 	"github.com/fatih/color"
 	flag "github.com/spf13/pflag"
 )
@@ -31,10 +31,12 @@ type Team struct {
 type Repo struct {
 	FullName string `json:"full_name"`
 	RoleName string `json:"role_name"`
+	NodeID   string `json:"node_id"`
 }
 
 type Release struct {
 	ID              int    `json:"id"`
+	NodeID          string `json:"node_id"`
 	Draft           bool   `json:"draft"`
 	TagName         string `json:"tag_name"`
 	TargetCommitish string `json:"target_commitish"`
@@ -54,6 +56,26 @@ type CommitResponse struct {
 			Message string `json:"message"`
 		} `json:"commit"`
 	} `json:"commits"`
+}
+
+type GraphQLRepo struct {
+	ID       string `json:"id"`
+	FullName string `json:"nameWithOwner"`
+	Releases struct {
+		Nodes []GraphQLRelease `json:"nodes"`
+	} `json:"releases"`
+}
+
+type GraphQLRelease struct {
+	ID         string `json:"id"`
+	DatabaseID int    `json:"databaseId"`
+	Draft      bool   `json:"isDraft"`
+	Latest     bool   `json:"isLatest"`
+	TagName    string `json:"tagName"`
+	TagCommit  struct {
+		AbbreviatedOid string `json:"abbreviatedOid"`
+	} `json:"tagCommit"`
+	URL string `json:"url"`
 }
 
 func main() {
@@ -109,7 +131,8 @@ func main() {
 			fatal(err)
 		}
 
-		for i, _ := range orgTeams {
+		// Set the org field on each of the returned teams
+		for i := range orgTeams {
 			orgTeams[i].Org = org
 		}
 		allTeams = append(allTeams, orgTeams...)
@@ -129,7 +152,7 @@ func main() {
 
 	var repos []Repo
 	for _, team := range filteredTeams {
-		fmt.Printf("Getting repos owned by team: %s\n", team.Name)
+		fmt.Printf("Getting repos owned by team: %s/%s\n", team.Org, team.Name)
 
 		endpoint := fmt.Sprintf("orgs/%s/teams/%s/repos", team.Org, team.Slug)
 		teamRepos, err := ghGetAll[Repo](endpoint)
@@ -156,33 +179,49 @@ func main() {
 		fatalf("No repos owned by teams: %v", teamNames)
 	}
 
-	var draftReleases []Release
+	if len(repos) > 100 {
+		fatalf("more than 100 repositories found - please reduce number of orgs/teams")
+	}
+
+	fmt.Println("Getting releases for repos")
+	var ids []string
 	for _, repo := range repos {
-		fmt.Printf("Getting draft releases for repo: %s\n", repo.FullName)
+		ids = append(ids, repo.NodeID)
+	}
+	repoReleases, err := repoReleasesGraphQLQuery(ids)
+	if err != nil {
+		fatal(err)
+	}
 
-		endpoint := fmt.Sprintf("/repos/%s/releases", repo.FullName)
-		releases, err := ghGetAll[Release](endpoint)
-		if err != nil {
-			fatal(err)
-		}
+	var draftReleases []Release
+	latestReleases := map[string]Release{}
+	for _, repoRelease := range repoReleases {
+		foundDraft := false
+		for _, gqRelease := range repoRelease.Releases.Nodes {
+			release := Release{
+				ID:              gqRelease.DatabaseID,
+				NodeID:          gqRelease.ID,
+				Draft:           gqRelease.Draft,
+				TagName:         gqRelease.TagName,
+				TargetCommitish: gqRelease.TagCommit.AbbreviatedOid,
+				HTMLURL:         gqRelease.URL,
+				RepoFullName:    repoRelease.FullName,
+			}
 
-		if len(releases) == 0 {
-			fatalf("no releases found for repo: %s", repo.FullName)
-		}
+			if gqRelease.Draft {
+				if foundDraft {
+					fatalf("found multiple draft releases for %s", repoRelease.FullName)
+				}
+				draftReleases = append(draftReleases, release)
+			}
 
-		var repoDraftReleases []Release
-		for _, release := range releases {
-			if release.Draft {
-				release.RepoFullName = repo.FullName
-				repoDraftReleases = append(repoDraftReleases, release)
+			if gqRelease.Latest {
+				if val, ok := latestReleases[repoRelease.FullName]; ok {
+					fatalf("found multiple 'latest' releases for %s - %s and %s", repoRelease.FullName, val.TagName, gqRelease.TagName)
+				}
+				latestReleases[repoRelease.FullName] = release
 			}
 		}
-
-		if len(repoDraftReleases) > 1 {
-			fatalf("Multiple draft releases found for repo: %s", repo.FullName)
-		}
-
-		draftReleases = append(draftReleases, repoDraftReleases...)
 	}
 
 	if len(draftReleases) == 0 {
@@ -190,17 +229,29 @@ func main() {
 		for _, repo := range repos {
 			repoFullNames = append(repoFullNames, repo.FullName)
 		}
-		log.Printf("No draft releases found for repos - exiting: %v", repoFullNames)
+		fmt.Printf("Repos: %v\n", repoFullNames)
+		color.Yellow("No draft releases found for repos. Exiting.")
 		os.Exit(0)
+	}
+
+	fmt.Println("Getting SHAs for all draft releases")
+	for i, draftRelease := range draftReleases {
+		// We have to make an additional REST API call to get the "target_commitish" as is not present in the graphQL response
+		endpoint := fmt.Sprintf("/repos/%s/releases/%d", draftRelease.RepoFullName, draftRelease.ID)
+		r, err := ghGetSingle[Release](endpoint)
+		if err != nil {
+			fatal(err)
+		}
+
+		draftReleases[i].TargetCommitish = r.TargetCommitish
 	}
 
 	fmt.Println()
 
 	for _, draftRelease := range draftReleases {
-
-		latestRelease, err := ghGetSingle[Release](fmt.Sprintf("/repos/%s/releases/latest", draftRelease.RepoFullName))
-		if err != nil {
-			fatal(err)
+		latestRelease, ok := latestReleases[draftRelease.RepoFullName]
+		if !ok {
+			fatalf("No 'latest' release found for: %s", draftRelease.RepoFullName)
 		}
 
 		endpoint := fmt.Sprintf("/repos/%s/compare/%s...%s", draftRelease.RepoFullName, latestRelease.TagName, draftRelease.TargetCommitish)
@@ -209,17 +260,40 @@ func main() {
 			fatal(err)
 		}
 
-		// color.Blue(fmt.Sprintf("%s - draft: %s (previous: %s)\n\n", draftRelease.RepoFullName, draftRelease.TagName, latestRelease.TagName))
-		color.Blue(draftRelease.RepoFullName)
-		fmt.Printf("Draft release: %s (current: %s)\n\n", draftRelease.TagName, latestRelease.TagName)
-		// fmt.Printf("Draft: %s\n", draftRelease.TagName)
-		// fmt.Printf("Previously published: %s\n", latestRelease.TagName)
-		// fmt.Printf("Commits:\n")
-
 		// Order commits by newest first
 		sort.Slice(commitResponse.Commits, func(i, j int) bool {
 			return commitResponse.Commits[i].Commit.Author.Date.After(commitResponse.Commits[j].Commit.Author.Date)
 		})
+
+		draftVersion, err := semver.StrictNewVersion(strings.ReplaceAll(draftRelease.TagName, "v", ""))
+		if err != nil {
+			fatal(err)
+		}
+		latestVersion, err := semver.StrictNewVersion(strings.ReplaceAll(latestRelease.TagName, "v", ""))
+		if err != nil {
+			fatal(err)
+		}
+
+		if draftVersion.LessThan(latestVersion) {
+			fatalf("Draft release version: %s is behind latest release version: %s", draftRelease.TagName, latestRelease.TagName)
+		}
+
+		var releaseSemverType string
+		switch *draftVersion {
+		case latestVersion.IncPatch():
+			releaseSemverType = color.GreenString("Patch release")
+		case latestVersion.IncMinor():
+			releaseSemverType = color.MagentaString("Minor release")
+		case latestVersion.IncMajor():
+			releaseSemverType = color.RedString("Major release")
+		default:
+			releaseSemverType = color.YellowString("Unable to determine if draft release is major/minor/patch")
+		}
+
+		fmt.Printf("%s - %s\n", color.BlueString(draftRelease.RepoFullName), releaseSemverType)
+
+		fmt.Printf("Draft release: %s (current: %s)\n\n", draftRelease.TagName, latestRelease.TagName)
+
 		for _, c := range commitResponse.Commits {
 			color.Yellow("    commit %s", c.SHA)
 			fmt.Printf("    Author: %s <%s>\n", c.Commit.Author.Name, c.Commit.Author.Email)
@@ -254,7 +328,7 @@ func publishDraftRelease(draftRelease Release) (Release, error) {
 		endpoint,
 	)
 
-	apiOutput, err := ghPublishDraftReleaseCmd.CombinedOutput()
+	apiOutput, err := ghPublishDraftReleaseCmd.Output()
 	if err != nil {
 		return *new(Release), err
 	}
@@ -280,7 +354,7 @@ func strContainsAnySubstring(str string, substrings []string) bool {
 
 func ghGetSingle[T any](endpoint string) (T, error) {
 	ghTeamsCmd := exec.Command("gh", "api", endpoint)
-	apiOutput, err := ghTeamsCmd.CombinedOutput()
+	apiOutput, err := ghTeamsCmd.Output()
 	if err != nil {
 		return *new(T), err
 	}
@@ -297,21 +371,21 @@ func ghGetSingle[T any](endpoint string) (T, error) {
 
 func ghGetAll[T any](endpoint string) ([]T, error) {
 	ghTeamsCmd := exec.Command("gh", "api", "--paginate", endpoint)
-	apiOutput, err := ghTeamsCmd.CombinedOutput()
+	apiOutput, err := ghTeamsCmd.Output()
 	if err != nil {
 		return nil, err
 	}
 
 	jqSlurpCmd := exec.Command("jq", "-s", ".")
 	jqSlurpCmd.Stdin = bytes.NewReader(apiOutput)
-	jqSlurpOutput, err := jqSlurpCmd.CombinedOutput()
+	jqSlurpOutput, err := jqSlurpCmd.Output()
 	if err != nil {
 		return nil, err
 	}
 
 	jqAddCmd := exec.Command("jq", "add")
 	jqAddCmd.Stdin = bytes.NewReader(jqSlurpOutput)
-	jqAddOutput, err := jqAddCmd.CombinedOutput()
+	jqAddOutput, err := jqAddCmd.Output()
 	if err != nil {
 		return nil, err
 	}
@@ -342,4 +416,61 @@ func fatal(err error) {
 func fatalf(format string, v ...any) {
 	color.Red(format, v...)
 	os.Exit(1)
+}
+
+func repoReleasesGraphQLQuery(ids []string) ([]GraphQLRepo, error) {
+	for i, id := range ids {
+		ids[i] = fmt.Sprintf(`"%s"`, id)
+	}
+	query := fmt.Sprintf(`
+query{
+  nodes(ids: [%s]) {
+
+    # Join to a nested list of organization objects.
+    id
+    ... on Repository {
+      nameWithOwner
+      releases(first: 100) {
+        nodes{
+          id
+          databaseId
+          isDraft
+          isLatest
+          tagName
+          tagCommit {
+            abbreviatedOid
+          }
+          url
+        }
+      }
+    }
+  }
+}
+`, strings.Join(ids, ","))
+
+	ghAPICmd := exec.Command(
+		"gh",
+		"api",
+		"graphql",
+		"-f",
+		fmt.Sprintf("query=%s", query),
+		"--jq", ".data.nodes",
+	)
+
+	var errb bytes.Buffer
+	ghAPICmd.Stderr = &errb
+
+	apiOutput, err := ghAPICmd.Output()
+	if err != nil {
+		fmt.Printf("%s", errb.String())
+		return nil, err
+	}
+
+	releases := new([]GraphQLRepo)
+	err = json.Unmarshal(apiOutput, releases)
+	if err != nil {
+		return nil, err
+	}
+
+	return *releases, nil
 }
