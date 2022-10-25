@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	semver "github.com/Masterminds/semver/v3"
@@ -22,10 +23,24 @@ var (
 	defaultOrgs            = []string{"paketo-buildpacks", "paketo-community"}
 )
 
+type Teams []Team
+
+func (t Teams) FullNames() []string {
+	var names []string
+	for _, team := range t {
+		names = append(names, team.FullName())
+	}
+	return names
+}
+
 type Team struct {
 	Name string `json:"name"`
 	Slug string `json:"slug"`
 	Org  string // Not part of the Github body but used to construct API endpoints pertaining to the team
+}
+
+func (t Team) FullName() string {
+	return fmt.Sprintf("%s/%s", t.Org, t.Slug)
 }
 
 type Repo struct {
@@ -42,6 +57,11 @@ type Release struct {
 	TargetCommitish string `json:"target_commitish"`
 	HTMLURL         string `json:"html_url"`
 	RepoFullName    string // Not part of the GitHub body but used to construct API endpoints pertaining to the Release
+}
+
+type DraftRelease struct {
+	Release        Release
+	CommitResponse CommitResponse
 }
 
 type CommitResponse struct {
@@ -121,69 +141,25 @@ func main() {
 		fatal(err)
 	}
 
-	var allTeams []Team
-	for _, org := range *orgs {
-		fmt.Printf("Getting teams for org: %s\n", org)
-
-		endpoint := fmt.Sprintf("orgs/%s/teams", org)
-		orgTeams, err := ghGetAll[Team](endpoint)
-		if err != nil {
-			fatal(err)
-		}
-
-		// Set the org field on each of the returned teams
-		for i := range orgTeams {
-			orgTeams[i].Org = org
-		}
-		allTeams = append(allTeams, orgTeams...)
-	}
-
-	var filteredTeams []Team
-	for _, team := range allTeams {
-		if owningTeamRegex.MatchString(team.Name) &&
-			strContainsAnySubstring(strings.ToLower(team.Name), teamsFilter) {
-			filteredTeams = append(filteredTeams, team)
-		}
+	filteredTeams, err := teamsForOrgs(*orgs, *owningTeamRegex, teamsFilter)
+	if err != nil {
+		fatal(err)
 	}
 
 	if len(filteredTeams) == 0 {
 		fatalf("No teams found for orgs: %v, teams: %v, and team owner regex: '%s'", *orgs, teamsFilter, *teamOwnerRegex)
 	}
 
-	var repos []Repo
-	for _, team := range filteredTeams {
-		fmt.Printf("Getting repos owned by team: %s/%s\n", team.Org, team.Name)
-
-		endpoint := fmt.Sprintf("orgs/%s/teams/%s/repos", team.Org, team.Slug)
-		teamRepos, err := ghGetAll[Repo](endpoint)
-		if err != nil {
-			fatal(err)
-		}
-
-		var ownedRepos []Repo
-		for _, repo := range teamRepos {
-			if repoRegex.MatchString(repo.FullName) &&
-				repo.RoleName == "admin" {
-				ownedRepos = append(ownedRepos, repo)
-			}
-		}
-
-		repos = append(repos, ownedRepos...)
-	}
-
-	if len(repos) == 0 {
-		var teamNames []string
-		for _, team := range filteredTeams {
-			teamNames = append(teamNames, team.Name)
-		}
-		fatalf("No repos owned by teams: %v", teamNames)
+	repos, err := reposForTeams(filteredTeams, *repoRegex)
+	if err != nil {
+		fatal(err)
 	}
 
 	if len(repos) > 100 {
 		fatalf("more than 100 repositories found - please reduce number of orgs/teams")
 	}
 
-	fmt.Println("Getting releases for repos")
+	fmt.Printf("Getting releases for %d repos\n", len(repos))
 	var ids []string
 	for _, repo := range repos {
 		ids = append(ids, repo.NodeID)
@@ -234,30 +210,20 @@ func main() {
 		os.Exit(0)
 	}
 
-	fmt.Println("Getting SHAs for all draft releases")
-	for i, draftRelease := range draftReleases {
-		// We have to make an additional REST API call to get the "target_commitish" as is not present in the graphQL response
-		endpoint := fmt.Sprintf("/repos/%s/releases/%d", draftRelease.RepoFullName, draftRelease.ID)
-		r, err := ghGetSingle[Release](endpoint)
-		if err != nil {
-			fatal(err)
-		}
-
-		draftReleases[i].TargetCommitish = r.TargetCommitish
+	drs, err := fetchCommitHistory(draftReleases, latestReleases)
+	if err != nil {
+		fatal(err)
 	}
 
 	fmt.Println()
 
-	for _, draftRelease := range draftReleases {
+	for _, dr := range drs {
+		draftRelease := dr.Release
+		commitResponse := dr.CommitResponse
+
 		latestRelease, ok := latestReleases[draftRelease.RepoFullName]
 		if !ok {
 			fatalf("No 'latest' release found for: %s", draftRelease.RepoFullName)
-		}
-
-		endpoint := fmt.Sprintf("/repos/%s/compare/%s...%s", draftRelease.RepoFullName, latestRelease.TagName, draftRelease.TargetCommitish)
-		commitResponse, err := ghGetSingle[CommitResponse](endpoint)
-		if err != nil {
-			fatal(err)
 		}
 
 		// Order commits by newest first
@@ -290,6 +256,8 @@ func main() {
 			releaseSemverType = color.YellowString("Unable to determine if draft release is major/minor/patch")
 		}
 
+		color.Blue("------------------------------------------------------------------------------------------------")
+
 		fmt.Printf("%s - %s\n", color.BlueString(draftRelease.RepoFullName), releaseSemverType)
 
 		fmt.Printf("Draft release: %s (current: %s)\n\n", draftRelease.TagName, latestRelease.TagName)
@@ -316,6 +284,132 @@ func main() {
 		}
 		fmt.Println()
 	}
+}
+
+func teamsForOrgs(orgs []string, owningTeamRegex regexp.Regexp, teamsFilter []string) (Teams, error) {
+	fmt.Printf("Getting teams for orgs: %v\n", orgs)
+	var wg sync.WaitGroup
+
+	orgTeams := make([][]Team, len(orgs))
+
+	for i, org := range orgs {
+		wg.Add(1)
+		go func(i int, org string, orgTeams [][]Team) {
+			defer wg.Done()
+
+			endpoint := fmt.Sprintf("orgs/%s/teams", org)
+			teams, err := ghGetAll[Team](endpoint)
+			if err != nil {
+				fatal(err)
+			}
+
+			for _, team := range teams {
+				if owningTeamRegex.MatchString(team.Name) &&
+					strContainsAnySubstring(strings.ToLower(team.Name), teamsFilter) {
+
+					// Set the custom org field on each of the returned teams
+					team.Org = org
+					orgTeams[i] = append(orgTeams[i], team)
+				}
+			}
+		}(i, org, orgTeams)
+	}
+
+	wg.Wait()
+
+	var allTeams []Team
+	for _, teams := range orgTeams {
+		allTeams = append(allTeams, teams...)
+	}
+
+	return allTeams, nil
+}
+
+func reposForTeams(teams Teams, repoRegex regexp.Regexp) ([]Repo, error) {
+	fmt.Printf("Getting repos owned by teams: [%v]\n", strings.Join(teams.FullNames(), " "))
+	var wg sync.WaitGroup
+
+	teamRepos := make([][]Repo, len(teams))
+
+	for i, team := range teams {
+		wg.Add(1)
+		go func(i int, team Team, teamRepos [][]Repo) {
+			defer wg.Done()
+			endpoint := fmt.Sprintf("orgs/%s/teams/%s/repos", team.Org, team.Slug)
+			repos, err := ghGetAll[Repo](endpoint)
+			if err != nil {
+				fatal(err)
+			}
+
+			var ownedRepos []Repo
+			for _, repo := range repos {
+				if repoRegex.MatchString(repo.FullName) &&
+					repo.RoleName == "admin" {
+					ownedRepos = append(ownedRepos, repo)
+				}
+			}
+
+			if len(ownedRepos) == 0 {
+				var teamNames []string
+				for _, team := range teams {
+					teamNames = append(teamNames, team.Name)
+				}
+				fatalf("No repos owned by teams: %v", teamNames)
+			}
+
+			teamRepos[i] = ownedRepos
+		}(i, team, teamRepos)
+	}
+	wg.Wait()
+
+	var repos []Repo
+
+	for _, rs := range teamRepos {
+		repos = append(repos, rs...)
+	}
+
+	return repos, nil
+}
+
+func fetchCommitHistory(draftReleases []Release, latestReleases map[string]Release) ([]DraftRelease, error) {
+	draftReleaseWithCommits := make([]DraftRelease, len(draftReleases))
+
+	fmt.Printf("Getting commit history for %d draft releases\n", len(draftReleases))
+	var wg sync.WaitGroup
+
+	for i, draftRelease := range draftReleases {
+		latestRelease, ok := latestReleases[draftRelease.RepoFullName]
+		if !ok {
+			fatalf("No 'latest' release found for: %s", draftRelease.RepoFullName)
+		}
+
+		wg.Add(1)
+		go func(i int, draftRelease Release, latestRelease Release, draftReleaseWithCommits []DraftRelease) {
+			defer wg.Done()
+
+			// We have to make an additional REST API call to get the "target_commitish" as is not present in the graphQL response
+			releaseEndpoint := fmt.Sprintf("/repos/%s/releases/%d", draftRelease.RepoFullName, draftRelease.ID)
+			r, err := ghGetSingle[Release](releaseEndpoint)
+			if err != nil {
+				fatal(err)
+			}
+
+			draftRelease.TargetCommitish = r.TargetCommitish
+
+			// We have to make an additional REST API call to get the commit info
+			compareEndpoint := fmt.Sprintf("/repos/%s/compare/%s...%s", draftRelease.RepoFullName, latestRelease.TagName, draftRelease.TargetCommitish)
+			commitResponse, err := ghGetSingle[CommitResponse](compareEndpoint)
+			if err != nil {
+				fatal(err)
+			}
+
+			draftReleaseWithCommits[i] = DraftRelease{Release: draftRelease, CommitResponse: commitResponse}
+		}(i, draftRelease, latestRelease, draftReleaseWithCommits)
+	}
+
+	wg.Wait()
+
+	return draftReleaseWithCommits, nil
 }
 
 func publishDraftRelease(draftRelease Release) (Release, error) {
@@ -353,9 +447,15 @@ func strContainsAnySubstring(str string, substrings []string) bool {
 }
 
 func ghGetSingle[T any](endpoint string) (T, error) {
-	ghTeamsCmd := exec.Command("gh", "api", endpoint)
-	apiOutput, err := ghTeamsCmd.Output()
+	ghCmd := exec.Command("gh", "api", endpoint)
+
+	var errb bytes.Buffer
+	ghCmd.Stderr = &errb
+
+	apiOutput, err := ghCmd.Output()
 	if err != nil {
+		fmt.Printf("%s\n", errb.String())
+		fmt.Printf("endpoint: %s\n", endpoint)
 		return *new(T), err
 	}
 
@@ -370,9 +470,15 @@ func ghGetSingle[T any](endpoint string) (T, error) {
 }
 
 func ghGetAll[T any](endpoint string) ([]T, error) {
-	ghTeamsCmd := exec.Command("gh", "api", "--paginate", endpoint)
-	apiOutput, err := ghTeamsCmd.Output()
+	ghCmd := exec.Command("gh", "api", "--paginate", endpoint)
+
+	var errb bytes.Buffer
+	ghCmd.Stderr = &errb
+
+	apiOutput, err := ghCmd.Output()
 	if err != nil {
+		fmt.Printf("%s\n", errb.String())
+		fmt.Printf("endpoint: %s\n", endpoint)
 		return nil, err
 	}
 
@@ -430,7 +536,7 @@ query{
     id
     ... on Repository {
       nameWithOwner
-      releases(first: 100) {
+      releases(first: 3) {
         nodes{
           id
           databaseId
