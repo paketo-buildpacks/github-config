@@ -27,7 +27,7 @@ runs:
       #!/usr/bin/env bash
       set -eu
       version=$(jq -r .jam "scripts/.util/tools.json")
-      echo "::set-output name=version::${version#v}"
+      echo "version=${version#v}" >> "$GITHUB_OUTPUT"
 
   - name: Install Jam
     shell: bash
@@ -55,5 +55,5 @@ runs:
           --metadata-file "${{ inputs.metadata_file_path }}" \
       )"
       versions="$(echo ${versions} | cut -d'[' -f2- | cut -d']' -f-1 | sed 's/ /, /g')"
-      echo "::set-output name=new_versions::${versions}"
+      echo "new_versions=${versions}" >> "$GITHUB_OUTPUT"
       echo "Added versions ${versions}"

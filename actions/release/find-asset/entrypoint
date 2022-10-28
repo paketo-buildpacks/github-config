@@ -69,7 +69,7 @@ function find_asset() {
   fi
   echo "Asset URL is: " "${url}"
 
-  printf "::set-output name=url::%s\n" "${url}"
+  printf "url=%s\n" "${url}" >> "$GITHUB_OUTPUT"
 }
 
 main "${@:-}"

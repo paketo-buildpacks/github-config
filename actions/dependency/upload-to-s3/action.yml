@@ -34,4 +34,4 @@ runs:
 
         # Access at https://artifacts.paketo.io/<dependency>/artifact.tgz
         uri="https://artifacts.paketo.io/${{ inputs.dependency-name }}/${filename}"
-        echo "::set-output name=uri::${uri}"
+        echo "uri=${uri}" >> "$GITHUB_OUTPUT"

@@ -38,10 +38,10 @@ function main() {
   done
 
   if rules::has_human_commits "${token}" "${repo}" "${number}" "${botsString}"; then
-    echo "::set-output name=human_commits::true"
+    echo "human_commits=true" >> "$GITHUB_OUTPUT"
     exit 0
   fi
-    echo "::set-output name=human_commits::false"
+    echo "human_commits=false" >> "$GITHUB_OUTPUT"
 }
 
 function rules::has_human_commits() {

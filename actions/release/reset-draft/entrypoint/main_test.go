@@ -7,7 +7,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,6 +37,7 @@ func TestEntrypoint(t *testing.T) {
 
 			api      *httptest.Server
 			requests []*http.Request
+			tempDir  string
 		)
 
 		it.Before(func() {
@@ -110,9 +114,11 @@ func TestEntrypoint(t *testing.T) {
 					fmt.Fprintln(w, `{"error": "server-error"}`)
 
 				default:
-					t.Fatal(fmt.Sprintf("unknown request: %s", dump))
+					t.Fatalf("unknown request: %s", dump)
 				}
 			}))
+
+			tempDir = t.TempDir()
 		})
 
 		context("when a draft release does NOT exists", func() {
@@ -149,6 +155,10 @@ func TestEntrypoint(t *testing.T) {
 					"--repo", "some-org/draft-repo",
 					"--token", "some-github-token",
 				)
+				command.Env = []string{
+					fmt.Sprintf("GITHUB_OUTPUT=%s", filepath.Join(tempDir, "github-output")),
+					fmt.Sprintf("GITHUB_STATE=%s", filepath.Join(tempDir, "github-state")),
+				}
 
 				buffer := gbytes.NewBuffer()
 
@@ -166,8 +176,12 @@ func TestEntrypoint(t *testing.T) {
 				Expect(buffer).To(gbytes.Say(`Fetching latest releases`))
 				Expect(buffer).To(gbytes.Say(`  Repository: some-org/draft-repo`))
 				Expect(buffer).To(gbytes.Say(`Latest release is draft, deleting.`))
-				Expect(buffer).To(gbytes.Say(`::set-output name=current_version::some-version`))
 				Expect(buffer).To(gbytes.Say(`Success`))
+
+				data, err := os.ReadFile(filepath.Join(tempDir, "github-output"))
+				Expect(err).NotTo(HaveOccurred())
+				outputs := strings.Split(string(data), "\n")
+				Expect(outputs).To(ContainElements("current_version=some-version"))
 			})
 		})
 
