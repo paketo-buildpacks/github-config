@@ -93,7 +93,17 @@ func main() {
 		fail(fmt.Errorf("unexpected response from delete draft release request: %s", dump))
 	}
 
-	fmt.Printf("::set-output name=current_version::%s\n", releases[0].TagName)
+	outputFileName, ok := os.LookupEnv("GITHUB_OUTPUT")
+	if !ok {
+		fail(errors.New("GITHUB_OUTPUT is not set, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-output-parameter"))
+	}
+	file, err := os.OpenFile(outputFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		fail(err)
+	}
+	defer file.Close()
+	fmt.Fprintf(file, "current_version=%s\n", releases[0].TagName)
+
 	fmt.Println("Success!")
 }
 

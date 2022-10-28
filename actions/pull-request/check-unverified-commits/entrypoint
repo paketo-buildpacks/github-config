@@ -32,10 +32,10 @@ function main() {
   done
 
   if rules::has_unverified_commits "${token}" "${repo}" "${number}" ; then
-    echo "::set-output name=unverified_commits::true"
+    echo "unverified_commits=true" >> "$GITHUB_OUTPUT"
     exit 0
   fi
-  echo "::set-output name=unverified_commits::false"
+  echo "unverified_commits=false" >> "$GITHUB_OUTPUT"
 }
 
 function rules::has_unverified_commits() {

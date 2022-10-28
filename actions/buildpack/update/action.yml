@@ -25,7 +25,7 @@ runs:
       #!/usr/bin/env bash
       set -eu
       version=$(jq -r .jam "scripts/.util/tools.json")
-      echo "::set-output name=version::${version#v}"
+      echo "version=${version#v}" >> "$GITHUB_OUTPUT"
 
   - name: Install Jam
     shell: bash

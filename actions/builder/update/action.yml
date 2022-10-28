@@ -27,7 +27,7 @@ runs:
           --silent \
         | jq -r -S .tag_name
       )"
-      echo "::set-output name=version::${version#v}"
+      echo "version=${version#v}" >> "$GITHUB_OUTPUT"
 
   - name: Install Jam
     shell: bash

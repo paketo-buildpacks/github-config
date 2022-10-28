@@ -65,7 +65,7 @@ function main() {
     git add --all "${pathspec}"
     git commit --message "${message}"
 
-    echo "::set-output name=commit_sha::$(git rev-parse HEAD)"
+    echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
     exit 0
   fi
 }
