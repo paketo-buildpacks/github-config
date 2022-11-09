@@ -7,7 +7,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,6 +36,7 @@ func TestEntrypoint(t *testing.T) {
 
 			api      *httptest.Server
 			requests []*http.Request
+			tempDir  string
 		)
 
 		it.Before(func() {
@@ -200,10 +204,19 @@ func TestEntrypoint(t *testing.T) {
 					fmt.Fprintln(w, `{ "message": "Malformed JSON }`)
 
 				default:
-					t.Fatal(fmt.Sprintf("unknown request: %s", dump))
+					t.Fatalf("unknown request: %s", dump)
 				}
 			}))
+
+			tempDir = t.TempDir()
 		})
+
+		outputContains := func(elements ...string) {
+			data, err := os.ReadFile(filepath.Join(tempDir, "github-output"))
+			Expect(err).NotTo(HaveOccurred())
+			outputs := strings.Split(string(data), "\n")
+			Expect(outputs).To(ContainElements(elements))
+		}
 
 		context("all PRs since the last release have semver:patch", func() {
 			it("increments the patch from the previous version", func() {
@@ -214,6 +227,10 @@ func TestEntrypoint(t *testing.T) {
 					"--token", "some-github-token",
 					"--ref-name", "some-ref-name",
 				)
+				command.Env = []string{
+					fmt.Sprintf("GITHUB_OUTPUT=%s", filepath.Join(tempDir, "github-output")),
+					fmt.Sprintf("GITHUB_STATE=%s", filepath.Join(tempDir, "github-state")),
+				}
 
 				buffer := gbytes.NewBuffer()
 
@@ -230,7 +247,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/ghijklm/pulls"))
 
-				Expect(buffer).To(gbytes.Say(`::set-output name=tag::1.2.4`))
+				outputContains(`tag=1.2.4`)
 			})
 		})
 
@@ -243,6 +260,10 @@ func TestEntrypoint(t *testing.T) {
 					"--token", "some-github-token",
 					"--ref-name", "some-ref-name",
 				)
+				command.Env = []string{
+					fmt.Sprintf("GITHUB_OUTPUT=%s", filepath.Join(tempDir, "github-output")),
+					fmt.Sprintf("GITHUB_STATE=%s", filepath.Join(tempDir, "github-state")),
+				}
 
 				buffer := gbytes.NewBuffer()
 
@@ -259,7 +280,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-minor-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-minor-repo/commits/ghijklm/pulls"))
 
-				Expect(buffer).To(gbytes.Say(`::set-output name=tag::1.3.0`))
+				outputContains(`tag=1.3.0`)
 			})
 		})
 
@@ -272,6 +293,10 @@ func TestEntrypoint(t *testing.T) {
 					"--token", "some-github-token",
 					"--ref-name", "some-ref-name",
 				)
+				command.Env = []string{
+					fmt.Sprintf("GITHUB_OUTPUT=%s", filepath.Join(tempDir, "github-output")),
+					fmt.Sprintf("GITHUB_STATE=%s", filepath.Join(tempDir, "github-state")),
+				}
 
 				buffer := gbytes.NewBuffer()
 
@@ -288,7 +313,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-major-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-major-repo/commits/ghijklm/pulls"))
 
-				Expect(buffer).To(gbytes.Say(`::set-output name=tag::2.0.0`))
+				outputContains(`tag=2.0.0`)
 			})
 		})
 
@@ -301,6 +326,10 @@ func TestEntrypoint(t *testing.T) {
 					"--token", "some-github-token",
 					"--ref-name", "some-ref-name",
 				)
+				command.Env = []string{
+					fmt.Sprintf("GITHUB_OUTPUT=%s", filepath.Join(tempDir, "github-output")),
+					fmt.Sprintf("GITHUB_STATE=%s", filepath.Join(tempDir, "github-state")),
+				}
 
 				buffer := gbytes.NewBuffer()
 
@@ -314,7 +343,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-unreleased-repo"))
 				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-unreleased-repo/releases/latest"))
 
-				Expect(buffer).To(gbytes.Say(`::set-output name=tag::0.0.1`))
+				outputContains(`tag=0.0.1`)
 			})
 		})
 
@@ -327,6 +356,10 @@ func TestEntrypoint(t *testing.T) {
 					"--token", "some-github-token",
 					"--ref-name", "some-ref-name",
 				)
+				command.Env = []string{
+					fmt.Sprintf("GITHUB_OUTPUT=%s", filepath.Join(tempDir, "github-output")),
+					fmt.Sprintf("GITHUB_STATE=%s", filepath.Join(tempDir, "github-state")),
+				}
 
 				buffer := gbytes.NewBuffer()
 
@@ -341,7 +374,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-no-new-commits-repo/releases/latest"))
 				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-no-new-commits-repo/compare/v1.2.3...some-ref-name"))
 
-				Expect(buffer).To(gbytes.Say(`::set-output name=tag::1.2.4`))
+				outputContains("tag=1.2.4")
 			})
 		})
 

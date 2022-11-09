@@ -39,7 +39,7 @@ function main() {
 
   if [[ "${author}" == "dependabot[bot]" ]]; then
     echo "PR author is dependabot. Labeling as patch."
-    echo "::set-output name=label::patch"
+    echo "label=patch" >> "$GITHUB_OUTPUT"
     exit 0
   fi
 
@@ -48,7 +48,7 @@ function main() {
   retVal=$?
   if [ $retVal -ne 0 ]; then
     echo "No Github credentials provided. Skipping labeling."
-    echo "::set-output name=label::"
+    echo "label=" >> "$GITHUB_OUTPUT"
     exit 0
   fi
   set -e
@@ -76,13 +76,13 @@ function main() {
 
     if [ "${safe}" -eq "0" ]; then
       echo "Files changed that aren't on the patch allowlist"
-      echo "::set-output name=label::"
+      echo "label=" >> "$GITHUB_OUTPUT"
       exit 0
     fi
   done < <(gh api /repos/"${repo}"/pulls/"${number}"/files --jq '.[].filename')
 
   echo "All changes are patches."
-  echo "::set-output name=label::patch"
+  echo "label=patch" >> "$GITHUB_OUTPUT"
 }
 
 main "${@:-}"

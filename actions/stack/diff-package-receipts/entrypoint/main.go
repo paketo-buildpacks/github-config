@@ -142,9 +142,18 @@ func main() {
 		)
 	}
 
-	fmt.Printf("::set-output name=added::%s\n", string(addedJSON))
-	fmt.Printf("::set-output name=removed::%s\n", string(removedJSON))
-	fmt.Printf("::set-output name=modified::%s\n", string(modifiedJSON))
+	outputFileName, ok := os.LookupEnv("GITHUB_OUTPUT")
+	if !ok {
+		log.Fatal("GITHUB_OUTPUT is not set, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-output-parameter")
+	}
+	file, err := os.OpenFile(outputFileName, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	fmt.Fprintf(file, "added=%s\n", string(addedJSON))
+	fmt.Fprintf(file, "removed=%s\n", string(removedJSON))
+	fmt.Fprintf(file, "modified=%s\n", string(modifiedJSON))
 }
 
 func parsePackagesFromFile(path string) (map[string]CycloneDXComponent, error) {

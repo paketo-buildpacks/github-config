@@ -57,4 +57,4 @@ runs:
       if: ${{ steps.find.outputs.url != '' }}
       shell: bash
       run: |
-        printf "::set-output name=output_path::%s\n" "${{ inputs.output_path }}"
+        printf "output_path=%s\n" "${{ inputs.output_path }}" >> "$GITHUB_OUTPUT"

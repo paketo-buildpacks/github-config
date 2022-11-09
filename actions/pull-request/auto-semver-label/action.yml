@@ -23,10 +23,10 @@ runs:
       retVal=$?
       if [ $retVal -ne 0 ]; then
         echo "No Github credentials provided."
-        echo "::set-output name=status::false"
+        echo "status=false" >> "$GITHUB_OUTPUT"
         exit 0
       fi
-        echo "::set-output name=status::true"
+        echo "status=true" >> "$GITHUB_OUTPUT"
   - name: Check For Auto-labelable Changes
     id: changes
     shell: bash

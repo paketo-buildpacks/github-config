@@ -24,4 +24,4 @@ runs:
       packages=$(jq  '.components[] |  .name' "${{ inputs.build_receipt }}" "${{ inputs.run_receipt }}" \
         | jq --null-input --compact-output '[inputs]')
 
-      printf "::set-output name=packages::%s\n" "${packages}"
+      printf "packages=%s\n" "${packages}" >> "$GITHUB_OUTPUT"

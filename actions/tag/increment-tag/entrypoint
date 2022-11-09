@@ -51,6 +51,6 @@ main() {
     tag="$(printf "%s" "$previous" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')"
   fi
 
-  echo "::set-output name=tag::${tag#v}"
+  echo "tag=${tag#v}" >> "$GITHUB_OUTPUT"
 }
 main "${@:-}"

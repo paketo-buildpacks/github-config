@@ -2,13 +2,14 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
 	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
-	"regexp"
-	"strings"
+	"os"
 	"text/template"
 )
 
@@ -122,18 +123,26 @@ func main() {
 
 	fmt.Println(b.String())
 
-	fmt.Println(fmt.Sprintf("::set-output name=release_body::%s", escape(b.String())))
+	outputFileName, ok := os.LookupEnv("GITHUB_OUTPUT")
+	if !ok {
+		log.Fatalf("GITHUB_OUTPUT is not set, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-output-parameter")
+	}
+	file, err := os.OpenFile(outputFileName, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		log.Fatalf("failed to set output: %s", err.Error())
+	}
+	defer file.Close()
+	delimiter := generateDelimiter()
+	fmt.Fprintf(file, "release_body<<%s\n%s\n%s\n", delimiter, b.String(), delimiter) // see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
 }
 
-func escape(original string) string {
-	newline := regexp.MustCompile(`\n`)
-	cReturn := regexp.MustCompile(`\r`)
-
-	result := strings.ReplaceAll(original, `%`, `%25`)
-	result = newline.ReplaceAllString(result, `%0A`)
-	result = cReturn.ReplaceAllString(result, `%0D`)
-
-	return result
+func generateDelimiter() string {
+	data := make([]byte, 16) // roughly the same entropy as uuid v4 used in https://github.com/actions/toolkit/blob/b36e70495fbee083eb20f600eafa9091d832577d/packages/core/src/file-command.ts#L28
+	_, err := rand.Read(data)
+	if err != nil {
+		log.Fatal("could not generate random delimiter", err)
+	}
+	return hex.EncodeToString(data)
 }
 
 func fixEmptyArray(original string) string {
