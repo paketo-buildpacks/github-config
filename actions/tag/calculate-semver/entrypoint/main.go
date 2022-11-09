@@ -88,7 +88,7 @@ func main() {
 
 	// there are no releases on the repo
 	if prevVersion == nil {
-		fmt.Println("::set-output name=tag::0.0.1")
+		writeTagOutput("0.0.1")
 		os.Exit(0)
 	}
 
@@ -105,7 +105,7 @@ func main() {
 	}
 
 	next := calculateNextSemver(*prevVersion, largestChange)
-	fmt.Printf("::set-output name=tag::%s", next.String())
+	writeTagOutput(next.String())
 }
 
 func fail(err error) {
@@ -235,4 +235,17 @@ func calculateNextSemver(previous semver.Version, largestChange int) semver.Vers
 		fail(fmt.Errorf("input change size doesn't correspond to patch/minor/major: %d", largestChange))
 	}
 	return semver.Version{}
+}
+
+func writeTagOutput(tag string) {
+	outputFileName, ok := os.LookupEnv("GITHUB_OUTPUT")
+	if !ok {
+		fail(errors.New("GITHUB_OUTPUT is not set, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-output-parameter"))
+	}
+	file, err := os.OpenFile(outputFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		fail(err)
+	}
+	defer file.Close()
+	fmt.Fprintf(file, "tag=%s\n", tag)
 }

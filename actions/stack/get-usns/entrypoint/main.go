@@ -126,7 +126,16 @@ func main() {
 	}
 
 	fmt.Println("Output: ", string(output))
-	fmt.Printf("::set-output name=usns::%s\n", string(output))
+	outputFileName, ok := os.LookupEnv("GITHUB_OUTPUT")
+	if !ok {
+		log.Fatal("GITHUB_OUTPUT is not set, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-output-parameter")
+	}
+	file, err := os.OpenFile(outputFileName, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	fmt.Fprintf(file, "usns=%s\n", string(output))
 
 	if config.Output != "" {
 		path, err := filepath.Abs(config.Output)
