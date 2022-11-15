@@ -28,7 +28,7 @@ inputs:
 
 runs:
   using: 'docker'
-  image: 'Dockerfile'
+  image: 'docker://ghcr.io/paketo-buildpacks/actions/stack/get-usns:latest'
   args:
   - "--feed-url"
   - "${{ inputs.feed_url }}"

@@ -16,7 +16,7 @@ inputs:
 
 runs:
   using: 'docker'
-  image: 'Dockerfile'
+  image: 'docker://ghcr.io/paketo-buildpacks/actions/release/download-asset:latest'
   args:
   - "--url"
   - ${{ inputs.url }}

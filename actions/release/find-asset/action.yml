@@ -25,7 +25,7 @@ outputs:
 
 runs:
   using: 'docker'
-  image: 'Dockerfile'
+  image: 'docker://ghcr.io/paketo-buildpacks/actions/release/find-asset:latest'
   args:
   - "--repo"
   - "${{ inputs.repo }}"
