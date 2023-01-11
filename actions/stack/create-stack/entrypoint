@@ -27,16 +27,6 @@ function main() {
 
   args=()
 
-  # If the repository name contains 'full' then we create the stack with
-  # the --unbuffered flag to avoid hitting memory limits in github
-  # workers
-  if [[ "${GITHUB_REPOSITORY}" == *-"full"-* ]]; then
-    echo "Full stack detected (${GITHUB_REPOSITORY}): running with --unbuffered flag"
-    args+=("--unbuffered")
-  else
-    echo "Non-full stack detected (${GITHUB_REPOSITORY}): omitting --unbuffered flag"
-  fi
-
   # Assigning a variable to an array in bash splits the variable on
   # whitespace, which includes new lines.
   # Therefore this assignment works whether the string is a single line
