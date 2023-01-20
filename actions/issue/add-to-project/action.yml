@@ -1,0 +1,50 @@
+name: "Add issue to project"
+description: |
+  Adds the given issue to a github project board and (optionally) sets a custom
+  field of type Single-Select to the given value.
+  (e.g. in the Paketo Workstreams board, adding an issue and setting its
+  "Workstream" field)
+  This action is designed to be chained with actions/issue/file.
+
+inputs:
+  token:
+    description: 'Token used to authenticate user account'
+    required: true
+  issue-node-id:
+    description: 'Golbal node ID of the issue'
+    required: true
+  project-org:
+    description: 'The github org of the target project to add the issue'
+    required: true
+  project-num:
+    description: 'The project number within the github org (integer)'
+    required: true
+  field-name:
+    description: 'The field to be set after the issue is added to the project (e.g. Workstream)'
+    required: false
+    default: ''
+  option-name:
+    description: 'The options value to set @field-name to. Must be a valid option for the field (e.g. Foo Workstream)'
+    required: false
+    default: ''
+
+outputs:
+  project-item-id:
+    description: 'Node ID of the added project item (type projectv2item)'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--token"
+  - ${{ inputs.token }}
+  - "--issue-node-id"
+  - ${{ inputs.issue-node-id }}
+  - "--project-org"
+  - ${{ inputs.project-org }}
+  - "--project-num"
+  - ${{ inputs.project-num }}
+  - "--field-name"
+  - ${{ inputs.field-name }}
+  - "--option-name"
+  - ${{ inputs.option-name }}
