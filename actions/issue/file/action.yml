@@ -32,10 +32,16 @@ inputs:
     description: '(Markdown) content of comment to add to preexisting issue. Required if comment_if_exists is true'
     required: false
 
+outputs:
+  node-id:
+    description: 'Universal node id of the output issue'
+    value: ${{ steps.file.outputs.node-id }}
+
 runs:
   using: 'composite'
   steps:
   - name: File Issue
+    id: file
     shell: bash
     env:
       GITHUB_TOKEN: ${{ inputs.token }}
@@ -44,6 +50,26 @@ runs:
       set -euo pipefail
 
       gh auth status
+
+      function output_node_id() {
+        local issue_number fullrepo repowner repoowner
+        fullrepo="${1}"
+        issue_number="${2}"
+
+        repoowner="${fullrepo%%/*}"
+        reponame="${fullrepo##*/}"
+
+        # gh cli does not yet support querying node ids directly
+        issue_node_id="$(gh api graphql -f query='
+          query($owner: String!, $name: String!, $issue_number: Int!) {
+            repository(owner: $owner, name: $name) {
+              issue(number: $issue_number) {
+                id
+              }
+            }
+          }' -f owner="$repoowner" -f name="$reponame" -F issue_number="$issue_number" --jq='.data.repository.issue.id')"
+        echo "node-id=${issue_node_id}" >> "$GITHUB_OUTPUT"
+      }
 
       if [[ "${{ inputs.comment_if_exists }}" == "true" ]]; then
         if [ -z "${{ inputs.label }}" ]; then
@@ -66,12 +92,15 @@ runs:
           gh issue comment "${issue_number}" \
             --body "${{ inputs.comment_body }}" \
             --repo "${{ inputs.repo }}"
+          output_node_id "${{ inputs.repo }}" "${issue_number}"
           exit 0
         fi
       fi
 
-      gh issue create \
+      issue_uri=$(gh issue create \
         --title "${{ inputs.issue_title }}" \
         --label "${{ inputs.label }}" \
         --body "${{ inputs.issue_body }}" \
-        --repo "${{ inputs.repo }}"
+        --repo "${{ inputs.repo }}")
+      issue_number=$(basename "${issue_uri}")
+      output_node_id "${{ inputs.repo }}" "${issue_number}"
