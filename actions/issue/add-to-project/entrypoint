@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+set -euo pipefail
+shopt -s inherit_errexit
+
+# Github CLI does not currently allow interacting with the API of new-style projects.
+# Github GraphQL API guide: https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/using-the-api-to-manage-projects
+
+function main() {
+  declare issue_node_id project_org project_num field_name option_name
+  declare -i project_num
+
+  while [[ "${#}" != 0 ]]; do
+    case "${1}" in
+      --token)
+        token="${2}"
+        shift 2
+        ;;
+
+      --issue-node-id)
+        issue_node_id="${2}"
+        shift 2
+        ;;
+
+      --project-org)
+        project_org="${2}"
+        shift 2
+        ;;
+
+      --project-num)
+        project_num=${2}
+        shift 2
+        ;;
+
+      --field-name)
+        field_name="${2}"
+        shift 2
+        ;;
+
+      --option-name)
+        option_name="${2}"
+        shift 2
+        ;;
+
+      "")
+        # skip if the argument is empty
+        shift 1
+        ;;
+
+      *)
+        echo "Unknown argument" "$@"
+        exit 1
+    esac
+  done
+
+  echo "${token}" | gh auth login --with-token
+
+  project_id=
+  field_id=
+  option_id=
+  fill_ids_from_input
+
+  project_item_id=
+  add_issue_to_proj
+
+  if [ -n "${field_name}" ] && [ -n "${option_name}" ]; then
+    set_proj_item_field
+  else
+    echo "field-name or option-name not set. Skipping setting project item field"
+  fi
+
+  printf "project-item-id=%s\n" "${project_item_id}" >> "$GITHUB_OUTPUT"
+}
+
+function fill_ids_from_input() {
+  project_obj="$(gh api graphql -f query='
+    query($org: String!, $number: Int!) {
+      organization(login: $org){
+        projectV2(number: $number) {
+          id
+          fields(first:100) {
+            nodes {
+              ... on ProjectV2SingleSelectField {
+                id
+                name
+                options {
+                  id
+                  name
+                }
+              }
+            }
+          }
+        }
+      }
+  }' -f org="${project_org}" -F number="${project_num}" --jq '.data.organization.projectV2')"
+
+  if [ -z "${project_obj}" ]; then
+    echo "Error: project-num ${project_num} in project-org ${project_org} not found"
+    exit 1
+  fi
+  project_id=$(jq -r '.id' <<< "${project_obj}")
+
+  if [ -n "${field_name}" ] && [ -n "${option_name}" ]; then
+    field_obj=$(echo "${project_obj}" | jq --arg FIELD_NAME "$field_name" '.fields.nodes[] | select( .name == $FIELD_NAME )')
+    if [ -z "${field_obj}" ]; then
+      echo "Error: field-name ${field_name} not found"
+      exit 1
+    fi
+
+    option_obj=$(echo "${field_obj}" | jq --arg OPTION_NAME "$option_name" '.options[] | select (.name == $OPTION_NAME)')
+    if [ -z "${option_obj}" ]; then
+      echo "Error: option-name ${option_name} not found"
+      exit 1
+    fi
+
+    field_id=$(jq -r '.id' <<< "${field_obj}")
+    option_id=$(jq -r '.id' <<< "${option_obj}")
+  fi
+}
+
+function add_issue_to_proj() {
+  project_item_id="$( gh api graphql -f query='
+    mutation($project:ID!, $issue:ID!) {
+      addProjectV2ItemById(input: {projectId: $project, contentId: $issue}) {
+        item {
+          id
+        }
+      }
+    }' -f project="${project_id}" -f issue="${issue_node_id}" --jq '.data.addProjectV2ItemById.item.id')"
+  echo "Issue (id: ${issue_node_id}) added to project (id: ${project_id}) as item (id: ${project_item_id})"
+}
+
+function set_proj_item_field() {
+  gh api graphql -f query='
+    mutation ($project:ID!, $item:ID!, $field:ID!, $option:String!) {
+      updateProjectV2ItemFieldValue(
+        input: {
+          projectId: $project
+          itemId: $item
+          fieldId: $field
+          value: {
+            singleSelectOptionId: $option
+          }
+        }
+      ) {
+        projectV2Item {
+          id
+        }
+      }
+    }' -f project="${project_id}" -f item="${project_item_id}" -f field="${field_id}" -f option="${option_id}"
+  echo "Field (id: ${field_id}) of item (id: ${project_item_id}) updated"
+}
+
+main "${@:-}"
