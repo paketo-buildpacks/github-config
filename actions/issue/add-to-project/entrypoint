@@ -6,9 +6,7 @@ shopt -s inherit_errexit
 # Github GraphQL API guide: https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/using-the-api-to-manage-projects
 
 function main() {
-  declare issue_node_id project_org project_num field_name option_name
-  declare -i project_num
-
+  local issue_node_id project_org project_num field_name option_name
   while [[ "${#}" != 0 ]]; do
     case "${1}" in
       --token)
@@ -54,25 +52,29 @@ function main() {
 
   echo "${token}" | gh auth login --with-token
 
-  project_id=
-  field_id=
-  option_id=
-  fill_ids_from_input
+  local project_obj project_item_id
+  project_obj=$(get_project_obj "${project_org}" "${project_num}")
+  if [ -z "${project_obj}" ]; then
+    echo "Error: project-num ${project_num} in project-org ${project_org} not found"
+    exit 1
+  fi
+  project_item_id=$(add_issue_to_proj "${project_obj}" "${issue_node_id}")
 
-  project_item_id=
-  add_issue_to_proj
-
-  if [ -n "${field_name}" ] && [ -n "${option_name}" ]; then
-    set_proj_item_field
+  if [ -z "${field_name}" ] || [ -z "${option_name}" ]; then
+    echo "field-name or option-name not set. Skipping setting project item field value"
   else
-    echo "field-name or option-name not set. Skipping setting project item field"
+    set_proj_item_field "${project_obj}" "${project_item_id}" "${field_name}" "${option_name}"
   fi
 
   printf "project-item-id=%s\n" "${project_item_id}" >> "$GITHUB_OUTPUT"
 }
 
-function fill_ids_from_input() {
-  project_obj="$(gh api graphql -f query='
+# Query project data
+function get_project_obj() {
+  local proj_org proj_num
+  proj_org="${1}"
+  proj_num="${2}"
+  gh api graphql -f query='
     query($org: String!, $number: Int!) {
       organization(login: $org){
         projectV2(number: $number) {
@@ -91,45 +93,53 @@ function fill_ids_from_input() {
           }
         }
       }
-  }' -f org="${project_org}" -F number="${project_num}" --jq '.data.organization.projectV2')"
-
-  if [ -z "${project_obj}" ]; then
-    echo "Error: project-num ${project_num} in project-org ${project_org} not found"
-    exit 1
-  fi
-  project_id=$(jq -r '.id' <<< "${project_obj}")
-
-  if [ -n "${field_name}" ] && [ -n "${option_name}" ]; then
-    field_obj=$(echo "${project_obj}" | jq --arg FIELD_NAME "$field_name" '.fields.nodes[] | select( .name == $FIELD_NAME )')
-    if [ -z "${field_obj}" ]; then
-      echo "Error: field-name ${field_name} not found"
-      exit 1
-    fi
-
-    option_obj=$(echo "${field_obj}" | jq --arg OPTION_NAME "$option_name" '.options[] | select (.name == $OPTION_NAME)')
-    if [ -z "${option_obj}" ]; then
-      echo "Error: option-name ${option_name} not found"
-      exit 1
-    fi
-
-    field_id=$(jq -r '.id' <<< "${field_obj}")
-    option_id=$(jq -r '.id' <<< "${option_obj}")
-  fi
+  }' -f org="${proj_org}" -F number="${proj_num}" --jq '.data.organization.projectV2'
 }
 
+# Add the issue to the project
 function add_issue_to_proj() {
-  project_item_id="$( gh api graphql -f query='
+  local proj_obj issue_id
+  proj_obj="${1}"
+  issue_id="${2}"
+
+  local proj_id
+  proj_id=$(jq -r '.id' <<< "${project_obj}")
+
+  gh api graphql -f query='
     mutation($project:ID!, $issue:ID!) {
       addProjectV2ItemById(input: {projectId: $project, contentId: $issue}) {
         item {
           id
         }
       }
-    }' -f project="${project_id}" -f issue="${issue_node_id}" --jq '.data.addProjectV2ItemById.item.id')"
-  echo "Issue (id: ${issue_node_id}) added to project (id: ${project_id}) as item (id: ${project_item_id})"
+    }' -f project="${proj_id}" -f issue="${issue_id}" --jq '.data.addProjectV2ItemById.item.id'
 }
 
+# For the project item, set field-name = option-value
 function set_proj_item_field() {
+  local proj_obj pitem_id field_name opt_name
+  proj_obj="${1}"
+  pitem_id="${2}"
+  field_name="${3}"
+  opt_name="${4}"
+
+  local field_obj opt_obj proj_id field_id opt_id
+  field_obj=$(echo "${proj_obj}" | jq --arg FIELD_NAME "${field_name}" '.fields.nodes[] | select( .name == $FIELD_NAME )')
+  if [ -z "${field_obj}" ]; then
+    echo "Error: field-name ${field_name} not found"
+    exit 1
+  fi
+
+  opt_obj=$(echo "${field_obj}" | jq --arg OPTION_NAME "${opt_name}" '.options[] | select (.name == $OPTION_NAME)')
+  if [ -z "${opt_obj}" ]; then
+    echo "Error: option-name ${opt_name} not found"
+    exit 1
+  fi
+
+  proj_id=$(jq -r '.id' <<< "${proj_obj}")
+  field_id=$(jq -r '.id' <<< "${field_obj}")
+  opt_id=$(jq -r '.id' <<< "${opt_obj}")
+
   gh api graphql -f query='
     mutation ($project:ID!, $item:ID!, $field:ID!, $option:String!) {
       updateProjectV2ItemFieldValue(
@@ -146,8 +156,8 @@ function set_proj_item_field() {
           id
         }
       }
-    }' -f project="${project_id}" -f item="${project_item_id}" -f field="${field_id}" -f option="${option_id}"
-  echo "Field (id: ${field_id}) of item (id: ${project_item_id}) updated"
+  }' -f project="${proj_id}" -f item="${pitem_id}" -f field="${field_id}" -f option="${opt_id}"
+  echo "Field (id: ${field_id}) of item (id: ${pitem_id}) updated"
 }
 
 main "${@:-}"
