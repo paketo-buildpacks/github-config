@@ -23,7 +23,8 @@ runs:
     shell: bash
     run: |
       #!/usr/bin/env bash
-      set -eu
+      set -euo pipefail
+      shopt -s inherit_errexit
       version=$(jq -r .jam "scripts/.util/tools.json")
       echo "version=${version#v}" >> "$GITHUB_OUTPUT"
 
@@ -31,7 +32,8 @@ runs:
     shell: bash
     run: |
       #!/usr/bin/env bash
-      set -eu
+      set -euo pipefail
+      shopt -s inherit_errexit
       mkdir -p "${HOME}"/bin
       echo "PATH=${HOME}/bin:${PATH}" >> "${GITHUB_ENV}"
       mkdir -p "${HOME}/bin"
@@ -47,8 +49,9 @@ runs:
     shell: bash
     run: |
       #!/usr/bin/env bash
-      set -eu
-        jam update-buildpack \
-          --buildpack-file "${PWD}/${{ inputs.buildpack_toml_path }}" \
-          --package-file "${PWD}/${{ inputs.package_toml_path }}" \
-          --no-cnb-registry="${{ inputs.no_cnb_registry }}"
+      set -euo pipefail
+      shopt -s inherit_errexit
+      jam update-buildpack \
+        --buildpack-file "${PWD}/${{ inputs.buildpack_toml_path }}" \
+        --package-file "${PWD}/${{ inputs.package_toml_path }}" \
+        --no-cnb-registry="${{ inputs.no_cnb_registry }}"
