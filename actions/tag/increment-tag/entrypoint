@@ -1,10 +1,9 @@
 #!/bin/sh
+set -euo pipefail
+shopt -s inherit_errexit
 
 # requires run: git fetch --depth=1 origin +refs/tags/*:refs/tags/*
 # before executing this script
-
-set -eu
-set -o pipefail
 
 main() {
   local current_version allow_head_tagged

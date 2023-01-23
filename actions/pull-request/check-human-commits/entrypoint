@@ -1,6 +1,6 @@
 #!/bin/bash
-set -eu
-set -o pipefail
+set -euo pipefail
+shopt -s inherit_errexit
 
 function main() {
   local token repo number botsString
