@@ -8,7 +8,7 @@ description: |
 
 inputs:
   token:
-    description: 'Token used to authenticate user account'
+    description: 'Github token to authenticate user account. Requires [project] scope'
     required: true
   issue-node-id:
     description: 'Golbal node ID of the issue'
