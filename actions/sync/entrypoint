@@ -30,6 +30,7 @@ function main() {
   for dir in "${directories[@]}"; do
     local src dest
     src="$(cd "${config}/${dir}" && pwd)/"
+    mkdir -p "${workspace}/${dir}"
     dest="$(cd "${workspace}/${dir}" && pwd)/"
 
     echo "syncing from ${src} to ${dest}"
