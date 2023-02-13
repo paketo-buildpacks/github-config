@@ -40,6 +40,8 @@ func main() {
 	var config struct {
 		BuildImage                string
 		RunImage                  string
+		BuildCveReport            string
+		RunCveReport              string
 		BuildPackagesAddedJSON    string
 		BuildPackagesModifiedJSON string
 		BuildPackagesRemovedJSON  string
@@ -51,6 +53,8 @@ func main() {
 
 	flag.StringVar(&config.BuildImage, "build-image", "", "Registry location of stack build image")
 	flag.StringVar(&config.RunImage, "run-image", "", "Registry location of stack run image")
+	flag.StringVar(&config.BuildCveReport, "build-cve-report", "", "CVE scan report path of build image in markdown format")
+	flag.StringVar(&config.RunCveReport, "run-cve-report", "", "CVE scan report path of run image in markdown format")
 	flag.StringVar(&config.PatchedJSON, "patched-usns", "", "JSON Array of patched USNs")
 	flag.StringVar(&config.BuildPackagesAddedJSON, "build-added", "", "JSON Array of packages added to build image")
 	flag.StringVar(&config.BuildPackagesModifiedJSON, "build-modified", "", "JSON Array of packages modified in build image")
@@ -61,15 +65,17 @@ func main() {
 	flag.Parse()
 
 	var contents struct {
-		PatchedArray  []USN
-		BuildAdded    []Package
-		BuildModified []ModifiedPackage
-		BuildRemoved  []Package
-		RunAdded      []Package
-		RunModified   []ModifiedPackage
-		RunRemoved    []Package
-		BuildImage    string
-		RunImage      string
+		PatchedArray   []USN
+		BuildAdded     []Package
+		BuildModified  []ModifiedPackage
+		BuildRemoved   []Package
+		RunAdded       []Package
+		RunModified    []ModifiedPackage
+		RunRemoved     []Package
+		BuildImage     string
+		RunImage       string
+		BuildCveReport string
+		RunCveReport   string
 	}
 
 	err := json.Unmarshal([]byte(fixEmptyArray(config.PatchedJSON)), &contents.PatchedArray)
@@ -105,6 +111,22 @@ func main() {
 	err = json.Unmarshal([]byte(fixEmptyArray(config.RunPackagesRemovedJSON)), &contents.RunRemoved)
 	if err != nil {
 		log.Fatalf("failed unmarshalling run packages removed: %s", err.Error())
+	}
+
+	if config.BuildCveReport != "" {
+		buildCveReportStr, err := os.ReadFile(config.BuildCveReport)
+		if err != nil {
+			log.Fatalf("failed reading Build CVE report %s", err.Error())
+		}
+		contents.BuildCveReport = string(buildCveReportStr)
+	}
+
+	if config.RunCveReport != "" {
+		runCveReportStr, err := os.ReadFile(config.RunCveReport)
+		if err != nil {
+			log.Fatalf("failed reading Run CVE report %s", err.Error())
+		}
+		contents.RunCveReport = string(runCveReportStr)
 	}
 
 	contents.BuildImage = config.BuildImage
