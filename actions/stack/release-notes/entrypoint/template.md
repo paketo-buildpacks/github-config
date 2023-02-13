@@ -78,3 +78,26 @@ No packages modified.
 {{- else }}
 No packages removed.
 {{- end }}
+
+## Known CVEs
+This section lists known CVEs of Critical, High and Unknown severity.
+
+### Build Image
+{{- if .BuildCveReport }}
+<details>
+<summary>Table</summary>
+{{.BuildCveReport}}
+</details>
+{{- else }}
+No known CVEs.
+{{- end }}
+
+### Run Image
+{{- if .RunCveReport }}
+<details>
+<summary>Table</summary>
+{{.RunCveReport}}
+</details>
+{{- else }}
+No known CVEs.
+{{- end }}

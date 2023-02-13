@@ -14,6 +14,12 @@ inputs:
   run_image:
     description: 'Image registry location of run image'
     required: true
+  build_cve_report:
+    description: 'CVE scan report path of build image in markdown format'
+    required: false
+  run_cve_report:
+    description: 'CVE scan report path of run image in markdown format'
+    required: false
   build_packages_added:
     description: 'JSON array of packages added "{ name: name, version: 1.2.3 }"'
     required: false
@@ -44,6 +50,10 @@ runs:
   - "${{ inputs.build_image }}"
   - "--run-image"
   - "${{ inputs.run_image }}"
+  - "--build-cve-report"
+  - "${{ inputs.build_cve_report }}"
+  - "--run-cve-report"
+  - "${{ inputs.run_cve_report }}"
   - "--patched-usns"
   - "${{ inputs.patched_usns }}"
   - "--build-added"
