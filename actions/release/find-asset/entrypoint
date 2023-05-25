@@ -54,9 +54,11 @@ function find_asset() {
   pattern="${3}"
   strict="${4}"
 
-  release_json=$(gh api "repos/${repo}/releases"  \
+  release_json=$(gh api "repos/${repo}/releases?per_page=100"  \
     --method GET \
     --paginate \
+    | jq -s '[.[]]' \
+    | jq 'add' \
     | jq -r \
     --arg pattern "${pattern}" \
     --argjson depth "${depth}" \
