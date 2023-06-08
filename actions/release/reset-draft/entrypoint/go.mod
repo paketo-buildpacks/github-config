@@ -3,6 +3,6 @@ module github.com/paketo-buildpacks/github-config/actions/release/reset-draft/en
 go 1.14
 
 require (
-	github.com/onsi/gomega v1.27.7
+	github.com/onsi/gomega v1.27.8
 	github.com/sclevine/spec v1.4.0
 )
