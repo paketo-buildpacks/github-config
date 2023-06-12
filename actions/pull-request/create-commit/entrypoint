@@ -60,7 +60,7 @@ function main() {
   git config --global user.name "${committer_name}"
   git config --global user.email "${committer_email}"
 
-  if [[ -n "$(git status --short -- "${pathspec}")" ]]; then
+  if [[ -n "$(git status --short -- ${pathspec})" ]]; then
     git add --all ${pathspec}
     git commit --message "${message}"
 
