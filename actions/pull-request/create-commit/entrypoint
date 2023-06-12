@@ -61,7 +61,7 @@ function main() {
   git config --global user.email "${committer_email}"
 
   if [[ -n "$(git status --short -- "${pathspec}")" ]]; then
-    git add --all "${pathspec}"
+    git add --all ${pathspec}
     git commit --message "${message}"
 
     echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
