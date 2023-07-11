@@ -62,7 +62,7 @@ function find_asset() {
     | jq -r \
     --arg pattern "${pattern}" \
     --argjson depth "${depth}" \
-    'sort_by(.tag_name | .[1:] | split(".") | map(tonumber))
+    'sort_by(.tag_name | gsub("^v"; "")  | split(".") | map(tonumber))
     | reverse
     | map(select(.draft==false))
     | limit($depth; .)
