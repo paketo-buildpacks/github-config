@@ -5,7 +5,7 @@ name: Build and Push action images
 jobs:
   build-and-push:
     name: Build and Push release/find-asset action image
-    runs-on: ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
       # Setting up Docker Buildx with docker-container driver is required
       # at the moment to be able to use a subdirectory with Git context
