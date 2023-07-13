@@ -23,4 +23,4 @@ jobs:
       with:
         context: "{{defaultContext}}:actions/release/find-asset"
         push: true
-        tags: paketo-buildpacks/actions/release/find-asset:latest
+        tags: ghcr.io/paketo-buildpacks/actions/release/find-asset:latest
