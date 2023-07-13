@@ -4,8 +4,12 @@ name: Build and Push action images
 
 jobs:
   build-and-push:
-    name: Build and Push release/find-asset action image
+    name: Build and Push action images
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        image-dir: [release/find-asset, release/download-asset, stack/get-usns]
+      fail-fast: false  # don't cancel all jobs when one fails
     steps:
       # Setting up Docker Buildx with docker-container driver is required
       # at the moment to be able to use a subdirectory with Git context
@@ -18,9 +22,9 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.PAKETO_BOT_GHCR_PACKAGES_READ_WRITE_TOKEN }}
-    - name: Build and push
+    - name: Build and push ${{ matrix.image-dir }} image
       uses: docker/build-push-action@v4
       with:
-        context: "{{defaultContext}}:actions/release/find-asset"
+        context: "{{defaultContext}}:actions/${{ matrix.image-dir }}"
         push: true
-        tags: ghcr.io/paketo-buildpacks/actions/release/find-asset:latest
+        tags: "ghcr.io/paketo-buildpacks/actions/${{ matrix.image-dir }}:latest"
