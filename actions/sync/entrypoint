@@ -51,7 +51,24 @@ function main() {
       )
     fi
 
+    if [[ -f "${dest}/.sync-post-hook" ]]; then
+      args+=(
+        --exclude=".sync-post-hook"
+        --exclude-from="${dest}/.sync-post-hook"
+      )
+    fi
+
     bash -c "rsync ${args[*]}"
+
+    echo
+    echo "sync complete"
+    echo
+
+    post_hook_filepath="${dest}/.sync-post-hook"
+    if [[ -f "${post_hook_filepath}" ]]; then
+      echo "running post hook at: '${post_hook_filepath}'"
+      bash -c "${post_hook_filepath}"
+    fi
 
     echo
   done
