@@ -79,7 +79,7 @@ function find_asset() {
       else
         echo "Strict mode is disabled - exiting without error"
 
-        printf "url=%s\n" "${asset_url}"
+        printf "url="
         printf "url=" >> "$GITHUB_OUTPUT"
         exit 0
       fi
