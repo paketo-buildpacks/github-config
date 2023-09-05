@@ -71,11 +71,18 @@ function find_asset() {
   )
 
   if [[ "${release_json}" == "null" ]]; then
+      echo "No matching asset found for pattern: '${pattern}' on repo: '${repo}' and depth: '${depth}'."
+
       if [[ "${strict}" == "true" ]]; then
-        echo "Error: no matching asset found for pattern: '${pattern}' on repo: ${repo} and depth: ${depth}."
+        echo "Strict mode is enabled - exiting with error."
         exit 1
+      else
+        echo "Strict mode is disabled - exiting without error"
+
+        printf "url=%s\n" "${asset_url}"
+        printf "url=" >> "$GITHUB_OUTPUT"
+        exit 0
       fi
-    url=""
   fi
 
   release_version=$(echo "${release_json}" | jq -r '.tag_name')
@@ -88,7 +95,7 @@ function find_asset() {
   asset_count=$(echo "${assets_json}" | jq 'length')
 
   if [[ "${asset_count}" -gt 1 ]]; then
-    echo "Error: expected one asset - found ${asset_count} assets matching pattern: '${pattern}' on ${repo} ${release_version}."
+    echo "Error: expected one asset - found ${asset_count} assets matching pattern: '${pattern}' on repo: '${repo}' version: '${release_version}'."
     echo "${assets_json}" | jq -r '.[] | "- " + (.name)'
     exit 1
   fi
@@ -96,9 +103,10 @@ function find_asset() {
   asset_name=$(echo "${assets_json}" | jq -r '.[0].name')
   asset_url=$(echo "${assets_json}" | jq -r '.[0].url')
 
-  echo "Found asset: '${asset_name}' on ${repo} ${release_version}."
+  echo "Found asset: '${asset_name}' on repo: '${repo}' version: '${release_version}'."
   echo "Asset URL: ${asset_url}"
 
+  printf "url=%s\n" "${asset_url}"
   printf "url=%s\n" "${asset_url}" >> "$GITHUB_OUTPUT"
 }
 
