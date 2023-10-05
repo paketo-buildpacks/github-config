@@ -3,7 +3,7 @@ name: Update Tools
 
 on:
   schedule:
-  - cron: '0 0 * * *'
+  - cron: '42 19 * * *' # daily at 19:42 UTC
   workflow_dispatch: {}
 
 concurrency: tools_update
