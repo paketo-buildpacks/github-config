@@ -30,6 +30,9 @@ main() {
 
   git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
+  printf "current_version=%s\n" "${current_version}" >> "$GITHUB_OUTPUT"
+  printf "allow_head_tagged=%s\n" "${allow_head_tagged}" >> "$GITHUB_OUTPUT"
+
   if [ "${allow_head_tagged}" = "false" ]; then
     if git describe --exact-match --tags HEAD > /dev/null 2>&1; then
       echo "error: HEAD has already been tagged"
@@ -38,14 +41,19 @@ main() {
   fi
 
   if [ -n "${current_version}" ]; then
+    printf "Current version provided: %s\n" "${current_version} - using this as the tag"
     tag="${current_version}"
   else
     if [[ -z "$(git rev-list --tags --max-count=1)" ]]; then
-      echo "There are no previous tags"
+      printf "There are no previous tags - using v0.0.0 as the tag"
       previous="v0.0.0"
     else
       # List all tags of HEAD, sorted in ascending semver order; use the last one
-      previous="$(git tag --sort "version:refname" --points-at "$(git rev-list --tags --max-count=1)" | tail -n 1)"
+      all_previous="$(git tag --sort "version:refname" --merged)"
+      printf "Last 10 previous tags: %s\n" "$(tail -n 10 <<< "${previous}")"
+
+      previous="$(tail -n 1 <<< "${all_previous}")"
+      printf "Previous tag: %s\n" "${previous}"
     fi
     tag="$(printf "%s" "$previous" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')"
   fi
