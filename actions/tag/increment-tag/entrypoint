@@ -50,7 +50,7 @@ main() {
     else
       # List all tags of HEAD, sorted in ascending semver order; use the last one
       all_previous="$(git tag --sort "version:refname" --merged)"
-      printf "Last 10 previous tags: %s\n" "$(tail -n 10 <<< "${previous}")"
+      printf "Last 10 previous tags: %s\n" "$(tail -n 10 <<< "${all_previous}")"
 
       previous="$(tail -n 1 <<< "${all_previous}")"
       printf "Previous tag: %s\n" "${previous}"
