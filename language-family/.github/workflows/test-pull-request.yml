@@ -45,8 +45,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
-    - run: git fetch --depth=1 origin +refs/tags/*:refs/tags/* || true
-
     - name: Run Integration Tests
       env:
         TMPDIR: "${{ runner.temp }}"
