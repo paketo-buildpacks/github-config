@@ -20,10 +20,11 @@ type Commit struct {
 }
 
 type Config struct {
-	Endpoint string
-	Repo     string
-	Token    string
-	RefName  string
+	Endpoint      string
+	Repo          string
+	Token         string
+	RefName       string
+	LatestVersion string
 }
 
 type Label struct {
@@ -48,6 +49,7 @@ func main() {
 	flag.StringVar(&config.Repo, "repo", "", "Specifies repo for sending requests")
 	flag.StringVar(&config.Token, "token", "", "Github Authorization Token")
 	flag.StringVar(&config.RefName, "ref-name", "", "Ref name of the branch this action is running on")
+	flag.StringVar(&config.LatestVersion, "latest-version", "", "Optional latest version of to base semver calculations off")
 	flag.Parse()
 
 	if config.Repo == "" {
@@ -81,17 +83,36 @@ func main() {
 		fail(fmt.Errorf("failed to get repo: unexpected response: %s", dump))
 	}
 
-	prevVersion, err := getLatestVersion(ghClient, config)
+	fmt.Println("Getting the latest release version on the repository")
+	latestReleaseVersion, err := getLatestVersion(ghClient, config)
 	if err != nil {
 		fail(err)
 	}
 
-	// there are no releases on the repo
-	if prevVersion == nil {
-		writeTagOutput("0.0.1")
-		os.Exit(0)
+	var prevVersion *semver.Version
+	if config.LatestVersion == "" {
+		prevVersion = latestReleaseVersion
+		// there are no releases on the repo
+		if prevVersion == nil {
+			writeTagOutput("0.0.1")
+			os.Exit(0)
+		}
+	} else {
+		prevVersion, err = semver.NewVersion(config.LatestVersion)
+		if err != nil {
+			fail(fmt.Errorf("--latest-version is not a well-formed semantic version: %w", err))
+		}
+		// Needed for the case where the branch may be versioned to a brand new
+		// version line with no previous releases on it, but we want the first
+		// release to be X.Y.0 (rather than X.Y.1)
+		if prevVersion.GreaterThan(latestReleaseVersion) && prevVersion.Patch() == 0 {
+			fmt.Println("First release in the new version line, using `latest-version` as output")
+			writeTagOutput(prevVersion.String())
+			return
+		}
 	}
 
+	fmt.Printf("Basing next semantic version off of %s\n", prevVersion.String())
 	PRsWithSizes, err := getPRsSinceLastRelease(ghClient, config, prevVersion)
 	if err != nil {
 		fail(err)
@@ -232,7 +253,7 @@ func calculateNextSemver(previous semver.Version, largestChange int) semver.Vers
 	case 2:
 		return previous.IncMajor()
 	default:
-		fail(fmt.Errorf("input change size doesn't correspond to patch/minor/major: %d", largestChange))
+		fail(fmt.Errorf("input change size doesn't correspond patch/minor/major: %d", largestChange))
 	}
 	return semver.Version{}
 }
