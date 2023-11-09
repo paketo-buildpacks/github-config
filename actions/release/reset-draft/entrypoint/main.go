@@ -15,11 +15,13 @@ func main() {
 		Endpoint string
 		Repo     string
 		Token    string
+		Version  string
 	}
 
 	flag.StringVar(&config.Endpoint, "endpoint", "https://api.github.com", "Specifies endpoint for sending requests")
 	flag.StringVar(&config.Repo, "repo", "", "Specifies repo for sending requests")
 	flag.StringVar(&config.Token, "token", "", "Github Authorization Token")
+	flag.StringVar(&config.Version, "version", "", "Optional specific release version to reset")
 	flag.Parse()
 
 	if config.Repo == "" {
@@ -69,6 +71,27 @@ func main() {
 		return
 	}
 
+	releaseToDelete := releases[0]
+
+	// If version is passed in, look for matching draft
+	if config.Version != "" {
+		found := false
+		for _, r := range releases {
+			if r.TagName == config.Version && r.Draft {
+				fmt.Printf("Matching draft version %s found\n", config.Version)
+
+				releaseToDelete = r
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			fmt.Printf("No releases matching version %s found, exiting.\n", config.Version)
+			return
+		}
+	}
+
 	if !releases[0].Draft {
 		fmt.Println("Latest release is published, exiting.")
 		return
@@ -76,7 +99,7 @@ func main() {
 
 	fmt.Println("Latest release is draft, deleting.")
 
-	req, err = http.NewRequest("DELETE", fmt.Sprintf("%s/repos/%s/releases/%d", config.Endpoint, config.Repo, releases[0].ID), nil)
+	req, err = http.NewRequest("DELETE", fmt.Sprintf("%s/repos/%s/releases/%d", config.Endpoint, config.Repo, releaseToDelete.ID), nil)
 	if err != nil {
 		fail(err)
 	}
@@ -102,7 +125,7 @@ func main() {
 		fail(err)
 	}
 	defer file.Close()
-	fmt.Fprintf(file, "current_version=%s\n", releases[0].TagName)
+	fmt.Fprintf(file, "current_version=%s\n", releaseToDelete.TagName)
 
 	fmt.Println("Success!")
 }
