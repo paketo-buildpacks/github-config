@@ -448,9 +448,6 @@ func TestEntrypoint(t *testing.T) {
 					Expect(buffer).To(gbytes.Say(`{"error": "server-error"}`))
 				})
 			})
-			context.Focus("when a specific version is passed in", func() {
-
-			})
 		})
 	})
 }

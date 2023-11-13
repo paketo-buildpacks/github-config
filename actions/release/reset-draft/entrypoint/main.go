@@ -90,9 +90,7 @@ func main() {
 			fmt.Printf("No releases matching version %s found, exiting.\n", config.Version)
 			return
 		}
-	}
-
-	if !releases[0].Draft {
+	} else if !releases[0].Draft {
 		fmt.Println("Latest release is published, exiting.")
 		return
 	}
