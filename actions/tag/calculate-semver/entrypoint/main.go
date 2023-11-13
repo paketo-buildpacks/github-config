@@ -96,6 +96,7 @@ func main() {
 		if prevVersion == nil {
 			writeTagOutput("0.0.1")
 			os.Exit(0)
+
 		}
 	} else {
 		// if a latest version is given, override prevVersion to use that
@@ -274,7 +275,7 @@ func calculateNextSemver(previous semver.Version, largestChange int) semver.Vers
 	case 2:
 		return previous.IncMajor()
 	default:
-		fail(fmt.Errorf("input change size doesn't correspond patch/minor/major: %d", largestChange))
+		fail(fmt.Errorf("input change size doesn't correspond to patch/minor/major: %d", largestChange))
 	}
 	return semver.Version{}
 }
