@@ -382,6 +382,10 @@ func TestEntrypoint(t *testing.T) {
 					"--token", "some-github-token",
 					"--ref-name", "some-ref-name",
 				)
+				command.Env = []string{
+					fmt.Sprintf("GITHUB_OUTPUT=%s", filepath.Join(tempDir, "github-output")),
+					fmt.Sprintf("GITHUB_STATE=%s", filepath.Join(tempDir, "github-state")),
+				}
 
 				buffer := gbytes.NewBuffer()
 
