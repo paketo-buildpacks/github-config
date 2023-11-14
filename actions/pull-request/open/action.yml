@@ -19,6 +19,9 @@ inputs:
   base:
     description: 'Branch into which the code should be merged'
     default: 'main'
+  label:
+    description: 'Optional label to add to the PR. Note: Label must already be created on the repository.'
+    required: false
 
 runs:
   using: 'docker'
@@ -34,3 +37,5 @@ runs:
   - ${{ inputs.branch }}
   - "--base"
   - ${{ inputs.base }}
+  - "--label"
+  - ${{ inputs.label }}
