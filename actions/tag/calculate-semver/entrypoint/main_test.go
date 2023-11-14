@@ -61,7 +61,8 @@ func TestEntrypoint(t *testing.T) {
 					"/repos/some-org/some-no-new-commits-repo",
 					"/repos/some-org/some-non-semver-release-repo",
 					"/repos/some-org/some-unreleased-repo",
-					"/repos/some-org/some-patch-repo":
+					"/repos/some-org/some-patch-repo",
+					"/repos/some-org/some-draft-release-repo":
 					w.WriteHeader(http.StatusOK)
 					fmt.Fprintln(w, `{
 						"message": "Repo exists"
@@ -72,33 +73,58 @@ func TestEntrypoint(t *testing.T) {
 					fmt.Fprintln(w, `{ "message": "Not found" }`)
 
 				case
-					"/repos/some-org/some-broken-commits-repo/releases/latest",
-					"/repos/some-org/some-broken-pulls-repo/releases/latest",
-					"/repos/some-org/some-major-repo/releases/latest",
-					"/repos/some-org/some-malformed-commits-repo/releases/latest",
-					"/repos/some-org/some-malformed-pulls-repo/releases/latest",
-					"/repos/some-org/some-many-label-repo/releases/latest",
-					"/repos/some-org/some-minor-repo/releases/latest",
-					"/repos/some-org/some-no-label-repo/releases/latest",
-					"/repos/some-org/some-no-new-commits-repo/releases/latest",
-					"/repos/some-org/some-patch-repo/releases/latest":
+					"/repos/some-org/some-broken-commits-repo/releases",
+					"/repos/some-org/some-broken-pulls-repo/releases",
+					"/repos/some-org/some-major-repo/releases",
+					"/repos/some-org/some-malformed-commits-repo/releases",
+					"/repos/some-org/some-malformed-pulls-repo/releases",
+					"/repos/some-org/some-many-label-repo/releases",
+					"/repos/some-org/some-minor-repo/releases",
+					"/repos/some-org/some-no-label-repo/releases",
+					"/repos/some-org/some-no-new-commits-repo/releases",
+					"/repos/some-org/some-patch-repo/releases":
 					w.WriteHeader(http.StatusOK)
-					fmt.Fprintln(w, `{
-						"tag_name": "v1.2.3"
-					}`)
+					fmt.Fprintln(w, `[
+						{
+							"tag_name": "v1.3.0",
+							"draft": true
+						},
+						{
+							"tag_name": "v1.2.3",
+							"draft": false
+						},
+						{
+							"tag_name": "v1.1.2",
+							"draft": false
+						}
+					]`)
 
-				case "/repos/some-org/some-unreleased-repo/releases/latest":
+				case "/repos/some-org/some-unreleased-repo/releases":
 					w.WriteHeader(http.StatusNotFound)
 					fmt.Fprintln(w, `{ "message": "Not found" }`)
 
-				case "/repos/some-org/some-non-semver-release-repo/releases/latest":
+				case "/repos/some-org/some-draft-release-repo/releases":
 					w.WriteHeader(http.StatusOK)
-					fmt.Fprintln(w, `{ "tag_name": "sentimental_version" }`)
+					fmt.Fprintln(w, `[
+						{
+							"tag_name": "v1.3.0",
+							"draft": true
+						},
+						{
+							"tag_name": "v1.2.3",
+							"draft": true
+						}
+					]`)
+
+				case "/repos/some-org/some-non-semver-release-repo/releases":
+					w.WriteHeader(http.StatusOK)
+					fmt.Fprintln(w, `[{ "tag_name": "sentimental_version", "draft": false }]`)
 
 				case
 					"/repos/some-org/some-major-repo/compare/v1.2.3...some-ref-name",
 					"/repos/some-org/some-minor-repo/compare/v1.2.3...some-ref-name",
-					"/repos/some-org/some-patch-repo/compare/v1.2.3...some-ref-name":
+					"/repos/some-org/some-patch-repo/compare/v1.2.3...some-ref-name",
+					"/repos/some-org/some-patch-repo/compare/v1.1.2...some-ref-name":
 					w.WriteHeader(http.StatusOK)
 					fmt.Fprintln(w, `{ "commits" : [{ "sha" : "abcdef"}, { "sha" : "ghijklm" }]}`)
 
@@ -192,14 +218,14 @@ func TestEntrypoint(t *testing.T) {
 				case
 					"/repos/some-org/some-broken-commits-repo/compare/v1.2.3...some-ref-name",
 					"/repos/some-org/some-broken-pulls-repo/commits/abcdef/pulls",
-					"/repos/some-org/some-broken-release-repo/releases/latest":
+					"/repos/some-org/some-broken-release-repo/releases":
 					w.WriteHeader(http.StatusInternalServerError)
 					fmt.Fprintln(w, `{ "message": "Internal Error" }`)
 
 				case
 					"/repos/some-org/some-malformed-commits-repo/compare/v1.2.3...some-ref-name",
 					"/repos/some-org/some-malformed-pulls-repo/commits/abcdef/pulls",
-					"/repos/some-org/some-malformed-release-repo/releases/latest":
+					"/repos/some-org/some-malformed-release-repo/releases":
 					w.WriteHeader(http.StatusOK)
 					fmt.Fprintln(w, `{ "message": "Malformed JSON }`)
 
@@ -242,7 +268,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests).To(HaveLen(5))
 
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-patch-repo"))
-				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-patch-repo/releases/latest"))
+				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-patch-repo/releases"))
 				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-patch-repo/compare/v1.2.3...some-ref-name"))
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/ghijklm/pulls"))
@@ -275,7 +301,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests).To(HaveLen(5))
 
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-minor-repo"))
-				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-minor-repo/releases/latest"))
+				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-minor-repo/releases"))
 				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-minor-repo/compare/v1.2.3...some-ref-name"))
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-minor-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-minor-repo/commits/ghijklm/pulls"))
@@ -308,7 +334,7 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests).To(HaveLen(5))
 
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-major-repo"))
-				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-major-repo/releases/latest"))
+				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-major-repo/releases"))
 				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-major-repo/compare/v1.2.3...some-ref-name"))
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-major-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-major-repo/commits/ghijklm/pulls"))
@@ -341,8 +367,38 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests).To(HaveLen(2))
 
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-unreleased-repo"))
-				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-unreleased-repo/releases/latest"))
+				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-unreleased-repo/releases"))
 
+				outputContains(`tag=0.0.1`)
+			})
+		})
+
+		context("when there are no published semver versioned releases", func() {
+			it("prints an warning and sets output to v0.0.1", func() {
+				command := exec.Command(
+					entrypoint,
+					"--endpoint", api.URL,
+					"--repo", "some-org/some-non-semver-release-repo",
+					"--token", "some-github-token",
+					"--ref-name", "some-ref-name",
+				)
+				command.Env = []string{
+					fmt.Sprintf("GITHUB_OUTPUT=%s", filepath.Join(tempDir, "github-output")),
+					fmt.Sprintf("GITHUB_STATE=%s", filepath.Join(tempDir, "github-state")),
+				}
+
+				buffer := gbytes.NewBuffer()
+
+				session, err := gexec.Start(command, buffer, buffer)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+				Expect(buffer).To(gbytes.Say(`No semantically versioned published releases found`))
+
+				Expect(requests).To(HaveLen(2))
+
+				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-non-semver-release-repo"))
+				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-non-semver-release-repo/releases"))
 				outputContains(`tag=0.0.1`)
 			})
 		})
@@ -371,10 +427,106 @@ func TestEntrypoint(t *testing.T) {
 				Expect(requests).To(HaveLen(3))
 
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-no-new-commits-repo"))
-				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-no-new-commits-repo/releases/latest"))
+				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-no-new-commits-repo/releases"))
 				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-no-new-commits-repo/compare/v1.2.3...some-ref-name"))
 
 				outputContains("tag=1.2.4")
+			})
+		})
+
+		context("a latest version to base calculations off of is passed in", func() {
+			it("the version passed in is used instead of the latest release", func() {
+				command := exec.Command(
+					entrypoint,
+					"--endpoint", api.URL,
+					"--repo", "some-org/some-patch-repo",
+					"--token", "some-github-token",
+					"--ref-name", "some-ref-name",
+					"--latest-version", "v1.1.2",
+				)
+				command.Env = []string{
+					fmt.Sprintf("GITHUB_OUTPUT=%s", filepath.Join(tempDir, "github-output")),
+					fmt.Sprintf("GITHUB_STATE=%s", filepath.Join(tempDir, "github-state")),
+				}
+
+				buffer := gbytes.NewBuffer()
+
+				session, err := gexec.Start(command, buffer, buffer)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+
+				Expect(requests).To(HaveLen(5))
+
+				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-patch-repo"))
+				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-patch-repo/releases"))
+				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-patch-repo/compare/v1.1.2...some-ref-name"))
+				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/abcdef/pulls"))
+				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/ghijklm/pulls"))
+
+				outputContains(`tag=1.1.3`)
+			})
+
+			context("there are no prior published releases on the repository", func() {
+				it("the version passed in is used as the output version", func() {
+					command := exec.Command(
+						entrypoint,
+						"--endpoint", api.URL,
+						"--repo", "some-org/some-draft-release-repo",
+						"--token", "some-github-token",
+						"--ref-name", "some-ref-name",
+						"--latest-version", "v1.2.3",
+					)
+					command.Env = []string{
+						fmt.Sprintf("GITHUB_OUTPUT=%s", filepath.Join(tempDir, "github-output")),
+						fmt.Sprintf("GITHUB_STATE=%s", filepath.Join(tempDir, "github-state")),
+					}
+
+					buffer := gbytes.NewBuffer()
+
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+
+					Expect(requests).To(HaveLen(2))
+
+					Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-draft-release-repo"))
+					Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-draft-release-repo/releases"))
+					Expect(buffer).To(gbytes.Say("First release in the new version line, using `latest-version` as output"))
+					outputContains(`tag=1.2.3`)
+				})
+			})
+
+			context("the version passed in the first release in a new version line", func() {
+				it("the version passed in is used as the output version", func() {
+					command := exec.Command(
+						entrypoint,
+						"--endpoint", api.URL,
+						"--repo", "some-org/some-patch-repo",
+						"--token", "some-github-token",
+						"--ref-name", "some-ref-name",
+						"--latest-version", "v1.3.0",
+					)
+					command.Env = []string{
+						fmt.Sprintf("GITHUB_OUTPUT=%s", filepath.Join(tempDir, "github-output")),
+						fmt.Sprintf("GITHUB_STATE=%s", filepath.Join(tempDir, "github-state")),
+					}
+
+					buffer := gbytes.NewBuffer()
+
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+
+					Expect(requests).To(HaveLen(2))
+
+					Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-patch-repo"))
+					Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-patch-repo/releases"))
+					Expect(buffer).To(gbytes.Say("First release in the new version line, using `latest-version` as output"))
+					outputContains(`tag=1.3.0`)
+				})
 			})
 		})
 
@@ -519,28 +671,31 @@ func TestEntrypoint(t *testing.T) {
 
 					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
 
-					Expect(buffer).To(gbytes.Say(`failed to decode latest release:`))
+					Expect(buffer).To(gbytes.Say(`failed to decode releases:`))
 				})
 			})
 
-			context("when the latest release isn't semver versioned", func() {
-				it("prints an error and exits non-zero", func() {
-					command := exec.Command(
-						entrypoint,
-						"--endpoint", api.URL,
-						"--repo", "some-org/some-non-semver-release-repo",
-						"--token", "some-github-token",
-						"--ref-name", "some-ref-name",
-					)
+			context("a latest version to base calculations off of is passed in", func() {
+				context("latest version is not a semantic version", func() {
+					it("returns an error", func() {
+						command := exec.Command(
+							entrypoint,
+							"--endpoint", api.URL,
+							"--repo", "some-org/some-patch-repo",
+							"--token", "some-github-token",
+							"--ref-name", "some-ref-name",
+							"--latest-version", "bad-version",
+						)
 
-					buffer := gbytes.NewBuffer()
+						buffer := gbytes.NewBuffer()
 
-					session, err := gexec.Start(command, buffer, buffer)
-					Expect(err).NotTo(HaveOccurred())
+						session, err := gexec.Start(command, buffer, buffer)
+						Expect(err).NotTo(HaveOccurred())
 
-					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+						Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
 
-					Expect(buffer).To(gbytes.Say(`latest release tag 'sentimental_version' isn't semver versioned:`))
+						Expect(buffer).To(gbytes.Say(`--latest-version is not a well-formed semantic version`))
+					})
 				})
 			})
 
