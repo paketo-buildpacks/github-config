@@ -194,8 +194,7 @@ func TestEntrypoint(t *testing.T) {
 
 					Expect(buffer).To(gbytes.Say(`Fetching latest releases`))
 					Expect(buffer).To(gbytes.Say(`  Repository: some-org/draft-repo`))
-					Expect(buffer).To(gbytes.Say(`Matching draft version 1.2.3 found`))
-					Expect(buffer).To(gbytes.Say(`Latest release is draft, deleting.`))
+					Expect(buffer).To(gbytes.Say(`Found draft with version: '1.2.3', deleting`))
 					Expect(buffer).To(gbytes.Say(`Success`))
 
 					data, err := os.ReadFile(filepath.Join(tempDir, "github-output"))
@@ -259,7 +258,7 @@ func TestEntrypoint(t *testing.T) {
 
 				Expect(buffer).To(gbytes.Say(`Fetching latest releases`))
 				Expect(buffer).To(gbytes.Say(`  Repository: some-org/draft-repo`))
-				Expect(buffer).To(gbytes.Say(`Latest release is draft, deleting.`))
+				Expect(buffer).To(gbytes.Say(`Found draft with version: 'some-version', deleting`))
 				Expect(buffer).To(gbytes.Say(`Success`))
 
 				data, err := os.ReadFile(filepath.Join(tempDir, "github-output"))

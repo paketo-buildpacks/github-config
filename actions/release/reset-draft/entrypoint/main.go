@@ -51,11 +51,13 @@ func main() {
 		fail(fmt.Errorf("unexpected response from list releases request: %s", dump))
 	}
 
-	var releases []struct {
+	type release struct {
 		ID      int    `json:"id"`
 		Draft   bool   `json:"draft"`
 		TagName string `json:"tag_name"`
 	}
+	var releases []release
+
 	err = json.NewDecoder(resp.Body).Decode(&releases)
 	if err != nil {
 		fail(err)
@@ -71,15 +73,19 @@ func main() {
 		return
 	}
 
-	releaseToDelete := releases[0]
-
+	// If no version passed in, use lastest release
 	// If version is passed in, look for matching draft
-	if config.Version != "" {
+	var releaseToDelete release
+	if config.Version == "" {
+		releaseToDelete = releases[0]
+		if !releaseToDelete.Draft {
+			fmt.Println("Latest release is published, exiting.")
+			return
+		}
+	} else {
 		found := false
 		for _, r := range releases {
 			if r.TagName == config.Version && r.Draft {
-				fmt.Printf("Matching draft version %s found\n", config.Version)
-
 				releaseToDelete = r
 				found = true
 				break
@@ -90,12 +96,9 @@ func main() {
 			fmt.Printf("No releases matching version %s found, exiting.\n", config.Version)
 			return
 		}
-	} else if !releases[0].Draft {
-		fmt.Println("Latest release is published, exiting.")
-		return
 	}
 
-	fmt.Println("Latest release is draft, deleting.")
+	fmt.Printf("Found draft with version: '%s', deleting\n", releaseToDelete.TagName)
 
 	req, err = http.NewRequest("DELETE", fmt.Sprintf("%s/repos/%s/releases/%d", config.Endpoint, config.Repo, releaseToDelete.ID), nil)
 	if err != nil {
