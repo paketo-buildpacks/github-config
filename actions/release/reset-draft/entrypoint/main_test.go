@@ -57,7 +57,13 @@ func TestEntrypoint(t *testing.T) {
 					fmt.Fprintln(w, `[
 						{
 							"draft": false,
-							"id": 2
+							"id": 2,
+							"tag_name": "random-version"
+						},
+						{
+							"draft": false,
+							"id": 3,
+							"tag_name": "1.2.3"
 						}
 					]`)
 
@@ -67,6 +73,11 @@ func TestEntrypoint(t *testing.T) {
 							"draft": true,
 							"id": 2,
 							"tag_name": "some-version"
+						},
+						{
+							"draft": true,
+							"id": 3,
+							"tag_name": "1.2.3"
 						}
 					]`)
 
@@ -82,6 +93,11 @@ func TestEntrypoint(t *testing.T) {
 					fmt.Fprintln(w, `[]`)
 
 				case "/repos/some-org/draft-repo/releases/2":
+					if req.Method == http.MethodDelete {
+						w.WriteHeader(http.StatusNoContent)
+					}
+
+				case "/repos/some-org/draft-repo/releases/3":
 					if req.Method == http.MethodDelete {
 						w.WriteHeader(http.StatusNoContent)
 					}
@@ -121,6 +137,74 @@ func TestEntrypoint(t *testing.T) {
 			tempDir = t.TempDir()
 		})
 
+		context("when a specific version is passed in", func() {
+			context("when a matching draft release does NOT exist", func() {
+				it("does not change the repo", func() {
+					command := exec.Command(
+						entrypoint,
+						"--endpoint", api.URL,
+						"--repo", "some-org/published-repo",
+						"--token", "some-github-token",
+						"--version", "1.2.3",
+					)
+
+					buffer := gbytes.NewBuffer()
+
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+
+					Expect(requests).To(HaveLen(1))
+					Expect(requests[0].Method).To(Equal("GET"))
+					Expect(requests[0].URL.Path).To(Equal("/repos/some-org/published-repo/releases"))
+
+					Expect(buffer).To(gbytes.Say(`Fetching latest releases`))
+					Expect(buffer).To(gbytes.Say(`  Repository: some-org/published-repo`))
+					Expect(buffer).To(gbytes.Say(`No releases matching version 1.2.3 found, exiting.`))
+				})
+			})
+
+			context("when a matching draft release does exists", func() {
+				it("deletes the draft release and outputs its version", func() {
+					command := exec.Command(
+						entrypoint,
+						"--endpoint", api.URL,
+						"--repo", "some-org/draft-repo",
+						"--token", "some-github-token",
+						"--version", "1.2.3",
+					)
+					command.Env = []string{
+						fmt.Sprintf("GITHUB_OUTPUT=%s", filepath.Join(tempDir, "github-output")),
+						fmt.Sprintf("GITHUB_STATE=%s", filepath.Join(tempDir, "github-state")),
+					}
+
+					buffer := gbytes.NewBuffer()
+
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+
+					Expect(requests).To(HaveLen(2))
+					Expect(requests[0].Method).To(Equal("GET"))
+					Expect(requests[0].URL.Path).To(Equal("/repos/some-org/draft-repo/releases"))
+					Expect(requests[1].Method).To(Equal("DELETE"))
+					Expect(requests[1].URL.Path).To(Equal("/repos/some-org/draft-repo/releases/3"))
+
+					Expect(buffer).To(gbytes.Say(`Fetching latest releases`))
+					Expect(buffer).To(gbytes.Say(`  Repository: some-org/draft-repo`))
+					Expect(buffer).To(gbytes.Say(`Found draft with version: '1.2.3', deleting`))
+					Expect(buffer).To(gbytes.Say(`Success`))
+
+					data, err := os.ReadFile(filepath.Join(tempDir, "github-output"))
+					Expect(err).NotTo(HaveOccurred())
+					outputs := strings.Split(string(data), "\n")
+					Expect(outputs).To(ContainElements("current_version=1.2.3"))
+				})
+			})
+		})
+
 		context("when a draft release does NOT exists", func() {
 			it("does not change the repo", func() {
 				command := exec.Command(
@@ -143,7 +227,6 @@ func TestEntrypoint(t *testing.T) {
 
 				Expect(buffer).To(gbytes.Say(`Fetching latest releases`))
 				Expect(buffer).To(gbytes.Say(`  Repository: some-org/published-repo`))
-				Expect(buffer).To(gbytes.Say(`Latest release is published, exiting.`))
 			})
 		})
 
@@ -175,7 +258,7 @@ func TestEntrypoint(t *testing.T) {
 
 				Expect(buffer).To(gbytes.Say(`Fetching latest releases`))
 				Expect(buffer).To(gbytes.Say(`  Repository: some-org/draft-repo`))
-				Expect(buffer).To(gbytes.Say(`Latest release is draft, deleting.`))
+				Expect(buffer).To(gbytes.Say(`Found draft with version: 'some-version', deleting`))
 				Expect(buffer).To(gbytes.Say(`Success`))
 
 				data, err := os.ReadFile(filepath.Join(tempDir, "github-output"))
