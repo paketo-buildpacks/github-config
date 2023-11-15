@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"sort"
 
+	"github.com/Masterminds/semver/v3"
 	"golang.org/x/oauth2"
-
-	"github.com/Masterminds/semver"
 )
 
 type Commit struct {
@@ -20,10 +20,11 @@ type Commit struct {
 }
 
 type Config struct {
-	Endpoint string
-	Repo     string
-	Token    string
-	RefName  string
+	Endpoint      string
+	Repo          string
+	Token         string
+	RefName       string
+	LatestVersion string
 }
 
 type Label struct {
@@ -48,6 +49,7 @@ func main() {
 	flag.StringVar(&config.Repo, "repo", "", "Specifies repo for sending requests")
 	flag.StringVar(&config.Token, "token", "", "Github Authorization Token")
 	flag.StringVar(&config.RefName, "ref-name", "", "Ref name of the branch this action is running on")
+	flag.StringVar(&config.LatestVersion, "latest-version", "", "Optional latest version of to base semver calculations off")
 	flag.Parse()
 
 	if config.Repo == "" {
@@ -81,17 +83,39 @@ func main() {
 		fail(fmt.Errorf("failed to get repo: unexpected response: %s", dump))
 	}
 
-	prevVersion, err := getLatestVersion(ghClient, config)
+	fmt.Println("Getting the latest release version on the repository")
+	latestReleaseVersion, err := getLatestRelease(ghClient, config)
 	if err != nil {
 		fail(err)
 	}
 
-	// there are no releases on the repo
-	if prevVersion == nil {
-		writeTagOutput("0.0.1")
-		os.Exit(0)
+	var prevVersion *semver.Version
+	if config.LatestVersion == "" {
+		prevVersion = latestReleaseVersion
+		// there are no releases on the repo
+		if prevVersion == nil {
+			writeTagOutput("0.0.1")
+			os.Exit(0)
+
+		}
+	} else {
+		// if a latest version is given, override prevVersion to use that
+		prevVersion, err = semver.NewVersion(config.LatestVersion)
+		if err != nil {
+			fail(fmt.Errorf("--latest-version is not a well-formed semantic version: %w", err))
+		}
+
+		// Needed for the case where the branch may be versioned to a brand new
+		// version line with no previous releases on it, but we want the first
+		// release to be X.Y.0 (rather than X.Y.1)
+		if latestReleaseVersion == nil || (prevVersion.GreaterThan(latestReleaseVersion) && prevVersion.Patch() == 0) {
+			fmt.Println("First release in the new version line, using `latest-version` as output")
+			writeTagOutput(prevVersion.String())
+			return
+		}
 	}
 
+	fmt.Printf("Basing next semantic version off of %s\n", prevVersion.String())
 	PRsWithSizes, err := getPRsSinceLastRelease(ghClient, config, prevVersion)
 	if err != nil {
 		fail(err)
@@ -113,8 +137,8 @@ func fail(err error) {
 	os.Exit(1)
 }
 
-func getLatestVersion(client *http.Client, config Config) (*semver.Version, error) {
-	uri := fmt.Sprintf("%s/repos/%s/releases/latest", config.Endpoint, config.Repo)
+func getLatestRelease(client *http.Client, config Config) (*semver.Version, error) {
+	uri := fmt.Sprintf("%s/repos/%s/releases", config.Endpoint, config.Repo)
 	resp, err := client.Get(uri)
 	if err != nil {
 		return nil, err
@@ -131,19 +155,38 @@ func getLatestVersion(client *http.Client, config Config) (*semver.Version, erro
 		return nil, fmt.Errorf("failed to get latest release: unexpected response: %s", dump)
 	}
 
-	var latestRelease struct {
+	type release struct {
 		TagName string `json:"tag_name"`
-	}
-	err = json.NewDecoder(resp.Body).Decode(&latestRelease)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode latest release: %w", err)
+		Draft   bool   `json:"draft"`
 	}
 
-	prevVersion, err := semver.NewVersion(latestRelease.TagName)
+	var releases []release
+
+	err = json.NewDecoder(resp.Body).Decode(&releases)
 	if err != nil {
-		return nil, fmt.Errorf("latest release tag '%s' isn't semver versioned: %w", latestRelease.TagName, err)
+		return nil, fmt.Errorf("failed to decode releases: %w", err)
 	}
-	return prevVersion, nil
+
+	var tags []*semver.Version
+	// include all semantically versioned non-draft release tags
+	for _, r := range releases {
+		if !r.Draft {
+			semverTag, err := semver.NewVersion(r.TagName)
+			if err != nil {
+				continue
+			}
+			tags = append(tags, semverTag)
+		}
+	}
+
+	if len(tags) == 0 {
+		fmt.Println("No semantically versioned published releases found")
+		return nil, nil
+	}
+
+	sort.Sort(semver.Collection(tags))
+	// return highest versioned tag
+	return tags[len(tags)-1], nil
 }
 
 func getPRsSinceLastRelease(client *http.Client, config Config, previous *semver.Version) (map[int]int, error) {

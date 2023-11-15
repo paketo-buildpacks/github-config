@@ -13,6 +13,9 @@ inputs:
   ref-name:
     description: 'Name of branch that initiated the action'
     required: true
+  latest-version:
+    description: 'Latest release version to base semver calculations off of. Optional'
+    required: false
 outputs:
   tag:
     description: 'The next tag version for the repo, according to semver'
@@ -26,3 +29,5 @@ runs:
   - ${{ inputs.token }}
   - "--ref-name"
   - ${{ inputs.ref-name }}
+  - "--latest-version"
+  - ${{ inputs.latest-version }}

@@ -4,7 +4,9 @@ description: |
   This action can be used to reset a repository to a state where there are no
   draft releases.
   - If there is a draft release on the target repository, it will be deleted
+    - If a version is passed in, and there is a matching draft release on the target repository, it will be deleted
   - If there is NO draft release, this action is a no op.
+    - If a version line is passed in, and there is NO matching draft release on the target repository, this action is a no op
 
 inputs:
   repo:
@@ -13,6 +15,9 @@ inputs:
   token:
     description: 'Github Access Token used to make the request'
     required: true
+  version:
+    description: 'Optional specific release version to reset'
+    required: false
 
 outputs:
   current_version:
@@ -26,3 +31,5 @@ runs:
   - ${{ inputs.repo }}
   - "--token"
   - ${{ inputs.token }}
+  - "--version"
+  - ${{ inputs.version }}

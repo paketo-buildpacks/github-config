@@ -13,6 +13,9 @@ inputs:
   no_cnb_registry:
     description: 'Turn off using CNB registry URIs in package.toml'
     default: 'false'
+  patch_only:
+    description: 'Allow only buildpack patch updates'
+    default: 'false'
 
 runs:
   using: 'composite'
@@ -54,4 +57,5 @@ runs:
       jam update-buildpack \
         --buildpack-file "${PWD}/${{ inputs.buildpack_toml_path }}" \
         --package-file "${PWD}/${{ inputs.package_toml_path }}" \
-        --no-cnb-registry="${{ inputs.no_cnb_registry }}"
+        --no-cnb-registry="${{ inputs.no_cnb_registry }}" \
+        --patch-only="${{ inputs.patch_only }}"

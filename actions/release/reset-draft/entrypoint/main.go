@@ -15,11 +15,13 @@ func main() {
 		Endpoint string
 		Repo     string
 		Token    string
+		Version  string
 	}
 
 	flag.StringVar(&config.Endpoint, "endpoint", "https://api.github.com", "Specifies endpoint for sending requests")
 	flag.StringVar(&config.Repo, "repo", "", "Specifies repo for sending requests")
 	flag.StringVar(&config.Token, "token", "", "Github Authorization Token")
+	flag.StringVar(&config.Version, "version", "", "Optional specific release version to reset")
 	flag.Parse()
 
 	if config.Repo == "" {
@@ -49,11 +51,13 @@ func main() {
 		fail(fmt.Errorf("unexpected response from list releases request: %s", dump))
 	}
 
-	var releases []struct {
+	type release struct {
 		ID      int    `json:"id"`
 		Draft   bool   `json:"draft"`
 		TagName string `json:"tag_name"`
 	}
+	var releases []release
+
 	err = json.NewDecoder(resp.Body).Decode(&releases)
 	if err != nil {
 		fail(err)
@@ -69,14 +73,34 @@ func main() {
 		return
 	}
 
-	if !releases[0].Draft {
-		fmt.Println("Latest release is published, exiting.")
-		return
+	// If no version passed in, use lastest release
+	// If version is passed in, look for matching draft
+	var releaseToDelete release
+	if config.Version == "" {
+		releaseToDelete = releases[0]
+		if !releaseToDelete.Draft {
+			fmt.Println("Latest release is published, exiting.")
+			return
+		}
+	} else {
+		found := false
+		for _, r := range releases {
+			if r.TagName == config.Version && r.Draft {
+				releaseToDelete = r
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			fmt.Printf("No releases matching version %s found, exiting.\n", config.Version)
+			return
+		}
 	}
 
-	fmt.Println("Latest release is draft, deleting.")
+	fmt.Printf("Found draft with version: '%s', deleting\n", releaseToDelete.TagName)
 
-	req, err = http.NewRequest("DELETE", fmt.Sprintf("%s/repos/%s/releases/%d", config.Endpoint, config.Repo, releases[0].ID), nil)
+	req, err = http.NewRequest("DELETE", fmt.Sprintf("%s/repos/%s/releases/%d", config.Endpoint, config.Repo, releaseToDelete.ID), nil)
 	if err != nil {
 		fail(err)
 	}
@@ -102,7 +126,7 @@ func main() {
 		fail(err)
 	}
 	defer file.Close()
-	fmt.Fprintf(file, "current_version=%s\n", releases[0].TagName)
+	fmt.Fprintf(file, "current_version=%s\n", releaseToDelete.TagName)
 
 	fmt.Println("Success!")
 }
