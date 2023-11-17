@@ -11,7 +11,7 @@ rules:
   line-length: disable
   indentation:
     spaces: consistent
-    indent-sequences: consistent
+    indent-sequences: whatever
     check-multi-line-strings: false
   brackets:
     max-spaces-inside: -1
