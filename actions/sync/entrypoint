@@ -51,13 +51,6 @@ function main() {
       )
     fi
 
-    if [[ -f "${dest}/.sync-post-hook" ]]; then
-      args+=(
-        --exclude=".sync-post-hook"
-        --exclude-from="${dest}/.sync-post-hook"
-      )
-    fi
-
     bash -c "rsync ${args[*]}"
 
     echo
