@@ -41,6 +41,8 @@ jobs:
         GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
       run: |
         DOCKERHUB_ORG="${GITHUB_REPOSITORY_OWNER/-/}" # translates 'paketo-buildpacks' to 'paketobuildpacks'
+        # Strip off the Github org prefix from repo name
+        # paketo-buildpacks/builder-with-some-name --> builder-with-some-name
         registry_repo=$(echo "${{ github.repository }}" | sed 's/^.*\///')
 
         echo "${PAKETO_BUILDPACKS_DOCKERHUB_PASSWORD}" | docker login --username "${PAKETO_BUILDPACKS_DOCKERHUB_USERNAME}" --password-stdin
