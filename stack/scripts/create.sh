@@ -6,6 +6,7 @@ set -o pipefail
 readonly PROG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly ROOT_DIR="$(cd "${PROG_DIR}/.." && pwd)"
 readonly BIN_DIR="${ROOT_DIR}/.bin"
+readonly IMAGES_JSON="${ROOT_DIR}/images.json"
 
 # shellcheck source=SCRIPTDIR/.util/tools.sh
 source "${PROG_DIR}/.util/tools.sh"
@@ -63,24 +64,20 @@ function main() {
 
   tools::install
 
-  #if stack or build argument is provided but not both, then throw an error
+  # if stack or build argument is provided but not both, then throw an error
   if [[ -n "${stack_dir_name}" && ! -n "${build_dir_name}" ]] || [[ ! -n "${stack_dir_name}" && -n "${build_dir_name}" ]]; then
     util::print::error "Both stack-dir and build-dir must be provided"
   elif [[ -n "${stack_dir_name}" && -n "${build_dir_name}" ]]; then
     stack::create "${ROOT_DIR}/${stack_dir_name}" "${ROOT_DIR}/${build_dir_name}" "${flags[@]}"
-  elif [ -f "${ROOT_DIR}/stacks.json" ]; then
-    stack_names=($(jq -r '.[] ' "${ROOT_DIR}/stacks.json"))
-    for stack_dir_name in "${stack_names[@]}"; do
-      if [ "${stack_dir_name}" == "stack" ]; then
-        stack::create "${ROOT_DIR}/stack" "${ROOT_DIR}/build" "${flags[@]}"
-      else
-        stack::create "${ROOT_DIR}/stack-${stack_dir_name}" "${ROOT_DIR}/build-${stack_dir_name}" "${flags[@]}"
-      fi
+  elif [ -f "${IMAGES_JSON}" ]; then
+    jq -c '.[]' "${IMAGES_JSON}" | while read -r image; do
+      config_dir=$(echo "${image}" | jq -r '.config_dir')
+      output_dir=$(echo "${image}" | jq -r '.output_dir')
+      stack::create "${ROOT_DIR}/${config_dir}" "${ROOT_DIR}/${output_dir}" "${flags[@]}"
     done
   else
     stack::create "${ROOT_DIR}/stack" "${ROOT_DIR}/build" "${flags[@]}"
   fi
-
 }
 
 function usage() {
