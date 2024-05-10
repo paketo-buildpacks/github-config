@@ -19,13 +19,14 @@ if [[ $BASH_VERSINFO -lt 4 ]]; then
 fi
 
 function main() {
-  local flags stack_dir_name build_dir_name
+  local flags
+  local stack_dir_name build_dir_name
   stack_dir_name=""
   build_dir_name=""
 
   while [[ "${#}" != 0 ]]; do
     case "${1}" in
-      --help | -h)
+      --help|-h)
         shift 1
         usage
         exit 0
@@ -58,7 +59,6 @@ function main() {
 
       *)
         util::print::error "unknown argument \"${1}\""
-        ;;
     esac
   done
 
@@ -70,7 +70,7 @@ function main() {
   elif [[ -n "${stack_dir_name}" && -n "${build_dir_name}" ]]; then
     stack::create "${ROOT_DIR}/${stack_dir_name}" "${ROOT_DIR}/${build_dir_name}" "${flags[@]}"
   elif [ -f "${IMAGES_JSON}" ]; then
-    jq -c '.[]' "${IMAGES_JSON}" | while read -r image; do
+    jq -c '.images[]' "${IMAGES_JSON}" | while read -r image; do
       config_dir=$(echo "${image}" | jq -r '.config_dir')
       output_dir=$(echo "${image}" | jq -r '.output_dir')
       stack::create "${ROOT_DIR}/${config_dir}" "${ROOT_DIR}/${output_dir}" "${flags[@]}"
@@ -95,13 +95,15 @@ OPTIONS
 USAGE
 }
 
+
 function tools::install() {
   util::tools::jam::install \
     --directory "${BIN_DIR}"
 }
 
 function stack::create() {
-  local stack_dirpath build_dirpath flags
+  local flags
+  local stack_dirpath build_dirpath
 
   stack_dirpath="${1}"
   shift
@@ -113,10 +115,10 @@ function stack::create() {
   flags=("${@}")
 
   args=(
-    --config "${stack_dirpath}/stack.toml"
-    --build-output "${build_dirpath}/build.oci"
-    --run-output "${build_dirpath}/run.oci"
-  )
+      --config "${stack_dirpath}/stack.toml"
+      --build-output "${build_dirpath}/build.oci"
+      --run-output "${build_dirpath}/run.oci"
+    )
 
   args+=("${flags[@]}")
 
