@@ -1,0 +1,55 @@
+name: Update Go Version
+
+on:
+  cron:
+  workflow_dispatch:
+
+jobs:
+  update-go:
+    name: Update Go
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Setup Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 'stable'
+
+    - name: Checkout
+      uses: actions/checkout@v3
+        with:
+          branch: automation/go/update
+
+    - name: Update
+      id: update
+      run: |
+        v=`go version | { read _ _ v _; echo ${v#go}; }`
+        go mod edit -go=${v}
+        go mod tidy
+        echo "version=${v}" >> "$GITHUB_OUTPUT"
+
+    - name: Show git diff
+      run: |
+        git diff
+
+    - name: Commit
+      id: commit
+      uses: paketo-buildpacks/github-config/actions/pull-request/create-commit@main
+      with:
+        message: "Bump go.mod version"
+        pathspec: "."
+        keyid: ${{ secrets.PAKETO_BOT_GPG_SIGNING_KEY_ID }}
+        key: ${{ secrets.PAKETO_BOT_GPG_SIGNING_KEY }}
+
+    - name: Push Branch 'automation/go/update'
+      if: ${{ steps.commit.outputs.commit_sha != '' }}
+      uses: paketo-buildpacks/github-config/actions/pull-request/push-branch@main
+      with:
+        branch: 'automation/go/update'
+
+    - name: Open Pull Request
+      if: ${{ steps.commit.outputs.commit_sha != '' }}
+      uses: paketo-buildpacks/github-config/actions/pull-request/open@main
+      with:
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        title: "Bumps Go version to ${{ steps.update.outputs.version }} in go.mod"
+        branch: automation/go/update
