@@ -133,7 +133,7 @@ func main() {
 	}
 	fmt.Println("Modified packages:")
 	for _, pkg := range modified {
-		fmt.Printf("%[1]s %s (PURL: %s) => %[1]s %s (PURL: %s)\n",
+		fmt.Printf("%[1]s %[2]s (PURL: %[3]s) => %[1]s %[4]s (PURL: %[5]s)\n",
 			pkg.Name,
 			pkg.PreviousVersion,
 			pkg.PreviousPURL,
