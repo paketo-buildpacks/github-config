@@ -1,0 +1,15 @@
+name: "Update Go Mod Version"
+description: |
+  Updates the versions of go and the go toolchain in a go.mod file
+
+inputs:
+  toolchain-version:
+    description: 'Version of the toolchain to write'
+    required: true
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--toolchain-version"
+  - "${{ inputs.toolchain-version }}"
