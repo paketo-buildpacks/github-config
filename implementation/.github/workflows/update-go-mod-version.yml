@@ -28,8 +28,23 @@ jobs:
         uses: pivotal-cf/tanzu-cnb-github-config/actions/update-go-mod-version@main
         with:
           toolchain-version: ${{ steps.setup-go.outputs.go-version }}
-      - name: Show changes
+      - name: Go mod tidy
         run: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          shopt -s inherit_errexit
+
+          echo "Before running go mod tidy"
+          echo "head -n10 go.mod "
+          head -n10 go.mod
+
+          echo "git diff"
+          git diff
+
+          echo "Running go mod tidy"
+          go mod tidy
+
+          echo "After running go mod tidy"
           echo "head -n10 go.mod "
           head -n10 go.mod
 
@@ -39,7 +54,7 @@ jobs:
         id: commit
         uses: paketo-buildpacks/github-config/actions/pull-request/create-commit@main
         with:
-          message: "Updating go mod version"
+          message: "Updates go mod toolchain version to ${{ steps.setup-go.outputs.go-version }}"
           pathspec: "."
           keyid: ${{ secrets.PAKETO_BOT_GPG_SIGNING_KEY_ID }}
           key: ${{ secrets.PAKETO_BOT_GPG_SIGNING_KEY }}
@@ -55,7 +70,7 @@ jobs:
         uses: paketo-buildpacks/github-config/actions/pull-request/open@main
         with:
           token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-          title: "Updates go mod version"
+          title: "Updates go mod toolchain version to ${{ steps.setup-go.outputs.go-version }}"
           branch: automation/go-mod-update/update-main
 
   failure:
@@ -73,6 +88,6 @@ jobs:
           comment_if_exists: true
           issue_title: "Failure: Update Go Mod Version workflow"
           issue_body: |
-            Update GitHub config workflow [failed](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}).
+            Update Go Mod Version workflow [failed](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}).
           comment_body: |
             Another failure occurred: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
