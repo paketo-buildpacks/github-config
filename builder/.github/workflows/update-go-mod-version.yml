@@ -25,7 +25,7 @@ jobs:
           go-version: 'stable'
       - name: Get current go toolchain version
         id: current-go-version
-        uses: pivotal-cf/tanzu-cnb-github-config/actions/update-go-mod-version@main
+        uses: paketo-buildpacks/github-config/actions/update-go-mod-version@main
         with:
           toolchain-version: ${{ steps.setup-go.outputs.go-version }}
       - name: Go mod tidy
