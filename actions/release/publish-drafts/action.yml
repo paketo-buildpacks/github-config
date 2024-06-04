@@ -1,0 +1,20 @@
+name: "Publish Draft Releases"
+description: |
+  Publishes either latest draft release, or all available draft releases on a repository
+inputs:
+  repo:
+    description: 'Repository to publish draft releases'
+    required: true
+  all:
+    description: 'Boolean. If true, publish all draft releases, otherwise publish just the latest'
+    required: false
+    default: false
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--repo"
+  - "${{ inputs.repo }}"
+  - "--all"
+  - "${{ inputs.all }}"
