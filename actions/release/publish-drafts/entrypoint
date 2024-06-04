@@ -34,8 +34,8 @@ function main() {
 
   gh auth status
 
-  # get all draft releases, and sort them in descending order
-  versions=$(gh api /repos/${repo}/releases | jq -r '[.[] | select(.draft == true) | .tag_name] | sort | reverse')
+  # get all draft releases, and sort them in ascending order so the highest semver release, is published as "latest"
+  versions=$(gh api /repos/${repo}/releases | jq -r '[.[] | select(.draft == true) | .tag_name] | sort')
   if [[ $(jq length <<<"$versions") -eq 0 ]]; then
     echo "Nothing to release!"
   else
