@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+set -euo pipefail
+shopt -s inherit_errexit
+
+function main() {
+  local repo all
+  while [[ "${#}" != 0 ]]; do
+    case "${1}" in
+      --repo)
+        repo="${2}"
+        shift 2
+        ;;
+
+      --all)
+        all="${2}"
+        shift 2
+        ;;
+
+      "")
+        # skip if the argument is empty
+        shift 1
+        ;;
+
+      *)
+        echo "Unknown argument" "$@"
+        exit 1
+    esac
+  done
+
+  if [[ -z "${GITHUB_TOKEN}" ]]; then
+    echo "Must set \$GITHUB_TOKEN"
+    exit 1
+  fi
+
+  gh auth status
+
+  # get all draft releases, and sort them in descending order
+  versions=$(gh api /repos/${repo}/releases | jq -r '[.[] | select(.draft == true) | .tag_name] | sort | reverse')
+  if [[ $(jq length <<<"$versions") -eq 0 ]]; then
+    echo "Nothing to release!"
+  else
+    if [[ "${all}" == "true" ]]; then
+      for release in $(echo ${versions} | jq -r .[]); do
+        publish "${release}" "${repo}"
+      done
+    else
+      release=$(echo ${versions} | jq -r .[0])
+      publish "${release}" "${repo}"
+    fi
+  fi
+}
+
+function publish() {
+  local release repo
+  release="${1}"
+  repo="${2}"
+
+  echo "Publishing ${release} for ${repo}"
+  gh release edit ${release} -R ${repo} --draft=false
+}
+
+main "${@:-}"
+
