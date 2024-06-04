@@ -80,7 +80,7 @@ function main() {
 #
 # based on: https://stackoverflow.com/questions/8350942/how-to-re-run-the-curl-command-automatically-when-the-error-occurs/8351489#8351489
 function with_backoff {
- local max_attempts=8 # about two minutes 
+  local max_attempts=8 # about two minutes 
   local timeout=1 # seconds between retries
   local attempt=1
   local exitCode=0
