@@ -77,7 +77,7 @@ function main() {
     if [ "${safe}" -eq "0" ]; then
       echo "Files changed that aren't on the patch allowlist"
       echo "label=" >> "$GITHUB_OUTPUT"
-      exit 0
+      exit 1
     fi
   done < <(gh api /repos/"${repo}"/pulls/"${number}"/files --jq '.[].filename')
 
