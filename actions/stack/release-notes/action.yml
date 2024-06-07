@@ -41,6 +41,9 @@ inputs:
   patched_usns:
     description: 'JSON array of objects "{ name: USN name, url: USN URL, description: USN description}"'
     required: false
+  supports_usns:
+    description: 'Boolean whether the release notes should support/show USNs'
+    required: false
 
 runs:
   using: 'docker'
@@ -68,3 +71,5 @@ runs:
   - "${{ inputs.run_packages_modified }}"
   - "--run-removed"
   - "${{ inputs.run_packages_removed_with_force }}"
+  - "--supports-usns"
+  - "${{ inputs.supports_usns }}"
