@@ -22,33 +22,45 @@ No USNs patched in this release.
 
 ## Build Image Package Changes
 ### Added
-{{- if ne (len .BuildAdded) 0 }}
+{{- if and (gt (len .BuildAdded) 0) (lt (len .BuildAdded) .ReceiptsShowLimit) }}
 ```
 {{- range .BuildAdded }}
 {{ .Name }} {{ .Version }} (PURL: {{ .PURL }})
 {{- end }}
+```
+{{- else if and (gt (len .BuildAdded) 0) (gt (len .BuildAdded) .ReceiptsShowLimit) }}
+```
+❌ TOO large to include
 ```
 {{- else }}
 No packages added.
 {{- end }}
 
 ### Modified
-{{- if ne (len .BuildModified) 0 }}
+{{- if and (gt (len .BuildModified) 0) (lt (len .BuildModified) .ReceiptsShowLimit) }}
 ```
 {{- range .BuildModified }}
 {{ .Name }} {{ .PreviousVersion }} ==> {{ .CurrentVersion }} (PURL: {{ .PreviousPURL }} ==> {{ .CurrentPURL }})
 {{- end }}
+```
+{{- else if and (gt (len .BuildModified) 0) (gt (len .BuildModified) .ReceiptsShowLimit) }}
+```
+❌ TOO large to include
 ```
 {{- else }}
 No packages modified.
 {{- end }}
 
 ### Removed
-{{- if ne (len .BuildRemoved) 0 }}
+{{- if and (gt (len .BuildRemoved) 0) (lt (len .BuildRemoved) .ReceiptsShowLimit) }}
 ```
 {{- range .BuildRemoved }}
 {{ .Name }} {{ .Version }} (PURL: {{ .PURL }})
 {{- end }}
+```
+{{- else if and (gt (len .BuildRemoved) 0) (gt (len .BuildRemoved) .ReceiptsShowLimit) }}
+```
+❌ TOO large to include
 ```
 {{- else }}
 No packages removed.
@@ -57,33 +69,45 @@ No packages removed.
 
 ## Run Image Package Changes
 ### Added
-{{- if ne (len .RunAdded) 0 }}
+{{- if and (gt (len .RunAdded) 0) (lt (len .RunAdded) .ReceiptsShowLimit) }}
 ```
 {{- range .RunAdded }}
 {{ .Name }} {{ .Version }} (PURL: {{ .PURL }})
 {{- end }}
+```
+{{- else if and (gt (len .RunAdded) 0) (gt (len .RunAdded) .ReceiptsShowLimit) }}
+```
+❌ TOO large to include
 ```
 {{- else }}
 No packages added.
 {{- end }}
 
 ### Modified
-{{- if ne (len .RunModified) 0 }}
+{{- if and (gt (len .RunModified) 0) (lt (len .RunModified) .ReceiptsShowLimit) }}
 ```
 {{- range .RunModified }}
 {{ .Name }} {{ .PreviousVersion }} ==> {{ .CurrentVersion }} (PURL: {{ .PreviousPURL }} ==> {{ .CurrentPURL }})
 {{- end }}
+```
+{{- else if and (gt (len .RunModified) 0) (gt (len .RunModified) .ReceiptsShowLimit) }}
+```
+❌ TOO large to include
 ```
 {{- else }}
 No packages modified.
 {{- end }}
 
 ### Removed
-{{- if ne (len .RunRemoved) 0 }}
+{{- if and (gt (len .RunRemoved) 0) (lt (len .RunRemoved) .ReceiptsShowLimit) }}
 ```
 {{- range .RunRemoved }}
 {{ .Name }} {{ .Version }} (PURL: {{ .PURL }})
 {{- end }}
+```
+{{- else if and (gt (len .RunRemoved) 0) (gt (len .RunRemoved) .ReceiptsShowLimit) }}
+```
+❌ TOO large to include
 ```
 {{- else }}
 No packages removed.
