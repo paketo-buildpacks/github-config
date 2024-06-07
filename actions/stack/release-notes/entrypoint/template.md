@@ -8,6 +8,8 @@ Run: `{{- .RunImage -}}`
 
 {{- if .SupportsUsns }}
 
+{{- if .SupportsUsns }}
+
 ## Patched USNs
 {{- if ne (len .PatchedArray) 0 }}
 {{ range .PatchedArray }}
@@ -17,8 +19,6 @@ Run: `{{- .RunImage -}}`
 No USNs patched in this release.
 {{- end }}
 {{- end }}
-
-{{- if .BuildImage}}
 
 ## Build Image Package Changes
 ### Added
