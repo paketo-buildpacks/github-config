@@ -51,6 +51,7 @@ func main() {
 		RunPackagesRemovedJSON    string
 		PatchedJSON               string
 		SupportsUsns              string
+		ReceiptsShowLimit         string
 	}
 
 	flag.StringVar(&config.BuildImage, "build-image", "", "Registry location of stack build image")
@@ -65,21 +66,23 @@ func main() {
 	flag.StringVar(&config.RunPackagesAddedJSON, "run-added", "", "JSON Array of packages added to run image")
 	flag.StringVar(&config.RunPackagesModifiedJSON, "run-modified", "", "JSON Array of packages modified in run image")
 	flag.StringVar(&config.RunPackagesRemovedJSON, "run-removed", "", "JSON Array of packages removed in run image")
+	flag.StringVar(&config.ReceiptsShowLimit, "receipts-show-limit", "2147483647", "Integer which defines the limit of whether it should show or not the receipts array of each image")
 	flag.Parse()
 
 	var contents struct {
-		PatchedArray   []USN
-		SupportsUsns   bool
-		BuildAdded     []Package
-		BuildModified  []ModifiedPackage
-		BuildRemoved   []Package
-		RunAdded       []Package
-		RunModified    []ModifiedPackage
-		RunRemoved     []Package
-		BuildImage     string
-		RunImage       string
-		BuildCveReport string
-		RunCveReport   string
+		PatchedArray      []USN
+		SupportsUsns      bool
+		BuildAdded        []Package
+		BuildModified     []ModifiedPackage
+		BuildRemoved      []Package
+		RunAdded          []Package
+		RunModified       []ModifiedPackage
+		RunRemoved        []Package
+		BuildImage        string
+		RunImage          string
+		BuildCveReport    string
+		RunCveReport      string
+		ReceiptsShowLimit int
 	}
 
 	err := json.Unmarshal([]byte(fixEmptyArray(config.PatchedJSON)), &contents.PatchedArray)
@@ -144,6 +147,11 @@ func main() {
 
 	contents.BuildImage = config.BuildImage
 	contents.RunImage = config.RunImage
+	contents.ReceiptsShowLimit, err = strconv.Atoi(config.ReceiptsShowLimit)
+
+	if err != nil {
+		log.Fatalf("failed converting receipts show limit string to int: %s", err.Error())
+	}
 
 	t, err := template.New("template.md").Parse(tString)
 	if err != nil {

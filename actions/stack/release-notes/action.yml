@@ -44,6 +44,9 @@ inputs:
   supports_usns:
     description: 'Boolean whether the release notes should support/show USNs'
     required: false
+  receipts_show_limit:
+    description: 'Integer which defines the limit of whether it should show or not the receipts array of each image'
+    required: false
 
 runs:
   using: 'docker'
@@ -73,3 +76,5 @@ runs:
   - "${{ inputs.run_packages_removed_with_force }}"
   - "--supports-usns"
   - "${{ inputs.supports_usns }}"
+  - "--receipts-show-limit"
+  - "${{ inputs.receipts_show_limit }}"
