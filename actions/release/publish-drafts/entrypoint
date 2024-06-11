@@ -34,8 +34,12 @@ function main() {
 
   gh auth status
 
-  # get all draft releases, and sort them in ascending order so the highest semver release, is published as "latest"
-  versions=$(gh api /repos/${repo}/releases | jq -r '[.[] | select(.draft == true) | .tag_name] | sort')
+  # Publish the highest semver release as "latest":
+  # get all draft releases
+  # trim off the 'v' in the version
+  # separates each part of the version
+  # sorts in ascending order
+  versions=$(gh api /repos/${repo}/releases | jq -r '[.[] | select(.draft == true) | .tag_name] | map(ltrimstr("v")) | sort_by( split(".") | map(tonumber) )')
   if [[ $(jq length <<<"$versions") -eq 0 ]]; then
     echo "Nothing to release!"
   else
