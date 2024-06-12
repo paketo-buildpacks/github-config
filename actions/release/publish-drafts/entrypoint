@@ -36,19 +36,25 @@ function main() {
 
   # Publish the highest semver release as "latest":
   # get all draft releases
-  # trim off the 'v' in the version
+  # trim off the 'v' prefix in the version
   # separates each part of the version
-  # sorts in ascending order
-  versions=$(gh api /repos/${repo}/releases | jq -r '[.[] | select(.draft == true) | .tag_name] | map(ltrimstr("v")) | sort_by( split(".") | map(tonumber) )')
+  # sorts versions in ascending order
+  # readd the 'v' prefix to each version (needed for gh CLI to find the release correctly)
+
+  versions=$(gh api /repos/${repo}/releases | jq -r '[.[] | select(.draft == true) | .tag_name] | map(ltrimstr("v")) | sort_by( split(".") | map(tonumber) ) | map("v" + .)')
+
   if [[ $(jq length <<<"$versions") -eq 0 ]]; then
     echo "Nothing to release!"
   else
     if [[ "${all}" == "true" ]]; then
+      # publish ALL draft releases, in order of lowest semantic version to highest
       for release in $(echo ${versions} | jq -r .[]); do
         publish "${release}" "${repo}"
       done
     else
-      release=$(echo ${versions} | jq -r .[0])
+      # publish the LAST element in the version list
+      # this corresponds to the HIGHEST semver version
+      release=$(echo ${versions} | jq -r .[-1])
       publish "${release}" "${repo}"
     fi
   fi
