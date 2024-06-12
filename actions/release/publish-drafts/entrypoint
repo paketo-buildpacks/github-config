@@ -59,8 +59,8 @@ function publish() {
   release="${1}"
   repo="${2}"
 
-  echo "Publishing ${release} for ${repo}"
-  gh release edit ${release} -R ${repo} --draft=false
+  echo "Publishing v${release} for ${repo}"
+  gh release edit v${release} -R ${repo} --draft=false
 }
 
 main "${@:-}"
