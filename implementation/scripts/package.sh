@@ -65,7 +65,7 @@ function main {
   tools::install "${token}"
 
   buildpack_type=buildpack
-  if [ -f "extension.toml" ]; then
+  if [ -f "${ROOT_DIR}/extension.toml" ]; then
     buildpack_type=extension
   fi
 
