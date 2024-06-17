@@ -32,8 +32,9 @@ type Label struct {
 }
 
 type PullRequest struct {
-	Number int     `json:"number"`
-	Labels []Label `json:"labels"`
+	MergedAt string  `json:"merged_at"`
+	Number   int     `json:"number"`
+	Labels   []Label `json:"labels"`
 }
 
 const (
@@ -231,6 +232,9 @@ func getPRsSinceLastRelease(client *http.Client, config Config, previous *semver
 		}
 
 		for _, pr := range commitPRs {
+			if pr.MergedAt == "" {
+				continue
+			}
 			for _, label := range pr.Labels {
 				newSize, err := labelToSize(label.Name)
 				if err != nil {
