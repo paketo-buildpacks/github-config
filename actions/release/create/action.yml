@@ -24,6 +24,9 @@ inputs:
   body:
     description: 'Text describing the contents of the release'
     default: ''
+  body_filepath:
+    description: 'Path to release body'
+    default: ''
   draft:
     description: 'When set to true, creates a draft release'
     default: 'false'
@@ -47,6 +50,8 @@ runs:
   - ${{ inputs.name }}
   - "--body"
   - ${{ inputs.body }}
+  - "--body-filepath"
+  - ${{ inputs.body_filepath }}
   - "--assets"
   - ${{ inputs.assets }}
   - "--draft=${{ inputs.draft }}"
