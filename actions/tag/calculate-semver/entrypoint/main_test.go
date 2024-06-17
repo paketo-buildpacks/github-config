@@ -126,7 +126,7 @@ func TestEntrypoint(t *testing.T) {
 					"/repos/some-org/some-patch-repo/compare/v1.2.3...some-ref-name",
 					"/repos/some-org/some-patch-repo/compare/v1.1.2...some-ref-name":
 					w.WriteHeader(http.StatusOK)
-					fmt.Fprintln(w, `{ "commits" : [{ "sha" : "abcdef"}, { "sha" : "ghijklm" }]}`)
+					fmt.Fprintln(w, `{ "commits" : [{ "sha" : "abcdef"}, { "sha" : "ghijklm" }, { "sha" : "openstill" }]}`)
 
 				case
 					"/repos/some-org/some-broken-pulls-repo/compare/v1.2.3...some-ref-name",
@@ -147,7 +147,8 @@ func TestEntrypoint(t *testing.T) {
 						"labels" : [
 						{ "name" : "semver:patch"},
 						{ "name" : "otherLabel" }
-						]
+						],
+						"merged_at" : "some-time"
 					}]`)
 
 				case "/repos/some-org/some-patch-repo/commits/ghijklm/pulls":
@@ -156,6 +157,16 @@ func TestEntrypoint(t *testing.T) {
 					{ "number" : 1,
 						"labels" : [
 						{ "name" : "semver:patch"},
+						{ "name" : "otherLabel" }
+						],
+						"merged_at" : "some-time"
+					}]`)
+
+				case "/repos/some-org/some-patch-repo/commits/openstill/pulls":
+					w.WriteHeader(http.StatusOK)
+					fmt.Fprintln(w, `[
+					{ "number" : 3,
+						"labels" : [
 						{ "name" : "otherLabel" }
 						]
 					}]`)
@@ -167,7 +178,8 @@ func TestEntrypoint(t *testing.T) {
 						"labels" : [
 						{ "name" : "semver:patch"},
 						{ "name" : "otherLabel" }
-						]
+						],
+						"merged_at" : "some-time"
 					}]`)
 
 				case "/repos/some-org/some-minor-repo/commits/ghijklm/pulls":
@@ -176,6 +188,16 @@ func TestEntrypoint(t *testing.T) {
 					{ "number" : 3,
 						"labels" : [
 						{ "name" : "semver:minor"},
+						{ "name" : "otherLabel" }
+						],
+						"merged_at" : "some-time"
+					}]`)
+
+				case "/repos/some-org/some-minor-repo/commits/openstill/pulls":
+					w.WriteHeader(http.StatusOK)
+					fmt.Fprintln(w, `[
+					{ "number" : 3,
+						"labels" : [
 						{ "name" : "otherLabel" }
 						]
 					}]`)
@@ -187,7 +209,8 @@ func TestEntrypoint(t *testing.T) {
 						"labels" : [
 						{ "name" : "semver:major"},
 						{ "name" : "otherLabel" }
-						]
+						],
+						"merged_at" : "some-time"
 					}]`)
 
 				case "/repos/some-org/some-major-repo/commits/ghijklm/pulls":
@@ -197,6 +220,16 @@ func TestEntrypoint(t *testing.T) {
 						"labels" : [
 						{ "name" : "semver:minor"},
 						{ "name" : "otherLabel" }
+						],
+						"merged_at" : "some-time"
+					}]`)
+
+				case "/repos/some-org/some-major-repo/commits/openstill/pulls":
+					w.WriteHeader(http.StatusOK)
+					fmt.Fprintln(w, `[
+					{ "number" : 3,
+						"labels" : [
+						{ "name" : "otherLabel" }
 						]
 					}]`)
 
@@ -204,7 +237,10 @@ func TestEntrypoint(t *testing.T) {
 					w.WriteHeader(http.StatusOK)
 					fmt.Fprintln(w, `[
 					{ "number" : 1,
-						"labels" : [{ "name" : "otherLabel" }]
+						"labels" : [
+						{ "name" : "otherLabel" }
+						],
+						"merged_at" : "some-time"
 					}]`)
 
 				case "/repos/some-org/some-many-label-repo/commits/abcdef/pulls":
@@ -213,7 +249,10 @@ func TestEntrypoint(t *testing.T) {
 					{ "number" : 1,
 						"labels" : [
 						{ "name" : "semver:minor" },
-						{ "name" : "semver:major" }]}]`)
+						{ "name" : "semver:major" }
+						],
+						"merged_at" : "some-time"
+					}]`)
 
 				case
 					"/repos/some-org/some-broken-commits-repo/compare/v1.2.3...some-ref-name",
@@ -265,13 +304,14 @@ func TestEntrypoint(t *testing.T) {
 
 				Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
 
-				Expect(requests).To(HaveLen(5))
+				Expect(requests).To(HaveLen(6))
 
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-patch-repo"))
 				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-patch-repo/releases"))
 				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-patch-repo/compare/v1.2.3...some-ref-name"))
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/ghijklm/pulls"))
+				Expect(requests[5].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/openstill/pulls"))
 
 				outputContains(`tag=1.2.4`)
 			})
@@ -298,13 +338,14 @@ func TestEntrypoint(t *testing.T) {
 
 				Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
 
-				Expect(requests).To(HaveLen(5))
+				Expect(requests).To(HaveLen(6))
 
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-minor-repo"))
 				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-minor-repo/releases"))
 				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-minor-repo/compare/v1.2.3...some-ref-name"))
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-minor-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-minor-repo/commits/ghijklm/pulls"))
+				Expect(requests[5].URL.Path).To(Equal("/repos/some-org/some-minor-repo/commits/openstill/pulls"))
 
 				outputContains(`tag=1.3.0`)
 			})
@@ -331,13 +372,14 @@ func TestEntrypoint(t *testing.T) {
 
 				Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
 
-				Expect(requests).To(HaveLen(5))
+				Expect(requests).To(HaveLen(6))
 
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-major-repo"))
 				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-major-repo/releases"))
 				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-major-repo/compare/v1.2.3...some-ref-name"))
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-major-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-major-repo/commits/ghijklm/pulls"))
+				Expect(requests[5].URL.Path).To(Equal("/repos/some-org/some-major-repo/commits/openstill/pulls"))
 
 				outputContains(`tag=2.0.0`)
 			})
@@ -456,13 +498,14 @@ func TestEntrypoint(t *testing.T) {
 
 				Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
 
-				Expect(requests).To(HaveLen(5))
+				Expect(requests).To(HaveLen(6))
 
 				Expect(requests[0].URL.Path).To(Equal("/repos/some-org/some-patch-repo"))
 				Expect(requests[1].URL.Path).To(Equal("/repos/some-org/some-patch-repo/releases"))
 				Expect(requests[2].URL.Path).To(Equal("/repos/some-org/some-patch-repo/compare/v1.1.2...some-ref-name"))
 				Expect(requests[3].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/abcdef/pulls"))
 				Expect(requests[4].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/ghijklm/pulls"))
+				Expect(requests[5].URL.Path).To(Equal("/repos/some-org/some-patch-repo/commits/openstill/pulls"))
 
 				outputContains(`tag=1.1.3`)
 			})

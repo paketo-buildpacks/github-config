@@ -3,11 +3,16 @@ set -euo pipefail
 shopt -s inherit_errexit
 
 function main() {
-  local branch
+  local branch force
   while [ "${#}" != 0 ]; do
     case "${1}" in
       --branch)
         branch="${2}"
+        shift 2
+        ;;
+
+      --force)
+        force="${2}"
         shift 2
         ;;
 
@@ -22,7 +27,12 @@ function main() {
   done
 
   git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-  git push origin "${branch}"
+
+  if [[ "${force}" == "true" ]]; then
+    git push origin "${branch}" --force-with-lease
+  else
+    git push origin "${branch}"
+  fi
 }
 
 main "${@:-}"

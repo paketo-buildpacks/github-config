@@ -7,6 +7,10 @@ inputs:
   branch:
     description: 'Name of the branch to push'
     required: true
+  force:
+    description: 'Push using --force-with-lease'
+    required: false
+    default: ""
 
 runs:
   using: 'docker'
@@ -14,3 +18,5 @@ runs:
   args:
   - "--branch"
   - ${{ inputs.branch }}
+  - "--force"
+  - ${{ inputs.force }}
