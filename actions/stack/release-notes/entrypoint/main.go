@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"text/template"
 )
 
@@ -49,6 +50,7 @@ func main() {
 		RunPackagesModifiedJSON   string
 		RunPackagesRemovedJSON    string
 		PatchedJSON               string
+		SupportsUsns              string
 	}
 
 	flag.StringVar(&config.BuildImage, "build-image", "", "Registry location of stack build image")
@@ -56,6 +58,7 @@ func main() {
 	flag.StringVar(&config.BuildCveReport, "build-cve-report", "", "CVE scan report path of build image in markdown format")
 	flag.StringVar(&config.RunCveReport, "run-cve-report", "", "CVE scan report path of run image in markdown format")
 	flag.StringVar(&config.PatchedJSON, "patched-usns", "", "JSON Array of patched USNs")
+	flag.StringVar(&config.SupportsUsns, "supports-usns", "", "Boolean variable to show patched USNs in release notes")
 	flag.StringVar(&config.BuildPackagesAddedJSON, "build-added", "", "JSON Array of packages added to build image")
 	flag.StringVar(&config.BuildPackagesModifiedJSON, "build-modified", "", "JSON Array of packages modified in build image")
 	flag.StringVar(&config.BuildPackagesRemovedJSON, "build-removed", "", "JSON Array of packages removed in build image")
@@ -66,6 +69,7 @@ func main() {
 
 	var contents struct {
 		PatchedArray   []USN
+		SupportsUsns   bool
 		BuildAdded     []Package
 		BuildModified  []ModifiedPackage
 		BuildRemoved   []Package
@@ -81,6 +85,15 @@ func main() {
 	err := json.Unmarshal([]byte(fixEmptyArray(config.PatchedJSON)), &contents.PatchedArray)
 	if err != nil {
 		log.Fatalf("failed unmarshalling patched USNs: %s", err.Error())
+	}
+
+	if config.SupportsUsns == "" {
+		contents.SupportsUsns = true
+	} else {
+		contents.SupportsUsns, err = strconv.ParseBool(config.SupportsUsns)
+		if err != nil {
+			log.Fatalf("failed converting supportsUsns string to boolean: %s", err.Error())
+		}
 	}
 
 	err = json.Unmarshal([]byte(fixEmptyArray(config.BuildPackagesAddedJSON)), &contents.BuildAdded)
