@@ -103,13 +103,7 @@ jobs:
       run: |
 
         if [ "${{ needs.preparation.outputs.push_to_dockerhub }}" == "true" ]; then
-        echo "${DOCKERHUB_PASSWORD}" | sudo skopeo login --username "${DOCKERHUB_USERNAME}" --password-stdin index.docker.io
-        echo "${DOCKERHUB_PASSWORD}" | sudo skopeo login --username "${DOCKERHUB_USERNAME}" --password-stdin index.docker.io
-        echo "${GCR_PASSWORD}" | sudo skopeo login --username "${GCR_USERNAME}" --password-stdin gcr.io
-
           echo "${DOCKERHUB_PASSWORD}" | sudo skopeo login --username "${DOCKERHUB_USERNAME}" --password-stdin index.docker.io
-        echo "${GCR_PASSWORD}" | sudo skopeo login --username "${GCR_USERNAME}" --password-stdin gcr.io
-
           sudo skopeo copy "oci-archive:${GITHUB_WORKSPACE}/${{ matrix.oci_image }}.oci" "docker://${DOCKERHUB_ORG}/${{ matrix.oci_image }}-${{ steps.registry-repo.outputs.name }}:${{ steps.event.outputs.tag }}"
           sudo skopeo copy "oci-archive:${GITHUB_WORKSPACE}/${{ matrix.oci_image }}.oci" "docker://${DOCKERHUB_ORG}/${{ matrix.oci_image }}-${{ steps.registry-repo.outputs.name }}:latest"
         fi
