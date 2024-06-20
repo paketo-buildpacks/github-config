@@ -66,7 +66,7 @@ func main() {
 	flag.StringVar(&config.RunPackagesAddedJSON, "run-added", "", "JSON Array of packages added to run image")
 	flag.StringVar(&config.RunPackagesModifiedJSON, "run-modified", "", "JSON Array of packages modified in run image")
 	flag.StringVar(&config.RunPackagesRemovedJSON, "run-removed", "", "JSON Array of packages removed in run image")
-	flag.StringVar(&config.ReceiptsShowLimit, "receipts-show-limit", "2147483647", "Integer which defines the limit of whether it should show or not the receipts array of each image")
+	flag.StringVar(&config.ReceiptsShowLimit, "receipts-show-limit", "", "Integer which defines the limit of whether it should show or not the receipts array of each image")
 	flag.Parse()
 
 	var contents struct {
@@ -147,6 +147,9 @@ func main() {
 
 	contents.BuildImage = config.BuildImage
 	contents.RunImage = config.RunImage
+	if config.ReceiptsShowLimit == "" {
+		config.ReceiptsShowLimit = "2147483647"
+	}
 	contents.ReceiptsShowLimit, err = strconv.Atoi(config.ReceiptsShowLimit)
 
 	if err != nil {
