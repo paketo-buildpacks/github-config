@@ -4,6 +4,8 @@ shopt -s inherit_errexit
 
 function main() {
   local token repo
+  token=""
+  repo=""
 
   while [[ "${#}" != 0 ]]; do
     case "${1}" in
@@ -15,6 +17,11 @@ function main() {
       --repo)
         repo="${2}"
         shift 2
+        ;;
+
+      "")
+        # skip if the argument is empty
+        shift 1
         ;;
 
       *)
