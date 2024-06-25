@@ -49,6 +49,13 @@ jobs:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
         repo: anchore/syft
 
+    - name: Fetch Latest crane
+      id: latest-crane
+      uses: paketo-buildpacks/github-config/actions/tools/latest@main
+      with:
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        repo: google/go-containerregistry
+
     - name: Update builder tools.json
       env:
         JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
@@ -90,13 +97,14 @@ jobs:
         JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
         SYFT_VERSION: ${{ steps.latest-syft.outputs.version }}
+        CRANE_VERSION: ${{ steps.latest-crane.outputs.version }}
       run: |
         jq --null-input \
            --sort-keys \
            --arg pack "${PACK_VERSION}" \
            --arg jam "${JAM_VERSION}" \
            --arg syft "${SYFT_VERSION}" \
-           '{ pack: $pack, jam: $jam, syft: $syft }' > ./stack/scripts/.util/tools.json
+           '{ pack: $pack, jam: $jam, syft: $syft, crane: $crane }' > ./stack/scripts/.util/tools.json
 
     - name: Commit
       id: commit
