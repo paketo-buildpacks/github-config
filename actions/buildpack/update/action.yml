@@ -17,6 +17,11 @@ inputs:
     description: 'Allow only buildpack patch updates'
     default: 'false'
 
+outputs:
+  semver_bump:
+    description: 'The highest semver bump across all updated dependencies in the buildpack.toml'
+    value: ${{ steps.update.outputs.semver_bump }}
+
 runs:
   using: 'composite'
   steps:
@@ -32,6 +37,7 @@ runs:
       echo "version=${version#v}" >> "$GITHUB_OUTPUT"
 
   - name: Install Jam
+    id: install
     shell: bash
     run: |
       #!/usr/bin/env bash
@@ -49,13 +55,20 @@ runs:
       chmod +x "${HOME}/bin/jam"
 
   - name: Update Buildpack
+    id: update
     shell: bash
     run: |
       #!/usr/bin/env bash
       set -euo pipefail
       shopt -s inherit_errexit
-      jam update-buildpack \
+
+      output="$(jam update-buildpack \
         --buildpack-file "${PWD}/${{ inputs.buildpack_toml_path }}" \
         --package-file "${PWD}/${{ inputs.package_toml_path }}" \
         --no-cnb-registry="${{ inputs.no_cnb_registry }}" \
-        --patch-only="${{ inputs.patch_only }}"
+        --patch-only="${{ inputs.patch_only }}" )"
+
+      # output looks like: 'Highest semver bump: <patch|minor|major|<none>>'
+      semver_bump=$(echo "${output}" | cut -d' ' -f4)
+      echo "semver_bump=${semver_bump}"
+      echo "semver_bump=${semver_bump}" >> "$GITHUB_OUTPUT"
