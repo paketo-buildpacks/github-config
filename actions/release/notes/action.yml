@@ -13,6 +13,9 @@ inputs:
   buildpackage_path:
     description: 'Relative path to the .cnb buildpackage'
     default: 'build/buildpackage.cnb'
+  buildpack_type:
+    description: 'Specifies whether it is a buildpack or an extension'
+    default: 'buildpack'
 
 outputs:
   release_body:
@@ -28,3 +31,5 @@ runs:
   - ${{ inputs.token }}
   - "--buildpackage-path"
   - ${{ inputs.buildpackage_path }}
+  - "--buildpack-type"
+  - ${{ inputs.buildpack_type }}
