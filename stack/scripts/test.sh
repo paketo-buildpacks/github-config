@@ -62,7 +62,7 @@ function main() {
   fi
 
   if [[ -f $INTEGRATION_JSON ]]; then
-    setupLocalRegistry=$(jq '.setup_local_registy' $INTEGRATION_JSON)
+    setupLocalRegistry=$(jq '.setup_local_registry' $INTEGRATION_JSON)
   fi
 
   if [[ "${setupLocalRegistry}" == "true" ]]; then
