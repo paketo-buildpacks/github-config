@@ -54,11 +54,12 @@ jobs:
         JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
         CREATE_PACKAGE_VERSION: ${{ steps.latest-create-package.outputs.version }}
+        CRANE_VERSION: ${{ steps.latest-crane.outputs.version }}
       run: |
         jq --null-input \
            --sort-keys \
            --arg pack "${PACK_VERSION}" \
-           '{ pack: $pack }' > ./builder/scripts/.util/tools.json
+           '{ pack: $pack, crane: $crane }' > ./builder/scripts/.util/tools.json
 
     - name: Update implementation tools.json
       env:
