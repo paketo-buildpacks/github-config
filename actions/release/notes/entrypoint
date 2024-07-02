@@ -3,7 +3,7 @@ set -euo pipefail
 shopt -s inherit_errexit
 
 function main() {
-  local token repo buildpackage_path
+  local token repo buildpackage_path buildpack_type
   while [ "${#}" != 0 ]; do
     case "${1}" in
       --token)
@@ -18,6 +18,11 @@ function main() {
 
       --buildpackage-path)
         buildpackage_path="${2}"
+        shift 2
+        ;;
+
+      --buildpack-type)
+        buildpack_type="${2}"
         shift 2
         ;;
 
@@ -65,7 +70,7 @@ function main() {
   local content
   content="$(
     jam summarize \
-      --buildpack "${GITHUB_WORKSPACE}/${buildpackage_path}" \
+      --"${buildpack_type}" "${GITHUB_WORKSPACE}/${buildpackage_path}" \
       --format markdown
   )"
 

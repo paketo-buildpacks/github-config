@@ -64,7 +64,7 @@ function main() {
   fi
 
   if [[ -f $INTEGRATION_JSON ]]; then
-    setupLocalRegistry=$(jq '.setup_local_registy' $INTEGRATION_JSON)
+    setupLocalRegistry=$(jq '.setup_local_registry' $INTEGRATION_JSON)
   fi
 
   if [[ "${setupLocalRegistry}" == "true" ]]; then
@@ -79,7 +79,6 @@ function main() {
   if [[ "${setupLocalRegistry}" == "true" ]]; then
     kill $registryPid
   fi
-}
 
 function join_by {
   local d=${1-} f=${2-}
