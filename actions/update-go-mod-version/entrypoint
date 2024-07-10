@@ -4,14 +4,13 @@ set -euo pipefail
 shopt -s inherit_errexit
 
 function main() {
-  local min_go_version toolchain_version
-  min_go_version="1.21" # 1.21 is the minimum to use the toolchain directive in go.mod
-  toolchain_version=""
+  local go_version
+  go_version=""
 
   while [[ "${#}" != 0 ]]; do
     case "${1}" in
-      --toolchain-version)
-        toolchain_version="${2}"
+      --go-version)
+        go_version="${2}"
         shift 2
         ;;
 
@@ -26,38 +25,21 @@ function main() {
     esac
   done
   
-  if [[ -z "${toolchain_version}" ]]; then
-    echo "Must provide toolchain version"
+  if [[ -z "${go_version}" ]]; then
+    echo "Must provide go version"
     exit 1
   fi
 
-  found_go_version="$(grep -E 'go ([0-9]+\.[0-9]+)' < go.mod | sed 's/go //g')"
+  echo "Setting go version to: '${go_version}'"
+  sed -i "s/go .*/go ${go_version}/g" go.mod
 
-  if lt "${found_go_version}" "${min_go_version}"; then
-    echo "Updating go version to the minimum required version '${min_go_version}' (was '${found_go_version}')"
-    sed -i "s/go ${found_go_version}/go ${min_go_version}/g" go.mod
-    found_go_version="${min_go_version}"
-  else
-    echo "not updating go version as current version (${found_go_version}) is >= minimum required version (${min_go_version})"
-  fi
-
-  echo "setting toolchain to: '${toolchain_version}'"
+  echo "setting toolchain to: '${go_version}'"
   if grep -qE 'toolchain go(.*)' < go.mod; then 
-    sed -i "s/toolchain go.*/toolchain go${toolchain_version}/g" go.mod    
+    sed -i "s/toolchain go.*/toolchain go${go_version}/g" go.mod
   else
     # Write the toolchain directive two lines below the go version
-    sed -i "/go ${found_go_version}/r"<(printf "\ntoolchain go%s\n" "${toolchain_version}") go.mod
+    sed -i "/go ${go_version}/r"<(printf "\ntoolchain go%s\n" "${go_version}") go.mod
   fi
-}
-
-# returns $1 <= $2
-function lte() {
-  [[ "$(printf '%s\n' "$1" "$2" | sort -V | head -n1)" == "$1" ]]
-}
-
-# returns $1 < $2
-function lt() {
-  ! lte "$2" "$1"
 }
 
 main "${@:-}"

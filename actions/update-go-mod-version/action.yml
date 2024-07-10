@@ -3,13 +3,13 @@ description: |
   Updates the versions of go and the go toolchain in a go.mod file
 
 inputs:
-  toolchain-version:
-    description: 'Version of the toolchain to write'
+  go-version:
+    description: 'Version of go to write for both the go version and the toolchain version'
     required: true
 
 runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-  - "--toolchain-version"
-  - "${{ inputs.toolchain-version }}"
+  - "--go-version"
+  - "${{ inputs.go-version }}"
