@@ -66,6 +66,7 @@ jobs:
         jq --null-input \
            --sort-keys \
            --arg pack "${PACK_VERSION}" \
+           --arg crane "${CRANE_VERSION}" \
            '{ pack: $pack, crane: $crane }' > ./builder/scripts/.util/tools.json
 
     - name: Update implementation tools.json
