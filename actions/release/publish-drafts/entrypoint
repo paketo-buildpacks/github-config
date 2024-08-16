@@ -58,7 +58,7 @@ function main() {
       publish "${release}" "${repo}"
     fi
   fi
-  echo "versions=${versions}" >> "$GITHUB_OUTPUT"
+  printf "versions=%s\n" "$(echo $versions | jq -c)" >> "$GITHUB_OUTPUT"
 }
 
 function publish() {
