@@ -58,7 +58,7 @@ function main() {
       publish "${release}" "${repo}"
     fi
   fi
-  printf "versions=%s\n" "${versions}" >> "$GITHUB_OUTPUT"
+  printf "versions=%s" "${versions}" >> "$GITHUB_OUTPUT"
 }
 
 function publish() {
