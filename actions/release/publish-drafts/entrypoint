@@ -58,6 +58,7 @@ function main() {
       publish "${release}" "${repo}"
     fi
   fi
+  printf "versions=%s\n" "${versions}" >> "$GITHUB_OUTPUT"
 }
 
 function publish() {
@@ -65,8 +66,9 @@ function publish() {
   release="${1}"
   repo="${2}"
 
-  echo "Publishing ${release} for ${repo}"
-  gh release edit ${release} -R ${repo} --draft=false
+  # TODO put this back
+  echo "NOT Publishing ${release} for ${repo}"
+  # gh release edit ${release} -R ${repo} --draft=false
 }
 
 main "${@:-}"
