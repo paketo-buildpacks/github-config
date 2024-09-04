@@ -31,15 +31,7 @@ function main() {
   fi
 
   echo "Setting go version to: '${go_version}'"
-  sed -i "s/go .*/go ${go_version}/g" go.mod
-
-  echo "setting toolchain to: '${go_version}'"
-  if grep -qE 'toolchain go(.*)' < go.mod; then 
-    sed -i "s/toolchain go.*/toolchain go${go_version}/g" go.mod
-  else
-    # Write the toolchain directive two lines below the go version
-    sed -i "/go ${go_version}/r"<(printf "\ntoolchain go%s\n" "${go_version}") go.mod
-  fi
+  sed -i "s/^go .*/go ${go_version}/g" go.mod
 }
 
 main "${@:-}"
