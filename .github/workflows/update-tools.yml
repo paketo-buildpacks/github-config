@@ -106,6 +106,7 @@ jobs:
            --arg pack "${PACK_VERSION}" \
            --arg jam "${JAM_VERSION}" \
            --arg syft "${SYFT_VERSION}" \
+           --arg crane "${CRANE_VERSION}" \
            '{ pack: $pack, jam: $jam, syft: $syft, crane: $crane }' > ./stack/scripts/.util/tools.json
 
     - name: Commit
