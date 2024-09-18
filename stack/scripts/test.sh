@@ -100,8 +100,8 @@ function main() {
 
   stack_output_builds_exist=$(stack_builds_exist)
 
-  util::print::title "Creating stack..."
   if [[ "${stack_output_builds_exist}" == "false" ]]; then
+    util::print::title "Creating stack..."
     while read -r image; do
       config_dir=$(echo "${image}" | jq -r '.config_dir')
       output_dir=$(echo "${image}" | jq -r '.output_dir')
