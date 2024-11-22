@@ -55,7 +55,7 @@ jobs:
 
 
       - name: Upload `${{ steps.retrieve.outputs.metadata-filepath }}`
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: metadata.json
           path: ${{ steps.retrieve.outputs.metadata-filepath }}
@@ -175,7 +175,7 @@ jobs:
 
       # If compiled, upload the tarball and checksum file for usage in the Update metadata job
       - name: Upload workflow asset
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ needs.get-compile-and-test.outputs.should-compile && matrix.includes.checksum == '' && matrix.includes.uri == '' }}
         with:
           name: '${{ needs.retrieve.outputs.id }}-${{ matrix.includes.version }}-${{ matrix.includes.target }}'
@@ -211,7 +211,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Download artifact files
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: '${{ needs.retrieve.outputs.id }}-${{ matrix.includes.version }}-${{ matrix.includes.target }}'
 
@@ -241,7 +241,7 @@ jobs:
         run: echo "checksum=$(cat ${{ steps.get-file-names.outputs.checksum-file }})" >> "$GITHUB_OUTPUT"
 
       - name: Download metadata.json
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: metadata.json
 
@@ -256,7 +256,7 @@ jobs:
           file: "metadata.json"
 
       - name: Upload modified metadata
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "metadata.json"
           path: "metadata.json"
@@ -290,7 +290,7 @@ jobs:
           echo "outputdir=$(mktemp -d)" >> "$GITHUB_OUTPUT"
 
       - name: Download metadata.json
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: metadata.json
           path: "${{ steps.make-outputdir.outputs.outputdir }}"
