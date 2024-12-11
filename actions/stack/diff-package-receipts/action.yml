@@ -8,14 +8,15 @@ inputs:
   current:
     description: 'Path to current package receipt'
     required: true
-
-outputs:
-  added:
+  added_diff_file:
     description: 'List of packages added'
-  removed:
+    required: true
+  removed_diff_file:
     description: 'List of packages removed'
-  modified:
+    required: true
+  modified_diff_file:
     description: 'List of packages modified'
+    required: true
 
 runs:
   using: 'docker'
@@ -25,3 +26,9 @@ runs:
   - "${{ inputs.previous }}"
   - "--current"
   - "${{ inputs.current }}"
+  - "--added-diff-file"
+  - "${{ inputs.added_diff_file }}"
+  - "--removed-diff-file"
+  - "${{ inputs.removed_diff_file }}"
+  - "--modified-diff-file"
+  - "${{ inputs.modified_diff_file }}"

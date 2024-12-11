@@ -29,8 +29,11 @@ type ModifiedCycloneDXComponent struct {
 
 func main() {
 	var config struct {
-		CurrentPath  string
-		PreviousPath string
+		CurrentPath          string
+		PreviousPath         string
+		AddedDiffFilePath    string
+		RemovedDiffFilePath  string
+		ModifiedDiffFilePath string
 	}
 
 	flag.StringVar(&config.PreviousPath,
@@ -43,10 +46,29 @@ func main() {
 		"",
 		"Path to current package receipt")
 
+	flag.StringVar(&config.AddedDiffFilePath,
+		"added-diff-file",
+		"",
+		"List of packages added")
+
+	flag.StringVar(&config.RemovedDiffFilePath,
+		"removed-diff-file",
+		"",
+		"List of packages removed")
+
+	flag.StringVar(&config.ModifiedDiffFilePath,
+		"modified-diff-file",
+		"",
+		"List of packages modified")
+
 	flag.Parse()
 
 	if config.CurrentPath == "" || config.PreviousPath == "" {
 		log.Fatal("Must provide current and previous paths")
+	}
+
+	if config.AddedDiffFilePath == "" || config.RemovedDiffFilePath == "" || config.ModifiedDiffFilePath == "" {
+		log.Fatal("Must provide diff file paths")
 	}
 
 	absolute, err := filepath.Abs(config.CurrentPath)
@@ -60,6 +82,24 @@ func main() {
 		log.Fatalf("Failed to create absolute path for %s", config.PreviousPath)
 	}
 	config.PreviousPath = absolute
+
+	absolute, err = filepath.Abs(config.AddedDiffFilePath)
+	if err != nil {
+		log.Fatalf("Failed to create absolute path for %s", config.AddedDiffFilePath)
+	}
+	config.AddedDiffFilePath = absolute
+
+	absolute, err = filepath.Abs(config.RemovedDiffFilePath)
+	if err != nil {
+		log.Fatalf("Failed to create absolute path for %s", config.RemovedDiffFilePath)
+	}
+	config.RemovedDiffFilePath = absolute
+
+	absolute, err = filepath.Abs(config.ModifiedDiffFilePath)
+	if err != nil {
+		log.Fatalf("Failed to create absolute path for %s", config.ModifiedDiffFilePath)
+	}
+	config.ModifiedDiffFilePath = absolute
 
 	previous, err := parsePackagesFromFile(config.PreviousPath)
 	if err != nil {
@@ -99,28 +139,37 @@ func main() {
 		}
 	}
 
-	addedJSON, err := json.Marshal(added)
+	addedFile, err := os.OpenFile(config.AddedDiffFilePath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if len(added) == 0 {
-		addedJSON = []byte(`[]`)
+	defer addedFile.Close()
+
+	err = json.NewEncoder(addedFile).Encode(&added)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	removedJSON, err := json.Marshal(removed)
+	removedFile, err := os.OpenFile(config.RemovedDiffFilePath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if len(removed) == 0 {
-		removedJSON = []byte(`[]`)
+	defer removedFile.Close()
+
+	err = json.NewEncoder(removedFile).Encode(&removed)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	modifiedJSON, err := json.Marshal(modified)
+	modifiedFile, err := os.OpenFile(config.ModifiedDiffFilePath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if len(modified) == 0 {
-		modifiedJSON = []byte(`[]`)
+	defer modifiedFile.Close()
+
+	err = json.NewEncoder(modifiedFile).Encode(&modified)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	fmt.Println("Added packages:")
@@ -141,19 +190,6 @@ func main() {
 			pkg.CurrentPURL,
 		)
 	}
-
-	outputFileName, ok := os.LookupEnv("GITHUB_OUTPUT")
-	if !ok {
-		log.Fatal("GITHUB_OUTPUT is not set, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-output-parameter")
-	}
-	file, err := os.OpenFile(outputFileName, os.O_APPEND|os.O_WRONLY, 0)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	fmt.Fprintf(file, "added=%s\n", string(addedJSON))
-	fmt.Fprintf(file, "removed=%s\n", string(removedJSON))
-	fmt.Fprintf(file, "modified=%s\n", string(modifiedJSON))
 }
 
 func parsePackagesFromFile(path string) (map[string]CycloneDXComponent, error) {

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"text/template"
 )
@@ -69,6 +70,42 @@ func main() {
 	flag.StringVar(&config.ReceiptsShowLimit, "receipts-show-limit", "", "Integer which defines the limit of whether it should show or not the receipts array of each image")
 	flag.Parse()
 
+	absolute, err = filepath.Abs(config.BuildPackagesAddedJSON)
+	if err != nil {
+		log.Fatalf("Failed to create absolute path for %s", config.BuildPackagesAddedJSON)
+	}
+	config.BuildPackagesAddedJSON = absolute
+
+	absolute, err = filepath.Abs(config.BuildPackagesModifiedJSON)
+	if err != nil {
+		log.Fatalf("Failed to create absolute path for %s", config.BuildPackagesModifiedJSON)
+	}
+	config.BuildPackagesModifiedJSON = absolute
+
+	absolute, err = filepath.Abs(config.BuildPackagesRemovedJSON)
+	if err != nil {
+		log.Fatalf("Failed to create absolute path for %s", config.BuildPackagesRemovedJSON)
+	}
+	config.BuildPackagesRemovedJSON = absolute
+
+	absolute, err = filepath.Abs(config.RunPackagesAddedJSON)
+	if err != nil {
+		log.Fatalf("Failed to create absolute path for %s", config.RunPackagesAddedJSON)
+	}
+	config.RunPackagesAddedJSON = absolute
+
+	absolute, err = filepath.Abs(config.RunPackagesModifiedJSON)
+	if err != nil {
+		log.Fatalf("Failed to create absolute path for %s", config.RunPackagesModifiedJSON)
+	}
+	config.RunPackagesModifiedJSON = absolute
+
+	absolute, err = filepath.Abs(config.RunPackagesRemovedJSON)
+	if err != nil {
+		log.Fatalf("Failed to create absolute path for %s", config.RunPackagesRemovedJSON)
+	}
+	config.RunPackagesRemovedJSON = absolute
+
 	var contents struct {
 		PatchedArray      []USN
 		SupportsUsns      bool
@@ -99,32 +136,68 @@ func main() {
 		}
 	}
 
-	err = json.Unmarshal([]byte(fixEmptyArray(config.BuildPackagesAddedJSON)), &contents.BuildAdded)
+	buildAddedFile, err := os.Open(config.BuildPackagesAddedJSON)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer buildAddedFile.Close()
+
+	err = json.NewDecoder(buildAddedFile).Decode(&contents.BuildAdded)
 	if err != nil {
 		log.Fatalf("failed unmarshalling build packages added: %s", err.Error())
 	}
 
-	err = json.Unmarshal([]byte(fixEmptyArray(config.BuildPackagesModifiedJSON)), &contents.BuildModified)
+	buildModifiedFile, err := os.Open(config.BuildPackagesModifiedJSON)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer buildModifiedFile.Close()
+
+	err = json.NewDecoder(buildModifiedFile).Decode(&contents.BuildModified)
 	if err != nil {
 		log.Fatalf("failed unmarshalling build packages modified: %s", err.Error())
 	}
 
-	err = json.Unmarshal([]byte(fixEmptyArray(config.BuildPackagesRemovedJSON)), &contents.BuildRemoved)
+	buildRemovedFile, err := os.Open(config.BuildPackagesRemovedJSON)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer buildRemovedFile.Close()
+
+	err = json.NewDecoder(buildRemovedFile).Decode(&contents.BuildRemoved)
 	if err != nil {
 		log.Fatalf("failed unmarshalling build packages removed: %s", err.Error())
 	}
 
-	err = json.Unmarshal([]byte(fixEmptyArray(config.RunPackagesAddedJSON)), &contents.RunAdded)
+	runAddedFile, err := os.Open(config.RunPackagesAddedJSON)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer runAddedFile.Close()
+
+	err = json.NewDecoder(runAddedFile).Decode(&contents.RunAdded)
 	if err != nil {
 		log.Fatalf("failed unmarshalling run packages added: %s", err.Error())
 	}
 
-	err = json.Unmarshal([]byte(fixEmptyArray(config.RunPackagesModifiedJSON)), &contents.RunModified)
+	runModifiedFile, err := os.Open(config.RunPackagesModifiedJSON)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer runModifiedFile.Close()
+
+	err = json.NewDecoder(runModifiedFile).Decode(&contents.RunModified)
 	if err != nil {
 		log.Fatalf("failed unmarshalling run packages modified: %s", err.Error())
 	}
 
-	err = json.Unmarshal([]byte(fixEmptyArray(config.RunPackagesRemovedJSON)), &contents.RunRemoved)
+	runRemovedFile, err := os.Open(config.RunPackagesRemovedJSON)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer runRemovedFile.Close()
+
+	err = json.NewDecoder(runRemovedFile).Decode(&contents.RunRemoved)
 	if err != nil {
 		log.Fatalf("failed unmarshalling run packages removed: %s", err.Error())
 	}

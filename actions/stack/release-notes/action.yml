@@ -21,22 +21,22 @@ inputs:
     description: 'CVE scan report path of run image in markdown format'
     required: false
   build_packages_added:
-    description: 'JSON array of packages added "{ name: name, version: 1.2.3 }"'
+    description: 'Path to build packages added file'
     required: false
   build_packages_modified:
-    description: 'JSON array of packages modified "{ name: name, previousVersion: 1.2.3, currentVersion: 1.2.4 }"'
+    description: 'Path to build packages modified file'
     required: false
   build_packages_removed_with_force:
-    description: 'JSON array of packages removed with user-provided force "{ name: name, version: 1.2.3}"'
+    description: 'Path to build packages removed file'
     required: false
   run_packages_added:
-    description: 'JSON array of packages added "{ name: name, version: 1.2.3 }"'
+    description: 'Path to run packages added file'
     required: false
   run_packages_modified:
-    description: 'JSON array of packages modified "{ name: name, previousVersion: 1.2.3, currentVersion: 1.2.4 }"'
+    description: 'Path to run packages modified file'
     required: false
   run_packages_removed_with_force:
-    description: 'JSON array of packages removed with user-provided force "{ name: name, version: 1.2.3}"'
+    description: 'Path to run packages removed file'
     required: false
   patched_usns:
     description: 'JSON array of objects "{ name: USN name, url: USN URL, description: USN description}"'
