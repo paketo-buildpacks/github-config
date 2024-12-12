@@ -70,7 +70,7 @@ func main() {
 	flag.StringVar(&config.ReceiptsShowLimit, "receipts-show-limit", "", "Integer which defines the limit of whether it should show or not the receipts array of each image")
 	flag.Parse()
 
-	absolute, err = filepath.Abs(config.BuildPackagesAddedJSON)
+	absolute, err := filepath.Abs(config.BuildPackagesAddedJSON)
 	if err != nil {
 		log.Fatalf("Failed to create absolute path for %s", config.BuildPackagesAddedJSON)
 	}
@@ -122,7 +122,7 @@ func main() {
 		ReceiptsShowLimit int
 	}
 
-	err := json.Unmarshal([]byte(fixEmptyArray(config.PatchedJSON)), &contents.PatchedArray)
+	err = json.Unmarshal([]byte(fixEmptyArray(config.PatchedJSON)), &contents.PatchedArray)
 	if err != nil {
 		log.Fatalf("failed unmarshalling patched USNs: %s", err.Error())
 	}
