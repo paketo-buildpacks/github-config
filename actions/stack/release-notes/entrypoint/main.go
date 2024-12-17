@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -244,6 +245,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to execute release notes template: %s", err.Error())
 	}
+
+	fmt.Println(b.String())
 
 	releaseBodyFile, err := os.OpenFile(config.ReleaseBodyFile, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
