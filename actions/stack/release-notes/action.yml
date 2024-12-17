@@ -3,10 +3,6 @@ name: 'Create Release Notes'
 description: |
   Creates release notes for a stack in Markdown format
 
-outputs:
-  release_body:
-    description: Generated detailed release notes for the stack
-
 inputs:
   build_image:
     description: 'Image registry location of build image'
@@ -47,6 +43,9 @@ inputs:
   receipts_show_limit:
     description: 'Integer which defines the limit of whether it should show or not the receipts array of each image'
     required: false
+  release_body_file:
+    description: 'Path to the release body file'
+    required: false
 
 runs:
   using: 'docker'
@@ -78,3 +77,5 @@ runs:
   - "${{ inputs.supports_usns }}"
   - "--receipts-show-limit"
   - "${{ inputs.receipts_show_limit }}"
+  - "--release-body-file"
+  - "${{ inputs.release_body_file }}"
