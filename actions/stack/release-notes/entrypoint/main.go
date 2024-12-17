@@ -2,12 +2,9 @@ package main
 
 import (
 	"bytes"
-	"crypto/rand"
 	_ "embed"
-	"encoding/hex"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -53,6 +50,7 @@ func main() {
 		PatchedJSON               string
 		SupportsUsns              string
 		ReceiptsShowLimit         string
+		ReleaseBodyFile           string
 	}
 
 	flag.StringVar(&config.BuildImage, "build-image", "", "Registry location of stack build image")
@@ -61,13 +59,14 @@ func main() {
 	flag.StringVar(&config.RunCveReport, "run-cve-report", "", "CVE scan report path of run image in markdown format")
 	flag.StringVar(&config.PatchedJSON, "patched-usns", "", "JSON Array of patched USNs")
 	flag.StringVar(&config.SupportsUsns, "supports-usns", "", "Boolean variable to show patched USNs in release notes")
-	flag.StringVar(&config.BuildPackagesAddedJSON, "build-added", "", "JSON Array of packages added to build image")
-	flag.StringVar(&config.BuildPackagesModifiedJSON, "build-modified", "", "JSON Array of packages modified in build image")
-	flag.StringVar(&config.BuildPackagesRemovedJSON, "build-removed", "", "JSON Array of packages removed in build image")
-	flag.StringVar(&config.RunPackagesAddedJSON, "run-added", "", "JSON Array of packages added to run image")
-	flag.StringVar(&config.RunPackagesModifiedJSON, "run-modified", "", "JSON Array of packages modified in run image")
-	flag.StringVar(&config.RunPackagesRemovedJSON, "run-removed", "", "JSON Array of packages removed in run image")
+	flag.StringVar(&config.BuildPackagesAddedJSON, "build-added", "", "Path to diff file of packages added to build image")
+	flag.StringVar(&config.BuildPackagesModifiedJSON, "build-modified", "", "Path to diff file of packages modified in build image")
+	flag.StringVar(&config.BuildPackagesRemovedJSON, "build-removed", "", "Path to diff file of packages removed in build image")
+	flag.StringVar(&config.RunPackagesAddedJSON, "run-added", "", "Path to diff file of packages added to run image")
+	flag.StringVar(&config.RunPackagesModifiedJSON, "run-modified", "", "Path to diff file of packages modified in run image")
+	flag.StringVar(&config.RunPackagesRemovedJSON, "run-removed", "", "Path to diff file of packages removed in run image")
 	flag.StringVar(&config.ReceiptsShowLimit, "receipts-show-limit", "", "Integer which defines the limit of whether it should show or not the receipts array of each image")
+	flag.StringVar(&config.ReleaseBodyFile, "release-body-file", "", "Path to release body file")
 	flag.Parse()
 
 	absolute, err := filepath.Abs(config.BuildPackagesAddedJSON)
@@ -105,6 +104,12 @@ func main() {
 		log.Fatalf("Failed to create absolute path for %s", config.RunPackagesRemovedJSON)
 	}
 	config.RunPackagesRemovedJSON = absolute
+
+	absolute, err = filepath.Abs(config.ReleaseBodyFile)
+	if err != nil {
+		log.Fatalf("Failed to create absolute path for %s", config.ReleaseBodyFile)
+	}
+	config.ReleaseBodyFile = absolute
 
 	var contents struct {
 		PatchedArray      []USN
@@ -240,28 +245,16 @@ func main() {
 		log.Fatalf("failed to execute release notes template: %s", err.Error())
 	}
 
-	fmt.Println(b.String())
-
-	outputFileName, ok := os.LookupEnv("GITHUB_OUTPUT")
-	if !ok {
-		log.Fatalf("GITHUB_OUTPUT is not set, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-output-parameter")
-	}
-	file, err := os.OpenFile(outputFileName, os.O_APPEND|os.O_WRONLY, 0)
+	releaseBodyFile, err := os.OpenFile(config.ReleaseBodyFile, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
-		log.Fatalf("failed to set output: %s", err.Error())
+		log.Fatal(err)
 	}
-	defer file.Close()
-	delimiter := generateDelimiter()
-	fmt.Fprintf(file, "release_body<<%s\n%s\n%s\n", delimiter, b.String(), delimiter) // see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
-}
+	defer releaseBodyFile.Close()
 
-func generateDelimiter() string {
-	data := make([]byte, 16) // roughly the same entropy as uuid v4 used in https://github.com/actions/toolkit/blob/b36e70495fbee083eb20f600eafa9091d832577d/packages/core/src/file-command.ts#L28
-	_, err := rand.Read(data)
+	_, err = releaseBodyFile.Write(b.Bytes())
 	if err != nil {
-		log.Fatal("could not generate random delimiter", err)
+		log.Fatalf("failed to write release body: %s", err.Error())
 	}
-	return hex.EncodeToString(data)
 }
 
 func fixEmptyArray(original string) string {
