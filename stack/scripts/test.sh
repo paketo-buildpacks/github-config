@@ -5,7 +5,7 @@ set -o pipefail
 
 readonly PROG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly STACK_DIR="$(cd "${PROG_DIR}/.." && pwd)"
-readonly STACK_IMAGES_JSON_PATH="${STACK_DIR}/images.json"
+readonly STACK_IMAGES_JSON_PATH="${STACK_DIR}/stacks/images.json"
 readonly INTEGRATION_JSON="${STACK_DIR}/integration.json"
 declare STACK_IMAGES
 
@@ -16,13 +16,16 @@ source "${PROG_DIR}/.util/tools.sh"
 source "${PROG_DIR}/.util/print.sh"
 
 function main() {
-  local clean token test_only_stacks registryPort registryPid localRegistry setupLocalRegistry
+  local clean token test_only_stacks validate_stack_builds
+  local registryPort registryPid localRegistry setupLocalRegistry
+
   help=""
   clean="false"
   token=""
   test_only_stacks=""
   registryPid=""
   setupLocalRegistry=""
+  validate_stack_builds="false"
 
   while [[ "${#}" != 0 ]]; do
     case "${1}" in
@@ -44,6 +47,11 @@ function main() {
       --test-only-stacks)
         test_only_stacks="${2}"
         shift 2
+        ;;
+
+      --validate-stack-builds)
+        validate_stack_builds="true"
+        shift 1
         ;;
 
       "")
@@ -100,6 +108,11 @@ function main() {
 
   stack_output_builds_exist=$(stack_builds_exist)
 
+  if [[ "${stack_output_builds_exist}" == "false" && "${validate_stack_builds}" == "true" ]]; then
+    util::print::error "Stack builds are not valid."
+    exit 1
+  fi
+
   if [[ "${stack_output_builds_exist}" == "false" ]]; then
     util::print::title "Creating stack..."
     while read -r image; do
@@ -109,6 +122,8 @@ function main() {
         --stack-dir "${config_dir}" \
         --build-dir "${output_dir}"
     done <<<"$STACK_IMAGES"
+  else
+    util::print::title "Stack builds already exist..."
   fi
 
   if [[ -f $INTEGRATION_JSON ]]; then
@@ -163,10 +178,11 @@ ${joined_oci_images}
 if they exist. Otherwise, first runs create.sh to create them.
 
 OPTIONS
-  --clean          -c  clears contents of stack output directory before running tests
-  --token <token>  -t  Token used to download assets from GitHub (e.g. jam, pack, etc) (optional)
-  --test-only-stacks   Runs the tests of the stacks passed to this argument (e.g. java-8 nodejs-16) (optional)
-  --help           -h  prints the command usage
+  --clean          -c     Clears contents of stack output directory before running tests
+  --token <token>  -t     Token used to download assets from GitHub (e.g. jam, pack, etc) (optional)
+  --test-only-stacks      Runs the tests of the stacks passed to this argument (e.g. java-8 nodejs-16) (optional)
+  --validate-stack-builds Validates that the stack builds are present before running tests (optional)
+  --help           -h     Prints the command usage
 USAGE
 }
 
@@ -210,7 +226,12 @@ function stack_builds_exist() {
 
   while IFS= read -r image; do
     stack_output_dir=$(echo "${image}" | jq -r '.output_dir')
-    if ! [[ -f "${STACK_DIR}/${stack_output_dir}/build.oci" ]] || ! [[ -f "${STACK_DIR}/${stack_output_dir}/run.oci" ]]; then
+    is_build_image_necessary=$(echo "${image}" | jq -r '.create_build_image // false')
+
+    if ! [[ -f "${STACK_DIR}/${stack_output_dir}/run.oci" ]]; then
+      stack_output_builds_exist="false"
+    fi
+    if [[ ! -f "${STACK_DIR}/${stack_output_dir}/build.oci" && "${is_build_image_necessary}" == true ]]; then
       stack_output_builds_exist="false"
     fi
   done <<<"$STACK_IMAGES"
