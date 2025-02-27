@@ -1,4 +1,9 @@
 .DS_Store
 *.tgz
 .idea
-.bin
+/.bin
+/build
+/bin
+/linux
+/darwin
+/windows
