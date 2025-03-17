@@ -21,6 +21,9 @@ inputs:
     description: 'JSON array of stack package names'
     required: false
     default: '[]'
+  packages_filepath:
+    description: 'Similar to packages, but instead of pointing into a variables, it points to a file'
+    required: false
   distribution:
     description: 'Ubuntu distribution of stack (bionic|focal|jammy|noble)'
     required: true
@@ -35,5 +38,7 @@ runs:
   - "${{ inputs.last_usns }}"
   - "--packages"
   - "${{ inputs.packages }}"
+  - "--packages-filepath"
+  - "${{ inputs.packages_filepath }}"
   - "--distro"
   - "${{ inputs.distribution }}"

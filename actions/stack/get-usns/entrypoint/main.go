@@ -44,12 +44,13 @@ type CVE struct {
 
 func main() {
 	var config struct {
-		Distro         string
-		LastUSNsJSON   string
-		Output         string
-		PackagesJSON   string
-		RSSURL         string
-		RetryTimeLimit string
+		Distro               string
+		LastUSNsJSON         string
+		Output               string
+		PackagesJSON         string
+		PackagesJSONFilepath string
+		RSSURL               string
+		RetryTimeLimit       string
 	}
 
 	flag.StringVar(&config.LastUSNsJSON,
@@ -64,6 +65,10 @@ func main() {
 		"packages",
 		"",
 		"JSON array of relevant packages")
+	flag.StringVar(&config.PackagesJSONFilepath,
+		"packages-filepath",
+		"",
+		"Filepath that points to the JSON array of relevant packages")
 	flag.StringVar(&config.Distro,
 		"distro",
 		"",
@@ -112,6 +117,19 @@ func main() {
 	err = json.Unmarshal([]byte(config.PackagesJSON), &packages)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if config.PackagesJSONFilepath != "" {
+
+		packagesFilepath, err := os.ReadFile(config.PackagesJSONFilepath)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = json.Unmarshal(packagesFilepath, &packages)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	newUSNs, err := getNewUSNsFromFeed(config.RSSURL, lastUSNs, distroToVersionRegex[config.Distro], retryTimeLimit)
