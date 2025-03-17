@@ -25,6 +25,7 @@ inputs:
     description: 'Ubuntu distribution of stack (bionic|jammy)'
     required: false
     default: "bionic"
+    description: 'Ubuntu distribution of stack (bionic|focal|jammy|noble)'
 
 runs:
   using: 'docker'

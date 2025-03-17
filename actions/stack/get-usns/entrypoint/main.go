@@ -22,6 +22,7 @@ import (
 )
 
 var distroToVersionRegex map[string]string = map[string]string{
+	"noble":  `24\.04`,
 	"jammy":  `22\.04`,
 	"focal":  `20\.04`,
 	"bionic": `18\.04`,
