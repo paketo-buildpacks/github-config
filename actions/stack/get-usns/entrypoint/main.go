@@ -66,8 +66,8 @@ func main() {
 		"JSON array of relevant packages")
 	flag.StringVar(&config.Distro,
 		"distro",
-		`bionic`,
-		"Name of Ubuntu distro: jammy, bionic")
+		"",
+		"Name of Ubuntu distro: bionic, focal, jammy, noble")
 	flag.StringVar(&config.Output,
 		"output",
 		"",
@@ -76,6 +76,18 @@ func main() {
 	flag.StringVar(&config.RetryTimeLimit, "retry-time-limit", "5m", "How long to retry failures for")
 
 	flag.Parse()
+
+	distroExists := distroToVersionRegex[config.Distro]
+	if distroExists == "" {
+		var validDistroValues = ""
+
+		for key := range distroToVersionRegex {
+			validDistroValues = validDistroValues + key + "\n"
+		}
+
+		errMessage := fmt.Sprintf("--distro flag has to be one of the following values: \n %s", validDistroValues)
+		log.Fatal(errMessage)
+	}
 
 	if config.LastUSNsJSON == "" {
 		config.LastUSNsJSON = `[]`
