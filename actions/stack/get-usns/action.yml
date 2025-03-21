@@ -21,10 +21,12 @@ inputs:
     description: 'JSON array of stack package names'
     required: false
     default: '[]'
-  distribution:
-    description: 'Ubuntu distribution of stack (bionic|jammy)'
+  packages_filepath:
+    description: 'Similar to packages, but instead of pointing into a variables, it points to a file'
     required: false
-    default: "bionic"
+  distribution:
+    description: 'Ubuntu distribution of stack (bionic|focal|jammy|noble)'
+    required: true
 
 runs:
   using: 'docker'
@@ -36,5 +38,7 @@ runs:
   - "${{ inputs.last_usns }}"
   - "--packages"
   - "${{ inputs.packages }}"
+  - "--packages-filepath"
+  - "${{ inputs.packages_filepath }}"
   - "--distro"
   - "${{ inputs.distribution }}"

@@ -6,7 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"html"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -22,6 +22,7 @@ import (
 )
 
 var distroToVersionRegex map[string]string = map[string]string{
+	"noble":  `24\.04`,
 	"jammy":  `22\.04`,
 	"focal":  `20\.04`,
 	"bionic": `18\.04`,
@@ -43,12 +44,13 @@ type CVE struct {
 
 func main() {
 	var config struct {
-		Distro         string
-		LastUSNsJSON   string
-		Output         string
-		PackagesJSON   string
-		RSSURL         string
-		RetryTimeLimit string
+		Distro               string
+		LastUSNsJSON         string
+		Output               string
+		PackagesJSON         string
+		PackagesJSONFilepath string
+		RSSURL               string
+		RetryTimeLimit       string
 	}
 
 	flag.StringVar(&config.LastUSNsJSON,
@@ -63,10 +65,14 @@ func main() {
 		"packages",
 		"",
 		"JSON array of relevant packages")
+	flag.StringVar(&config.PackagesJSONFilepath,
+		"packages-filepath",
+		"",
+		"Filepath that points to the JSON array of relevant packages")
 	flag.StringVar(&config.Distro,
 		"distro",
-		`bionic`,
-		"Name of Ubuntu distro: jammy, bionic")
+		"",
+		"Name of Ubuntu distro: bionic, focal, jammy, noble")
 	flag.StringVar(&config.Output,
 		"output",
 		"",
@@ -75,6 +81,18 @@ func main() {
 	flag.StringVar(&config.RetryTimeLimit, "retry-time-limit", "5m", "How long to retry failures for")
 
 	flag.Parse()
+
+	distroExists := distroToVersionRegex[config.Distro]
+	if distroExists == "" {
+		var validDistroValues = ""
+
+		for key := range distroToVersionRegex {
+			validDistroValues = validDistroValues + key + "\n"
+		}
+
+		errMessage := fmt.Sprintf("--distro flag has to be one of the following values: \n %s", validDistroValues)
+		log.Fatal(errMessage)
+	}
 
 	if config.LastUSNsJSON == "" {
 		config.LastUSNsJSON = `[]`
@@ -99,6 +117,19 @@ func main() {
 	err = json.Unmarshal([]byte(config.PackagesJSON), &packages)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if config.PackagesJSONFilepath != "" {
+
+		packagesFilepath, err := os.ReadFile(config.PackagesJSONFilepath)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = json.Unmarshal(packagesFilepath, &packages)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	newUSNs, err := getNewUSNsFromFeed(config.RSSURL, lastUSNs, distroToVersionRegex[config.Distro], retryTimeLimit)
@@ -296,7 +327,7 @@ func get(url string) (string, int, error) {
 
 	defer resp.Body.Close()
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", 0, err
 	}
