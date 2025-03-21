@@ -7,10 +7,17 @@ inputs:
   run_receipt:
     description: 'Package receipt for run image'
     required: true
+  output_path:
+    description: 'Path where asset should be downloaded'
+    required: false
+
 outputs:
   packages:
-    description: 'JSON array of packages contained in build and run images'
+    description: 'JSON array of packages contained in build and run images. Empty if output_path is provided as input'
     value: ${{ steps.packages.outputs.packages }}
+  output_path:
+    description: 'Absolute path to the downloaded artifact. Empty if no output_path as input is provided'
+    value: ${{ steps.packages.outputs.output_path }}
 
 runs:
   using: 'composite'
@@ -25,4 +32,9 @@ runs:
       packages=$(jq  '.components[] |  .name' "${{ inputs.build_receipt }}" "${{ inputs.run_receipt }}" \
         | jq --null-input --compact-output '[inputs]')
 
-      printf "packages=%s\n" "${packages}" >> "$GITHUB_OUTPUT"
+      if [ -n "${{ inputs.output_path }}" ]; then
+        echo "${packages}" > "${{ inputs.output_path }}"
+        printf "output_path=%s\n" "${{ inputs.output_path }}" >> "$GITHUB_OUTPUT"
+      else
+        printf "packages=%s\n" "${packages}" >> "$GITHUB_OUTPUT"
+      fi
