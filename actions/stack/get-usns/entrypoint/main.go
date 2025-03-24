@@ -82,16 +82,9 @@ func main() {
 
 	flag.Parse()
 
-	distroExists := distroToVersionRegex[config.Distro]
-	if distroExists == "" {
-		var validDistroValues = ""
-
-		for key := range distroToVersionRegex {
-			validDistroValues = validDistroValues + key + "\n"
-		}
-
-		errMessage := fmt.Sprintf("--distro flag has to be one of the following values: \n %s", validDistroValues)
-		log.Fatal(errMessage)
+	_, ok := distroToVersionRegex[config.Distro]
+	if !ok {
+		log.Fatal(fmt.Sprintf("--distro flag has to be one of the following values: %v", slices.Sorted(maps.Keys(distroToVersionRegex))))
 	}
 
 	if config.LastUSNsJSON == "" {
