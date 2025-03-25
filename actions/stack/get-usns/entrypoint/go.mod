@@ -1,6 +1,6 @@
 module github.com/paketo-buildpacks/github-config/actions/stack/get-usns/entrypoint
 
-go 1.18
+go 1.24.1
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.3
