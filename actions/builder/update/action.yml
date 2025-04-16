@@ -7,6 +7,10 @@ inputs:
   token:
     description: 'Github Access Token used to make the request'
     required: true
+  filename:
+    description: 'Name of the builder.toml file to update'
+    required: false
+    default: 'builder.toml'
 
 runs:
   using: 'composite'
@@ -54,4 +58,4 @@ runs:
       set -euo pipefail
       shopt -s inherit_errexit
       jam update-builder \
-        --builder-file "${PWD}/builder.toml"
+        --builder-file "${PWD}/${{ inputs.filename }}"
