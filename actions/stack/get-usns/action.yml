@@ -6,7 +6,7 @@ description: |
 
 outputs:
   usns:
-    description: JSON array of patched USNs
+    description: JSON array of patched USNs or file path to JSON array, if --output flag is specified
 
 inputs:
   feed_url:
@@ -27,6 +27,9 @@ inputs:
   distribution:
     description: 'Ubuntu distribution of stack (bionic|focal|jammy|noble)'
     required: true
+  usns_output_path:
+    description: 'Path to output usns JSON file'
+    required: false
 
 runs:
   using: 'docker'
@@ -42,3 +45,5 @@ runs:
   - "${{ inputs.packages_filepath }}"
   - "--distro"
   - "${{ inputs.distribution }}"
+  - "--output"
+  - "${{ inputs.usns_output_path }}"

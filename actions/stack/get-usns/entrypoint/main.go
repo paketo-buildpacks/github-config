@@ -160,7 +160,6 @@ func main() {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	fmt.Fprintf(file, "usns=%s\n", string(output))
 
 	if config.Output != "" {
 		path, err := filepath.Abs(config.Output)
@@ -171,6 +170,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+	} else {
+		fmt.Fprintf(file, "usns=%s\n", string(output))
 	}
 }
 
