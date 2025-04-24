@@ -151,7 +151,6 @@ func main() {
 		output = []byte(`[]`)
 	}
 
-	fmt.Println("Output: ", string(output))
 	outputFileName, ok := os.LookupEnv("GITHUB_OUTPUT")
 	if !ok {
 		log.Fatal("GITHUB_OUTPUT is not set, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-output-parameter")
