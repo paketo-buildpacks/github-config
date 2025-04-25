@@ -6,7 +6,7 @@ description: |
 
 outputs:
   usns:
-    description: JSON array of patched USNs or file path to JSON array, if --output flag is specified
+    description: JSON array of patched USNs or path to JSON file, if usns_output_path flag is specified
 
 inputs:
   feed_url:
