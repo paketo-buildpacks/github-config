@@ -18,7 +18,7 @@ inputs:
     required: false
     default: '[]'
   last_usns_filepath:
-    description: 'JSimilar to last_usns, but instead of pointing into a variable, it points to a file'
+    description: 'Similar to last_usns, but instead of pointing into a variable, it points to a file'
     required: false
   packages:
     description: 'JSON array of stack package names'
