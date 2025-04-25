@@ -17,6 +17,9 @@ inputs:
     description: 'JSON array of last known USNs'
     required: false
     default: '[]'
+  last_usns_filepath:
+    description: 'Similar to last_usns, but instead of pointing into a variable, it points to a file'
+    required: false
   packages:
     description: 'JSON array of stack package names'
     required: false
@@ -39,6 +42,8 @@ runs:
   - "${{ inputs.feed_url }}"
   - "--last-usns"
   - "${{ inputs.last_usns }}"
+  - "--last-usns-filepath"
+  - "${{ inputs.last_usns_filepath }}"
   - "--packages"
   - "${{ inputs.packages }}"
   - "--packages-filepath"

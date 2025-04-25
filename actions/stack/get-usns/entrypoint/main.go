@@ -48,6 +48,7 @@ func main() {
 	var config struct {
 		Distro               string
 		LastUSNsJSON         string
+		LastUSNsJSONFilepath string
 		Output               string
 		PackagesJSON         string
 		PackagesJSONFilepath string
@@ -59,6 +60,10 @@ func main() {
 		"last-usns",
 		"",
 		"JSON array of last known USNs")
+	flag.StringVar(&config.LastUSNsJSONFilepath,
+		"last-usns-filepath",
+		"",
+		"Filepath that points to the JSON array of last known USNs")
 	flag.StringVar(&config.RSSURL,
 		"feed-url",
 		"https://ubuntu.com/security/notices/rss.xml",
@@ -106,6 +111,19 @@ func main() {
 	err = json.Unmarshal([]byte(config.LastUSNsJSON), &lastUSNs)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if config.LastUSNsJSONFilepath != "" {
+
+		lastUSNsFilepath, err := os.ReadFile(config.LastUSNsJSONFilepath)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = json.Unmarshal(lastUSNsFilepath, &lastUSNs)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	var packages []string
