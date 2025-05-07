@@ -48,6 +48,7 @@ func main() {
 	var config struct {
 		Distro               string
 		LastUSNsJSON         string
+		LastUSNsJSONFilepath string
 		Output               string
 		PackagesJSON         string
 		PackagesJSONFilepath string
@@ -59,6 +60,10 @@ func main() {
 		"last-usns",
 		"",
 		"JSON array of last known USNs")
+	flag.StringVar(&config.LastUSNsJSONFilepath,
+		"last-usns-filepath",
+		"",
+		"Filepath that points to the JSON array of last known USNs")
 	flag.StringVar(&config.RSSURL,
 		"feed-url",
 		"https://ubuntu.com/security/notices/rss.xml",
@@ -108,6 +113,19 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if config.LastUSNsJSONFilepath != "" {
+
+		lastUSNsFilepath, err := os.ReadFile(config.LastUSNsJSONFilepath)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = json.Unmarshal(lastUSNsFilepath, &lastUSNs)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	var packages []string
 	err = json.Unmarshal([]byte(config.PackagesJSON), &packages)
 	if err != nil {
@@ -151,7 +169,6 @@ func main() {
 		output = []byte(`[]`)
 	}
 
-	fmt.Println("Output: ", string(output))
 	outputFileName, ok := os.LookupEnv("GITHUB_OUTPUT")
 	if !ok {
 		log.Fatal("GITHUB_OUTPUT is not set, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-output-parameter")
@@ -161,7 +178,6 @@ func main() {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	fmt.Fprintf(file, "usns=%s\n", string(output))
 
 	if config.Output != "" {
 		path, err := filepath.Abs(config.Output)
@@ -172,6 +188,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+	} else {
+		fmt.Fprintf(file, "usns=%s\n", string(output))
 	}
 }
 
