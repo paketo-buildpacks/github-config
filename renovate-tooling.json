@@ -4,6 +4,10 @@
         ":gomod",
         "local>renovate-default.json"
     ],
+    "postUpdateOptions": [
+      "gomodUpdateImportPaths",
+      "gomodTidy"
+    ],
     "packageRules": [
         {
             "matchManagers": [
