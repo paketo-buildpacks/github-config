@@ -2,20 +2,7 @@
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
         ":gomod",
-        "config:recommended",
-        ":dependencyDashboard"
-    ],
-    "commitMessageAction": "Updated",
-    "commitMessageExtra": "from {{#if currentVersion}}{{#unless (containsString currentVersion 'v')}}v{{/unless}}{{currentVersion}}{{else}}{{currentDigestShort}}{{/if}} to {{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}{{prettyNewMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
-    "prBodyNotes": [
-        "<!-- {\"depName\":\"{{depName}}\",\"currentVersion\":\"{{#unless (containsString currentVersion 'v')}}v{{/unless}}{{currentVersion}}\",\"newVersion\":\"{{prettyNewVersion}}\"} -->"
-    ],
-    "platform": "github",
-    "prConcurrentLimit": 0,
-    "prHourlyLimit": 0,
-    "labels": [
-        "dependencies",
-        "go"
+        "local>renovate-default.json"
     ],
     "packageRules": [
         {
