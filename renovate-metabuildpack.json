@@ -10,8 +10,6 @@
     "npm": {
         "enabled": false
     },
-    "prHourlyLimit": 0,
-    "prConcurrentLimit": 0,
     "postUpdateOptions": [
         "gomodUpdateImportPaths",
         "gomodTidy"
