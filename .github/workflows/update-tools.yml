@@ -73,20 +73,18 @@ jobs:
       env:
         JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
-        CREATE_PACKAGE_VERSION: ${{ steps.latest-create-package.outputs.version }}
       run: |
         jq --null-input \
            --sort-keys \
            --arg pack "${PACK_VERSION}" \
            --arg jam "${JAM_VERSION}" \
            --arg createpackage "${CREATE_PACKAGE_VERSION}" \
-           '{ pack: $pack, jam: $jam, createpackage: $createpackage }' > ./implementation/scripts/.util/tools.json
+           '{ pack: $pack, jam: $jam }' > ./implementation/scripts/.util/tools.json
 
     - name: Update language-family tools.json
       env:
         JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
-        CREATE_PACKAGE_VERSION: ${{ steps.latest-create-package.outputs.version }}
       run: |
         jq --null-input \
            --sort-keys \
