@@ -35,12 +35,12 @@ jobs:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
         repo: buildpacks/pack
 
-    - name: Fetch Latest create-package
-      id: latest-create-package
+    - name: Fetch Latest libpak-tools
+      id: latest-libpak-tools
       uses: paketo-buildpacks/github-config/actions/tools/latest@main
       with:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-        repo: paketo-buildpacks/libpak
+        repo: paketo-buildpacks/libpak-tools
 
     - name: Fetch Latest syft
       id: latest-syft
@@ -58,9 +58,7 @@ jobs:
 
     - name: Update builder tools.json
       env:
-        JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
-        CREATE_PACKAGE_VERSION: ${{ steps.latest-create-package.outputs.version }}
         CRANE_VERSION: ${{ steps.latest-crane.outputs.version }}
       run: |
         jq --null-input \
@@ -73,13 +71,16 @@ jobs:
       env:
         JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
+        CREATE_PACKAGE_VERSION: "v1.73.0"
+        LIBPAK_TOOLS_VERSION: ${{ steps.latest-libpak-tools.outputs.version }}
       run: |
         jq --null-input \
            --sort-keys \
            --arg pack "${PACK_VERSION}" \
            --arg jam "${JAM_VERSION}" \
            --arg createpackage "${CREATE_PACKAGE_VERSION}" \
-           '{ pack: $pack, jam: $jam }' > ./implementation/scripts/.util/tools.json
+           --arg libpaktools "${LIBPAK_TOOLS_VERSION}" \
+           '{ pack: $pack, jam: $jam, createpackage: $createpackage, libpaktools: $libpaktools }' > ./implementation/scripts/.util/tools.json
 
     - name: Update language-family tools.json
       env:
