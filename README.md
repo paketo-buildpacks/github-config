@@ -30,12 +30,12 @@ Submit your change to this repo as a PR. You should be all set when the PR is me
 Repositories managed by `github-config` get dependency updates from [Renovate](https://github.com/renovatebot/renovate). Onboarding new repositories need three steps:
 - Remove current dependency update configuration from repository
 - Add repository name to [`renovate-config.js`](./renovate-config.js)
-- Add `renovate.json` to the root of repository with following content:
+- Add `renovate.json` to the `.github` directory of the repository with following content:
 ```json
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
-        "local>paketo-buildpacks/github-config:<respective configuration file in github-config>"
+        "github>paketo-buildpacks/github-config//renovate/<respective configuration file in github-config>"
     ]
 }
 ```
