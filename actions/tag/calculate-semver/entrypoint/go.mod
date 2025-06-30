@@ -3,7 +3,7 @@ module github.com/paketo-buildpacks/github-config/actions/tag/calculate-semver-t
 go 1.23.0
 
 require (
-	github.com/Masterminds/semver/v3 v3.3.1
+	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/onsi/gomega v1.37.0
 	github.com/sclevine/spec v1.4.0
 	golang.org/x/oauth2 v0.30.0
