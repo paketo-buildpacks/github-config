@@ -2,7 +2,7 @@
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
         ":gomod",
-        "github>paketo-buildpacks/github-config//renovate/renovate-tools.json"
+        "github>paketo-buildpacks/github-config//renovate/renovate-tooling"
     ],
     "postUpdateOptions": [
       "gomodUpdateImportPaths",
