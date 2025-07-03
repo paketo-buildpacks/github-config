@@ -1,0 +1,13 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        ":dependencyDashboard"
+    ],
+    "commitMessageAction": "Updated",
+    "commitMessageExtra": "from {{#if currentVersion}}{{#unless (containsString currentVersion 'v')}}v{{/unless}}{{currentVersion}}{{else}}{{currentDigestShort}}{{/if}} to {{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}{{prettyNewMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
+    "prBodyNotes": [
+        "<!-- {\"depName\":\"{{depName}}\",\"currentVersion\":\"{{#unless (containsString currentVersion 'v')}}v{{/unless}}{{currentVersion}}\",\"newVersion\":\"{{prettyNewVersion}}\"} -->"
+    ],
+    "prConcurrentLimit": 0,
+    "prHourlyLimit": 0
+}
