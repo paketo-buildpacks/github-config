@@ -20,7 +20,7 @@ import (
 
 	"github.com/mmcdole/gofeed"
 
-	backoff "github.com/cenkalti/backoff/v4"
+	backoff "github.com/cenkalti/backoff/v5"
 )
 
 var distroToVersionRegex map[string]string = map[string]string{
