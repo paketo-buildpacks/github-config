@@ -12,6 +12,6 @@ jobs:
       uses: renovatebot/github-action@v42.0.3
       with:
         configurationFile: ./.github/renovate-config.js
-        token: ${{ secrets.PAKETO_BOT_REVIEWER_GITHUB_TOKEN }}
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
       env:
         LOG_LEVEL: 'debug'
