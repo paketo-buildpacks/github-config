@@ -1,6 +1,6 @@
 module.exports = {
     username: 'renovate-release',
-    gitAuthor: 'Renovate Bot <bot@renovateapp.com>',
+    gitAuthor: 'paketo-bot <paketobuildpacks@gmail.com>',
     onboarding: false,
     platform: 'github',
     forkProcessing: 'enabled',
