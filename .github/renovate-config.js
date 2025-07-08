@@ -1,5 +1,5 @@
 module.exports = {
-    username: 'renovate-release',
+    username: 'paketo-bot',
     gitAuthor: 'paketo-bot <paketobuildpacks@gmail.com>',
     onboarding: false,
     platform: 'github',
