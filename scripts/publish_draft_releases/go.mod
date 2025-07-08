@@ -1,9 +1,9 @@
 module github.com/paketo-buildpacks/github-config/scripts/publish-draft-releases
 
-go 1.19
+go 1.21
 
 require (
-	github.com/Masterminds/semver/v3 v3.3.1
+	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/fatih/color v1.18.0
 	github.com/spf13/pflag v1.0.6
 )
