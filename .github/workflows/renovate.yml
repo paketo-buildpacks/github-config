@@ -2,6 +2,8 @@ name: Renovate
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "30 4 * * *"
 jobs:
   renovate:
     runs-on: ubuntu-22.04
@@ -13,5 +15,3 @@ jobs:
       with:
         configurationFile: ./.github/renovate-config.js
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-      env:
-        LOG_LEVEL: 'debug'
