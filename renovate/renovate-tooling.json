@@ -3,6 +3,12 @@
     "extends": [
         "github>paketo-buildpacks/github-config//renovate/renovate-default"
     ],
+    "github-actions": {
+        "enabled": false
+    },
+    "dockerfile": {
+        "enabled": false
+    },
     "packageRules": [
         {
             "matchManagers": [
