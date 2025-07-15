@@ -7,13 +7,12 @@
     "github-actions": {
         "enabled": false
     },
+    "dockerfile": {
+        "enabled": false
+    },
     "npm": {
         "enabled": false
     },
-    "postUpdateOptions": [
-        "gomodUpdateImportPaths",
-        "gomodTidy"
-    ],
     "packageRules": [
         {
             "groupName": "all non-major Go dependencies",
