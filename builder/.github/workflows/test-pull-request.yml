@@ -9,7 +9,7 @@ jobs:
 
   smoke:
     name: Smoke Test
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - name: Setup Go
       uses: actions/setup-go@v5
@@ -17,14 +17,14 @@ jobs:
         go-version: 'stable'
 
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Run Smoke Tests
       run: ./scripts/smoke.sh
 
   upload:
     name: Upload Workflow Event Payload
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4

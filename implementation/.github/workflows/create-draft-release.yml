@@ -17,7 +17,7 @@ concurrency: release
 jobs:
   unit:
     name: Unit Tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       builders: ${{ steps.builders.outputs.builders }}
     steps:
@@ -26,7 +26,7 @@ jobs:
       with:
         go-version: 'stable'
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Run Unit Tests
       run: ./scripts/unit.sh
     - name: Get builders from integration.json
@@ -39,7 +39,7 @@ jobs:
 
   integration:
     name: Integration Tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: unit
     strategy:
       matrix:
@@ -51,7 +51,7 @@ jobs:
       with:
         go-version: 'stable'
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Run Integration Tests
       run: ./scripts/integration.sh --builder ${{ matrix.builder }} --token ${{ github.token }}
       env:
@@ -59,7 +59,7 @@ jobs:
 
   release:
     name: Release
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: integration
     steps:
     - name: Setup Go
@@ -68,7 +68,7 @@ jobs:
         go-version: 'stable'
 
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-tags: true
 
@@ -144,7 +144,7 @@ jobs:
 
   failure:
     name: Alert on Failure
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [ unit, integration, release ]
     if: ${{ always() && needs.unit.result == 'failure' || needs.integration.result == 'failure' || needs.release.result == 'failure' }}
     steps:
