@@ -5,8 +5,8 @@ go 1.23.0
 toolchain go1.24.5
 
 require (
-	github.com/aclements/go-moremath v0.0.0-20161014184102-0ff62e0875ff
 	github.com/onsi/gomega v1.37.0
+	github.com/aclements/go-moremath v0.0.0-20241023150245-c8bbc672ef66
 	github.com/paketo-buildpacks/occam v0.0.20
 	github.com/sclevine/spec v1.4.0
 )
@@ -29,4 +29,5 @@ require (
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 )

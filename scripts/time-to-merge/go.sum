@@ -6,8 +6,8 @@ github.com/ForestEckhardt/freezer v0.0.2/go.mod h1:x0FRNUsMml4Z5oKD8KN6pEEvqzj3C
 github.com/Masterminds/semver v1.5.0/go.mod h1:MB6lktGJrhw8PrUyiEoblNEGEQ+RzHPF078ddwwvV3Y=
 github.com/VividCortex/ewma v1.1.1 h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdcM=
 github.com/VividCortex/ewma v1.1.1/go.mod h1:2Tkkvm3sRDVXaiyucHiACn4cqf7DpdyLvmxzcbUokwA=
-github.com/aclements/go-moremath v0.0.0-20161014184102-0ff62e0875ff h1:txKOXqsFQUyi7Ht0Prto4QMU4O/0Gby6v5RFqMS0/PM=
-github.com/aclements/go-moremath v0.0.0-20161014184102-0ff62e0875ff/go.mod h1:idZL3yvz4kzx1dsBOAC+oYv6L92P1oFEhUXUB1A/lwQ=
+github.com/aclements/go-moremath v0.0.0-20241023150245-c8bbc672ef66 h1:siNQlUMcFUDZWCOt0p+RHl7et5Nnwwyq/sFZmr4iG1I=
+github.com/aclements/go-moremath v0.0.0-20241023150245-c8bbc672ef66/go.mod h1:FDw7qicTbJ1y1SZcNnOvym2BogPdC3lY9Z1iUM4MVhw=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cheggaaa/pb/v3 v3.0.5 h1:lmZOti7CraK9RSjzExsY53+WWfub9Qv13B5m4ptEoPE=
 github.com/cheggaaa/pb/v3 v3.0.5/go.mod h1:X1L61/+36nz9bjIsrDU52qHKOQukUQe2Ge+YvGuquCw=
