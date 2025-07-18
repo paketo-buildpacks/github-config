@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -9,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	backoff "github.com/cenkalti/backoff/v4"
+	backoff "github.com/cenkalti/backoff/v5"
 )
 
 func main() {
@@ -51,38 +52,38 @@ func main() {
 	req.Header.Set("Authorization", fmt.Sprintf("token %s", config.Token))
 	req.Header.Set("Accept", "application/octet-stream")
 
-	exponentialBackoff := backoff.NewExponentialBackOff()
-	exponentialBackoff.MaxElapsedTime = retryTimeLimit
-
-	err = backoff.RetryNotify(func() error {
+	operation := func() (bool, error) {
 		fmt.Printf("Downloading asset: %s -> %s\n", config.URL, config.Output)
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			return fmt.Errorf("failed to complete request: %w", err)
+			return false, fmt.Errorf("failed to complete request: %w", err)
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("failed to download asset: unexpected status: %s", resp.Status)
+			return false, fmt.Errorf("failed to download asset: unexpected status: %s", resp.Status)
 		}
 
 		file, err := os.Create(config.Output)
 		if err != nil {
-			return fmt.Errorf("failed to create output file: %w", err)
+			return false, fmt.Errorf("failed to create output file: %w", err)
 		}
 		defer file.Close()
 
 		_, err = io.Copy(file, resp.Body)
 		if err != nil {
-			return fmt.Errorf("failed to write to output file: %w", err)
+			return false, fmt.Errorf("failed to write to output file: %w", err)
 		}
 
-		return nil
-	},
-		exponentialBackoff,
-		func(err error, t time.Duration) {
+		return true, nil
+	}
+
+	_, err = backoff.Retry(context.Background(), operation,
+		backoff.WithBackOff(backoff.NewExponentialBackOff()),
+		backoff.WithMaxElapsedTime(retryTimeLimit),
+		backoff.WithNotify(func(err error, t time.Duration) {
 			fmt.Println(err)
 			fmt.Printf("Retrying in %s\n", t)
-		},
+		}),
 	)
 
 	if err != nil {

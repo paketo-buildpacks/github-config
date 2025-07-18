@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -14,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	backoff "github.com/cenkalti/backoff/v4"
+	backoff "github.com/cenkalti/backoff/v5"
 )
 
 type Release struct {
@@ -147,22 +148,20 @@ func main() {
 		uri.Path = fmt.Sprintf("/repos/%s/releases/%d/assets", config.Repo, release.ID)
 		uri.RawQuery = url.Values{"name": []string{asset.Name}}.Encode()
 
-		exponentialBackoff := backoff.NewExponentialBackOff()
-		exponentialBackoff.MaxElapsedTime = retryTimeLimit
-		err = backoff.RetryNotify(func() error {
+		operation := func() (bool, error) {
 			file, err := os.Open(asset.Path)
 			if err != nil {
-				return fmt.Errorf("failed to open file: %w", err)
+				return false, fmt.Errorf("failed to open file: %w", err)
 			}
 
 			info, err := file.Stat()
 			if err != nil {
-				return fmt.Errorf("failed to stat file: %w", err)
+				return false, fmt.Errorf("failed to stat file: %w", err)
 			}
 
 			req, err = http.NewRequest("POST", uri.String(), file)
 			if err != nil {
-				return fmt.Errorf("failed to create request: %w", err)
+				return false, fmt.Errorf("failed to create request: %w", err)
 			}
 
 			req.Header.Set("Authorization", fmt.Sprintf("token %s", config.Token))
@@ -173,21 +172,24 @@ func main() {
 			fmt.Printf("  Uploading asset: %s -> %s\n", asset.Path, asset.Name)
 			resp, err = http.DefaultClient.Do(req)
 			if err != nil {
-				return fmt.Errorf("failed to complete request: %w", err)
+				return false, fmt.Errorf("failed to complete request: %w", err)
 			}
 
 			if resp.StatusCode != http.StatusCreated {
 				dump, _ := httputil.DumpResponse(resp, true)
-				return fmt.Errorf("failed to upload asset: unexpected response: %s", dump)
+				return false, fmt.Errorf("failed to upload asset: unexpected response: %s", dump)
 			}
 
-			return nil
-		},
-			exponentialBackoff,
-			func(err error, t time.Duration) {
+			return true, nil
+		}
+
+		_, err = backoff.Retry(context.Background(), operation,
+			backoff.WithBackOff(backoff.NewExponentialBackOff()),
+			backoff.WithMaxElapsedTime(retryTimeLimit),
+			backoff.WithNotify(func(err error, t time.Duration) {
 				fmt.Println(err)
 				fmt.Printf("Retrying in %s\n", t)
-			},
+			}),
 		)
 
 		if err != nil {
