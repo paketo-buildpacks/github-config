@@ -2,7 +2,7 @@ module github.com/paketo-buildpacks/github-config/actions/pull-request/download-
 
 go 1.23.0
 
-toolchain go1.24.2
+toolchain go1.24.5
 
 require (
 	github.com/onsi/gomega v1.37.0
