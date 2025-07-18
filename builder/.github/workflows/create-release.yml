@@ -10,17 +10,17 @@ concurrency: release
 jobs:
   smoke:
     name: Smoke Test
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       release_notes: ${{ steps.notes.outputs.body }}
     steps:
     - name: Setup Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v5
       with:
         go-version: 'stable'
 
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Get pack version
       id: pack-version
@@ -50,11 +50,11 @@ jobs:
 
   release:
     name: Release
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: smoke
     steps:
     - name: Checkout With History
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0  # gets full history
 
@@ -71,7 +71,7 @@ jobs:
     - name: Publish Release
       id: publish
       if: ${{ steps.compare_previous_release.outputs.builder_changes == 'true' }}
-      uses: release-drafter/release-drafter@v5
+      uses: release-drafter/release-drafter@v6
       with:
         config-name: release-drafter-config.yml
         publish: true
@@ -99,7 +99,7 @@ jobs:
 
   failure:
     name: Alert on Failure
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [ smoke, release ]
     if: ${{ always() && needs.smoke.result == 'failure' ||  needs.release.result == 'failure' }}
     steps:
