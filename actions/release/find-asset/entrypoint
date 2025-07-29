@@ -54,21 +54,37 @@ function find_asset() {
   pattern="${3}"
   strict="${4}"
 
-  release_json=$(gh api "repos/${repo}/releases?per_page=100"  \
-    --method GET \
-    --paginate \
-    | jq -s '[.[]]' \
-    | jq 'add' \
-    | jq -r \
-    --arg pattern "${pattern}" \
-    --argjson depth "${depth}" \
-    'sort_by(.tag_name | gsub("^v"; "")  | split(".") | map(tonumber))
-    | reverse
-    | map(select(.draft==false))
-    | limit($depth; .)
-    | map(select(.assets | .[] | select(.name | test($pattern))))
-    | .[0]' \
-  )
+  if [ "${depth}" == "-1" ]; then
+    release_json=$(gh api "repos/${repo}/releases?per_page=100"  \
+      --method GET \
+      --paginate \
+      | jq -s '[.[]]' \
+      | jq 'add' \
+      | jq -r \
+      --arg pattern "${pattern}" \
+      'sort_by(.tag_name | gsub("^v"; "")  | split(".") | map(tonumber))
+      | reverse
+      | map(select(.draft==false))
+      | map(select(.assets | .[] | select(.name | test($pattern))))
+      | .[0]' \
+    )
+  else
+    release_json=$(gh api "repos/${repo}/releases?per_page=100"  \
+      --method GET \
+      --paginate \
+      | jq -s '[.[]]' \
+      | jq 'add' \
+      | jq -r \
+      --arg pattern "${pattern}" \
+      --argjson depth "${depth}" \
+      'sort_by(.tag_name | gsub("^v"; "")  | split(".") | map(tonumber))
+      | reverse
+      | map(select(.draft==false))
+      | limit($depth; .)
+      | map(select(.assets | .[] | select(.name | test($pattern))))
+      | .[0]' \
+    )
+  fi
 
   if [[ "${release_json}" == "null" ]]; then
       echo "No matching asset found for pattern: '${pattern}' on repo: '${repo}' and depth: '${depth}'."
