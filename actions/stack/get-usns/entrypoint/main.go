@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -20,7 +21,7 @@ import (
 
 	"github.com/mmcdole/gofeed"
 
-	backoff "github.com/cenkalti/backoff/v4"
+	backoff "github.com/cenkalti/backoff/v5"
 )
 
 var distroToVersionRegex map[string]string = map[string]string{
@@ -91,7 +92,7 @@ func main() {
 
 	_, ok := distroToVersionRegex[config.Distro]
 	if !ok {
-		log.Fatal(fmt.Sprintf("--distro flag has to be one of the following values: %v", slices.Sorted(maps.Keys(distroToVersionRegex))))
+		log.Fatalf("--distro flag has to be one of the following values: %v", slices.Sorted(maps.Keys(distroToVersionRegex)))
 	}
 
 	if config.LastUSNsJSON == "" {
@@ -239,25 +240,27 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string, retryTimeL
 	var feed *gofeed.Feed
 	var err error
 
-	exponentialBackoff := backoff.NewExponentialBackOff()
-	exponentialBackoff.MaxElapsedTime = retryTimeLimit
-	err = backoff.RetryNotify(func() error {
+	parseUrl := func() (bool, error) {
 		feed, err = fp.ParseURL(rssURL)
 		if err == nil {
-			return nil
+			return true, nil
 		}
 		var httpError gofeed.HTTPError
 		if errors.As(err, &httpError) {
-			return fmt.Errorf("error parsing rss feed: %w", err)
+			return false, fmt.Errorf("error parsing rss feed: %w", err)
 		}
-		return &backoff.PermanentError{Err: err}
-	},
-		exponentialBackoff,
-		func(err error, t time.Duration) {
-			log.Println(err)
-			log.Printf("Retrying in %s\n", t)
-		},
+		return false, &backoff.PermanentError{Err: err}
+	}
+
+	_, err = backoff.Retry(context.Background(), parseUrl,
+		backoff.WithBackOff(backoff.NewExponentialBackOff()),
+		backoff.WithMaxElapsedTime(retryTimeLimit),
+		backoff.WithNotify(func(err error, t time.Duration) {
+			fmt.Println(err)
+			fmt.Printf("Retrying in %s\n", t)
+		}),
 	)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -285,21 +288,26 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string, retryTimeL
 		var usnBody string
 		var code int
 
-		err = backoff.RetryNotify(func() error {
+		getUsn := func() (bool, error) {
 			usnBody, code, err = get(usnURL.String())
 			if err != nil {
-				return fmt.Errorf("error getting USN: %w", err)
+				return false, fmt.Errorf("error getting USN: %w", err)
 			}
 			if code != http.StatusOK {
-				return fmt.Errorf("unexpected status code getting USN: %d", code)
+				return false, fmt.Errorf("unexpected status code getting USN: %d", code)
 			}
-			return nil
-		},
-			backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 3),
-			func(err error, t time.Duration) {
-				fmt.Println(err)
-				fmt.Printf("Retrying in %s seconds\n", t)
-			},
+			return true, nil
+		}
+
+		_, err = backoff.Retry(context.Background(), getUsn,
+			backoff.WithBackOff(backoff.NewExponentialBackOff()),
+			backoff.WithMaxTries(3),
+			backoff.WithNotify(
+				func(err error, t time.Duration) {
+					fmt.Println(err)
+					fmt.Printf("Retrying in %s seconds\n", t)
+				},
+			),
 		)
 
 		feedUSNs = append(feedUSNs, USN{
