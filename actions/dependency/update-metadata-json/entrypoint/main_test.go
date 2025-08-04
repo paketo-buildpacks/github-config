@@ -72,6 +72,73 @@ func TestEntrypoint(t *testing.T) {
 			})
 		})
 
+		context("given metadata in JSON form with matching version, target, and os", func() {
+			it("updates the Checksum and URI fields for the appropriate JSON entry", func() {
+				command := exec.Command(
+					entrypoint,
+					"--version", "1.2.3",
+					"--target", "target-2",
+					"--os", "some-os",
+					"--checksum", "target-1.2.3-checksum",
+					"--uri", "target-1.2.3-uri",
+					"--file", filepath.Join(source, "metadata.json"),
+				)
+
+				buffer := gbytes.NewBuffer()
+				session, err := gexec.Start(command, buffer, buffer)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(session).Should(gexec.Exit(0), func() string { return string(buffer.Contents()) })
+
+				Expect(buffer).To(gbytes.Say("Success! Updated metadata with:"))
+				Expect(buffer).To(gbytes.Say(`"checksum": "target-1.2.3-checksum"`))
+				Expect(buffer).To(gbytes.Say(`"uri": "target-1.2.3-uri"`))
+
+				actualContents, err := os.ReadFile(filepath.Join(source, "metadata.json"))
+				Expect(err).NotTo(HaveOccurred())
+
+				expectedContents, err := os.ReadFile(filepath.Join(source, "expected-metadata-os.json"))
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(actualContents).To(MatchJSON(expectedContents))
+
+			})
+		})
+
+		context("given metadata in JSON form with matching version, target, os, and arch", func() {
+			it("updates the Checksum and URI fields for the appropriate JSON entry", func() {
+				command := exec.Command(
+					entrypoint,
+					"--version", "1.2.3",
+					"--target", "target-3",
+					"--os", "some-os",
+					"--arch", "some-arch",
+					"--checksum", "target-1.2.3-checksum",
+					"--uri", "target-1.2.3-uri",
+					"--file", filepath.Join(source, "metadata.json"),
+				)
+
+				buffer := gbytes.NewBuffer()
+				session, err := gexec.Start(command, buffer, buffer)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(session).Should(gexec.Exit(0), func() string { return string(buffer.Contents()) })
+
+				Expect(buffer).To(gbytes.Say("Success! Updated metadata with:"))
+				Expect(buffer).To(gbytes.Say(`"checksum": "target-1.2.3-checksum"`))
+				Expect(buffer).To(gbytes.Say(`"uri": "target-1.2.3-uri"`))
+
+				actualContents, err := os.ReadFile(filepath.Join(source, "metadata.json"))
+				Expect(err).NotTo(HaveOccurred())
+
+				expectedContents, err := os.ReadFile(filepath.Join(source, "expected-metadata-os-arch.json"))
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(actualContents).To(MatchJSON(expectedContents))
+
+			})
+		})
+
 		context("given metadata in JSON form with NO matching version and target", func() {
 			it("the metadata.json is unchanged", func() {
 				// Get contents before file changes

@@ -15,5 +15,25 @@
     "target": "target-1",
     "uri": "target-1.2.3-uri",
     "version": "1.2.3"
+  },
+  {
+    "id": "some-dependency",
+    "target": "target-2",
+    "version": "1.2.3",
+    "os": "some-os"
+  },
+  {
+    "id": "some-dependency",
+    "target": "target-2",
+    "version": "1.2.3",
+    "os": "some-os",
+    "arch": "some-other-arch"
+  },
+  {
+    "id": "some-dependency",
+    "target": "target-3",
+    "version": "1.2.3",
+    "os": "some-os",
+    "arch": "some-arch"
   }
 ]

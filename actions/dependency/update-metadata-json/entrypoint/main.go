@@ -23,9 +23,13 @@ func main() {
 		Checksum string
 		URI      string
 		File     string
+		OS       string
+		Arch     string
 	}
 
 	flag.StringVar(&config.Version, "version", "", "Dependency version")
+	flag.StringVar(&config.OS, "os", "", "Dependency OS")
+	flag.StringVar(&config.Arch, "arch", "", "Dependency architecture")
 	flag.StringVar(&config.Target, "target", "", "Dependency target name")
 	flag.StringVar(&config.Checksum, "checksum", "", "Dependency checksum to add")
 	flag.StringVar(&config.URI, "uri", "", "Dependency URI to add")
@@ -35,7 +39,6 @@ func main() {
 	if config.Version == "" {
 		fail(errors.New(`missing required input "version"`))
 	}
-
 	if config.Target == "" {
 		fail(errors.New(`missing required input "target"`))
 	}
@@ -48,6 +51,7 @@ func main() {
 	if config.File == "" {
 		fail(errors.New(`missing required input "file"`))
 	}
+	// empty OS and Arch are valid for backward compatibility, so we don't check for them
 
 	entries := []*Dependency{}
 	file, err := os.OpenFile(config.File, os.O_RDWR, os.ModePerm)
@@ -63,7 +67,11 @@ func main() {
 	// Find the dependency of interest and update the checksum
 	found := false
 	for _, dependency := range entries {
-		if dependency.Target == config.Target && dependency.Version == config.Version {
+		osMustMatch := config.OS != ""
+		archMustMatch := config.Arch != ""
+		osMatches := !osMustMatch || dependency.OS == config.OS
+		archMatches := (!osMustMatch && !archMustMatch) || dependency.Arch == config.Arch
+		if dependency.Target == config.Target && dependency.Version == config.Version && osMatches && archMatches {
 			dependency.Checksum = config.Checksum
 			dependency.URI = config.URI
 			found = true
