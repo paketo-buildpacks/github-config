@@ -16,7 +16,9 @@
   },
   {
     "id": "some-dependency",
+    "checksum": "target-1.2.3-checksum",
     "target": "target-2",
+    "uri": "target-1.2.3-uri",
     "version": "1.2.3",
     "os": "some-os"
   },

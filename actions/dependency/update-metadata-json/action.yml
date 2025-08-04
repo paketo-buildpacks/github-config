@@ -11,6 +11,14 @@ inputs:
   target:
     description: 'dependency OS target variant'
     required: true
+  os:
+    description: 'dependency OS'
+    required: false
+    default: ''
+  arch:
+    description: 'dependency architecture'
+    required: false
+    default: ''
   checksum:
     description: 'dependency checksum to add'
     required: true
@@ -29,6 +37,10 @@ runs:
   - ${{ inputs.version }}
   - "--target"
   - ${{ inputs.target }}
+  - "--os"
+  - ${{ inputs.os }}
+  - "--arch"
+  - ${{ inputs.arch }}
   - "--checksum"
   - ${{ inputs.checksum }}
   - "--uri"
