@@ -3,7 +3,7 @@ name: Update Dependencies From Metadata (Retrieve, Metadata, Compile, Test, Crea
 on:
   workflow_dispatch:
   schedule:
-    - cron: '57 13 * * *' # daily at 13:57 UTC
+    - cron: '57 13 * * *'  # daily at 13:57 UTC
 
 jobs:
   retrieve:

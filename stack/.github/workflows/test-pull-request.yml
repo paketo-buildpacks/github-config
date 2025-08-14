@@ -10,13 +10,13 @@ jobs:
     name: Acceptance Test
     runs-on: ubuntu-24.04
     steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
-
-    - name: Checkout
-      uses: actions/checkout@v4
 
     # https://github.com/docker/setup-qemu-action
     - name: Set up QEMU

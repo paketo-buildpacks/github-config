@@ -14,13 +14,13 @@ jobs:
     outputs:
       release_notes: ${{ steps.notes.outputs.body }}
     steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
-
-    - name: Checkout
-      uses: actions/checkout@v4
 
     - name: Get pack version
       id: pack-version
