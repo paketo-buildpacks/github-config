@@ -20,7 +20,7 @@ jobs:
           branch: automation/go-mod-update/update-main
       - name: Setup Go
         id: setup-go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
       - name: Get current go toolchain version
