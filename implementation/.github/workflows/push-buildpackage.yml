@@ -115,7 +115,6 @@ jobs:
     - uses: buildpacks/github-actions/setup-tools@v5.5.4
     - name: Push to DockerHub
       if: ${{  steps.parse_configs.outputs.push_to_dockerhub == 'true' }}
-
       id: push
       env:
         GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
