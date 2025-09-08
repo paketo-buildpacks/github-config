@@ -27,11 +27,15 @@ Now, to wire up your CNB repo to receive relevant updates as a pull requests:
 Submit your change to this repo as a PR. You should be all set when the PR is merged.
 
 ## Dependency updates
-Repositories managed by `github-config` get dependency updates from [Renovate](https://github.com/renovatebot/renovate). Onboarding new repositories need four steps:
-- Remove current dependency update configuration `.github/dependabot.yml` from repository
+Repositories managed by `github-config` get dependency updates from [Renovate](https://github.com/renovatebot/renovate). Onboarding new repositories need steps below:
+
+For the github-config repository:
+- Add the repository name to [`.github/renovate-config.js`](.github/renovate-config.js)
+
+For the repository you are adding renovate:
+- Remove current dependency update configuration `.github/dependabot.yml`
 - Add `dependabot.yml` and `renovate.json` to `.github/.syncignore`
-- Add repository name to [`renovate-config.js`](./renovate-config.js)
-- Add `renovate.json` to the `.github` directory of the repository with following content:
+- Add `renovate.json` to the `.github` directory with following content:
 ```json
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
