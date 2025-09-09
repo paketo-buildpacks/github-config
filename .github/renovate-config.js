@@ -8,5 +8,6 @@ module.exports = {
         "paketo-buildpacks/occam",
         "paketo-buildpacks/github-config",
         "paketo-buildpacks/libnodejs",
+        "paketo-buildpacks/cpython",
     ],
 }
