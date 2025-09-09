@@ -4,5 +4,10 @@ module.exports = {
     onboarding: false,
     platform: 'github',
     forkProcessing: 'enabled',
-    repositories: ['paketo-buildpacks/occam', 'paketo-buildpacks/github-config'],
+    repositories: [
+        "paketo-buildpacks/occam",
+        "paketo-buildpacks/github-config",
+        "paketo-buildpacks/libnodejs",
+        "paketo-buildpacks/cpython",
+    ],
 }
