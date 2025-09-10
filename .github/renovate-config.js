@@ -7,7 +7,15 @@ module.exports = {
     repositories: [
         "paketo-buildpacks/occam",
         "paketo-buildpacks/github-config",
-        "paketo-buildpacks/libnodejs",
         "paketo-buildpacks/cpython",
+        "paketo-buildpacks/libnodejs",
+        "paketo-buildpacks/node-engine",
+        "paketo-buildpacks/node-start",
+        "paketo-buildpacks/npm-install",
+        "paketo-buildpacks/yarn",
+        "paketo-buildpacks/yarn-start",
+        "paketo-buildpacks/yarn-install",
+        "paketo-buildpacks/ubi-nodejs-extension",
+        "paketo-buildpacks/node-run-script",
     ],
 }
