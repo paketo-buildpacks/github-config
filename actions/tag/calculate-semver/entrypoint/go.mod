@@ -1,12 +1,14 @@
 module github.com/paketo-buildpacks/github-config/actions/tag/calculate-semver-tag/entrypoint
 
-go 1.23.0
+go 1.24.0
+
+toolchain go1.24.7
 
 require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/onsi/gomega v1.38.0
 	github.com/sclevine/spec v1.4.0
-	golang.org/x/oauth2 v0.30.0
+	golang.org/x/oauth2 v0.31.0
 )
 
 require (
