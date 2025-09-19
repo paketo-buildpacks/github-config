@@ -7,7 +7,7 @@ toolchain go1.25.1
 require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/fatih/color v1.18.0
-	github.com/spf13/pflag v1.0.7
+	github.com/spf13/pflag v1.0.10
 )
 
 require (
