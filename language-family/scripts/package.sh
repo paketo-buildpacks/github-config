@@ -142,7 +142,7 @@ It contains the following files:
 
 * `buildpack.toml` - this is needed because it contains the buildpacks and ordering information for the composite buildpack
 * `package.toml` - this is needed because it contains the dependencies (and URIs) that let pack know where to find the buildpacks referenced in `buildpack.toml`.
-  * optionally `package.toml` can contain targets (platforms) for multi-arch support.
+  * `package.toml` can contain targets (platforms) for multi-arch support
 * `build/buildpack.tgz` - this is needed because it contains the actual buildpack referenced in `package.toml`
 
 ## package locally
@@ -157,19 +157,21 @@ pack buildpack package mybuildpack.cnb --format file --config package.toml
 
 To package this buildpack and publish it to a registry run the following.
 
-* replace SOME_REGISTRY with your registry (e.g. index.docker.io/yourdockerhubusername)
+* Note that as of pack v0.38.2 at least one target is required in package.toml or on the command line when publishing to a registry with `--publish`.
+
+* replace SOME-REGISTRY with your registry (e.g. index.docker.io/yourdockerhubusername)
 * replace SOME-VERSION with the version you want to publish (e.g. 0.0.1)
 
 ```
-pack buildpack package SOME_REGISTRY/mybuildpack:SOME-VERSION --format image --config package.toml --publish
+pack buildpack package SOME-REGISTRY/mybuildpack:SOME-VERSION --format image --config package.toml --publish
 ```
 README_EOF
 
   mkdir -p $tmp_dir/build
-  cp build/buildpack.tgz $tmp_dir/build
-  cp package.toml $tmp_dir/
+  cp ${BUILD_DIR}/buildpack.tgz $tmp_dir/build
+  cp ${ROOT_DIR}/package.toml $tmp_dir/
   # add the buildpack.toml from the tgz file because it has the version populated
-  tar -xzf build/buildpack.tgz -C $tmp_dir/ buildpack.toml
+  tar -xzf ${BUILD_DIR}/buildpack.tgz -C $tmp_dir/ buildpack.toml
 
   tar -cvzf ${BUILD_DIR}/buildpack-release-artifact.tgz -C $tmp_dir $(ls $tmp_dir)
   rm -rf $tmp_dir
