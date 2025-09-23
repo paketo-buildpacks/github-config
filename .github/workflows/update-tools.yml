@@ -86,12 +86,14 @@ jobs:
       env:
         JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
+        YJ_VERSION: "v5.1.0"
       run: |
         jq --null-input \
            --sort-keys \
            --arg pack "${PACK_VERSION}" \
            --arg jam "${JAM_VERSION}" \
-           '{ pack: $pack, jam: $jam }' > ./language-family/scripts/.util/tools.json
+           --arg yj "${YJ_VERSION}" \
+           '{ pack: $pack, jam: $jam, yj: $yj }' > ./language-family/scripts/.util/tools.json
 
     - name: Update stack tools.json
       env:
