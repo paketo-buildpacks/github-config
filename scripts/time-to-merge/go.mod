@@ -2,7 +2,7 @@ module github.com/paketo-buildpacks/github-config/scripts/time-to-merge
 
 go 1.24.6
 
-toolchain go1.24.7
+toolchain go1.25.1
 
 require (
 	github.com/aclements/go-moremath v0.0.0-20241023150245-c8bbc672ef66
