@@ -9,7 +9,7 @@ env:
 jobs:
   preparation:
     name: Preparation
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       combos: ${{ steps.get_combos.outputs.combos }}
     steps:
