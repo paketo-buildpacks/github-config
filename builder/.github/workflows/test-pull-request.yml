@@ -10,7 +10,7 @@ env:
 jobs:
   preparation:
     name: Preparation
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       combos: ${{ steps.get_combos.outputs.combos }}
     steps:
@@ -83,7 +83,7 @@ jobs:
   roundup:
     name: Smoke Test
     if: ${{ always() }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: smoke
     steps:
     - run: |
@@ -98,7 +98,7 @@ jobs:
 
   upload:
     name: Upload Workflow Event Payload
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
