@@ -193,7 +193,6 @@ function buildpackage::create() {
   tmp_dir=$(mktemp -d -p $BUILD_DIR)
   tar -xvf $release_archive_path -C $tmp_dir
 
-  current_dir=$(pwd)
   cd $tmp_dir
 
   args=(
@@ -217,12 +216,13 @@ function buildpackage::create() {
     buildpack package "${output}" \
     ${args[@]}
 
+  # Integration tests use the ./buildpackage.cnb naming convention
   if [[ -e "${BUILD_DIR}/buildpackage-linux-${arch}.cnb" ]]; then
-    echo "Copying linux-${arch} buildpackage to buildpackage.cnb"
-    cp "${BUILD_DIR}/buildpackage-linux-${arch}.cnb" "${BUILD_DIR}/buildpackage.cnb"
+    echo "Symlinking linux-${arch} buildpackage to buildpackage.cnb"
+    ln -sf "${BUILD_DIR}/buildpackage-linux-${arch}.cnb" "${BUILD_DIR}/buildpackage.cnb"
   fi
 
-  cd $current_dir
+  cd $BUILD_DIR
   rm -rf $tmp_dir
 }
 
