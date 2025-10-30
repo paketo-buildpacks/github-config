@@ -62,19 +62,18 @@ type usnGithubJsonResponse struct {
 	Releases map[string]ReleaseData `json:"releases"`
 }
 
-var config struct {
-	Distro               string
-	LastUSNsJSON         string
-	LastUSNsJSONFilepath string
-	Output               string
-	PackagesJSON         string
-	PackagesJSONFilepath string
-	RSSURL               string
-	RetryTimeLimit       string
-	GhUsnUrl             string
-}
-
 func main() {
+	var config struct {
+		Distro               string
+		LastUSNsJSON         string
+		LastUSNsJSONFilepath string
+		Output               string
+		PackagesJSON         string
+		PackagesJSONFilepath string
+		RSSURL               string
+		RetryTimeLimit       string
+		GhUsnUrl             string
+	}
 
 	flag.StringVar(&config.LastUSNsJSON,
 		"last-usns",
@@ -171,7 +170,7 @@ func main() {
 		}
 	}
 
-	newUSNs, err := getNewUSNsFromFeed(config.RSSURL, lastUSNs, retryTimeLimit)
+	newUSNs, err := getNewUSNsFromFeed(config.RSSURL, lastUSNs, retryTimeLimit, config.GhUsnUrl, config.Distro)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -235,7 +234,7 @@ func filterUSNsByPackages(usns []USN, packages []string) (filtered []USN) {
 	return filtered
 }
 
-func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, retryTimeLimit time.Duration) ([]USN, error) {
+func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, retryTimeLimit time.Duration, ghUsnUrl string, distro string) ([]USN, error) {
 	fp := gofeed.NewParser()
 
 	var feed *gofeed.Feed
@@ -281,7 +280,7 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, retryTimeLimit time.Durat
 			return nil, fmt.Errorf("error parsing URL of USN %s: %w", item.Title, err)
 		}
 		usnNumId := strings.TrimPrefix(usnId, "USN-")
-		usnGithubURL := fmt.Sprintf("%s/%s", config.GhUsnUrl, usnNumId+".json")
+		usnGithubURL := fmt.Sprintf("%s/%s", ghUsnUrl, usnNumId+".json")
 
 		var usnBody []byte
 		var code int
@@ -326,7 +325,7 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, retryTimeLimit time.Durat
 			Title:            item.Title,
 			CVEs:             CVEs,
 			URL:              *usnURL,
-			AffectedPackages: getAffectedPackages(parsedUSNBody, config.Distro),
+			AffectedPackages: getAffectedPackages(parsedUSNBody, distro),
 		})
 	}
 
