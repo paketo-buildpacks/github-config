@@ -9,7 +9,7 @@ RUN apk add \
 
 RUN mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
 
-ARG gh_version=1.7.0
+ARG gh_version=2.82.1
 RUN mkdir -p "/bin" \
       && export PATH="${PATH}:/bin" \
       && curl "https://github.com/cli/cli/releases/download/v${gh_version}/gh_${gh_version}_linux_amd64.tar.gz" \
