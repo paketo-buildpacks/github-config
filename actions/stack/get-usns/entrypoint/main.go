@@ -261,7 +261,7 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, retryTimeLimit time.Durat
 		},
 	)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	fmt.Println("Looking for new USNs...")
@@ -307,6 +307,10 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, retryTimeLimit time.Durat
 				fmt.Printf("Retrying in %s seconds\n", t)
 			},
 		)
+
+		if err != nil {
+			return nil, err
+		}
 
 		var CVEs []CVE
 		for _, cve := range parsedUSNBody.CVEs {

@@ -55,7 +55,9 @@ func TestEntrypoint(t *testing.T) {
 
 				data, err := os.ReadFile(filepath.Join("testdata", requestedFile))
 				if err != nil {
-					t.Fatalf("failed to read fixture: %v", err)
+					w.WriteHeader(http.StatusNotFound)
+					_, _ = w.Write([]byte{})
+					return
 				}
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write(data)
@@ -180,6 +182,84 @@ func TestEntrypoint(t *testing.T) {
 				Expect(string(contents)).To(Equal("[]"))
 			})
 
+		})
+
+		context("failure cases", func() {
+			context("when the http request to the rss feed returns status code 404", func() {
+				it("prints an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--packages", "[\"squid\", \"fetchmail\"]",
+						"--distro", "noble",
+						"--retry-time-limit", "2s",
+						"--feed-url", fmt.Sprintf("%s/does_not_exist.xml", api.URL),
+						"--last-usns-filepath", "testdata/previous_patched_usns_squid_fetchmail.json",
+						"--output", outputFilepath,
+					)
+
+					buffer := gbytes.NewBuffer()
+
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+					Expect(string(buffer.Contents())).To(ContainSubstring("error parsing rss feed: http error: 404 Not Found"))
+				})
+			})
+
+			context("when the usn url does not exist and return http 404", func() {
+				it.Before(func() {
+					os.Setenv("GITHUB_USN_BASE_URL", api.URL)
+				})
+
+				it("prints an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--packages", "[\"squid\", \"fetchmail\"]",
+						"--distro", "noble",
+						"--retry-time-limit", "2s",
+						"--feed-url", fmt.Sprintf("%s/rss_feed_with_404_usns.xml", api.URL),
+						"--last-usns-filepath", "testdata/previous_patched_usns_squid_fetchmail.json",
+						"--output", outputFilepath,
+					)
+
+					buffer := gbytes.NewBuffer()
+
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+					Expect(string(buffer.Contents())).To(ContainSubstring("New USN found: USN-4040-1"))
+					Expect(string(buffer.Contents())).To(ContainSubstring("unexpected status code getting USN: 404"))
+				})
+			})
+
+			context("when the usn JSON body is malformed and", func() {
+				it.Before(func() {
+					os.Setenv("GITHUB_USN_BASE_URL", api.URL)
+				})
+
+				it("prints an error and exits non-zero", func() {
+					command := exec.Command(
+						entrypoint,
+						"--packages", "[\"squid\", \"fetchmail\"]",
+						"--distro", "noble",
+						"--retry-time-limit", "2s",
+						"--feed-url", fmt.Sprintf("%s/rss_feed_with_malformed_usn.xml", api.URL),
+						"--last-usns-filepath", "testdata/previous_patched_usns_squid_fetchmail.json",
+						"--output", outputFilepath,
+					)
+
+					buffer := gbytes.NewBuffer()
+
+					session, err := gexec.Start(command, buffer, buffer)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+					Expect(string(buffer.Contents())).To(ContainSubstring("New USN found: USN-0001-1"))
+					Expect(string(buffer.Contents())).To(ContainSubstring("error unmarshalling USN body"))
+				})
+			})
 		})
 	})
 }
