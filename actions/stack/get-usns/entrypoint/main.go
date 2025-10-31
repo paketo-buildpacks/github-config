@@ -5,13 +5,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"html"
 	"io"
 	"log"
 	"maps"
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -23,7 +23,11 @@ import (
 	backoff "github.com/cenkalti/backoff/v4"
 )
 
-var distroToVersionRegex map[string]string = map[string]string{
+const DEFAULT_GITHUB_USNS_URL = "https://raw.githubusercontent.com/canonical/ubuntu-security-notices/refs/heads/main/usn"
+const UBUNTU_CVE_URL = "https://ubuntu.com/security/cve"
+const FEED_RSS_URL = "https://ubuntu.com/security/notices/rss.xml"
+
+var supportedDistros = map[string]string{
 	"noble":  `24\.04`,
 	"jammy":  `22\.04`,
 	"focal":  `20\.04`,
@@ -36,12 +40,26 @@ type USN struct {
 	Title            string   `json:"title"`
 	ID               string   `json:"id"`
 	URL              url.URL  `json:"-"`
-	URLString        string   `json:"url"`
 }
 
 type CVE struct {
 	Title string `json:"title"`
 	URL   string `json:"url"`
+}
+
+type Binary struct {
+	Pocket  string `json:"pocket"`
+	Version string `json:"version"`
+}
+
+type ReleaseData struct {
+	Binaries map[string]Binary `json:"binaries"`
+}
+
+type usnGithubJsonResponse struct {
+	CVEs     []string               `json:"cves"`
+	ID       string                 `json:"id"`
+	Releases map[string]ReleaseData `json:"releases"`
 }
 
 func main() {
@@ -54,6 +72,7 @@ func main() {
 		PackagesJSONFilepath string
 		RSSURL               string
 		RetryTimeLimit       string
+		GhUsnUrl             string
 	}
 
 	flag.StringVar(&config.LastUSNsJSON,
@@ -66,7 +85,7 @@ func main() {
 		"Filepath that points to the JSON array of last known USNs")
 	flag.StringVar(&config.RSSURL,
 		"feed-url",
-		"https://ubuntu.com/security/notices/rss.xml",
+		FEED_RSS_URL,
 		"URL of RSS feed")
 	flag.StringVar(&config.PackagesJSON,
 		"packages",
@@ -89,9 +108,9 @@ func main() {
 
 	flag.Parse()
 
-	_, ok := distroToVersionRegex[config.Distro]
+	_, ok := supportedDistros[config.Distro]
 	if !ok {
-		log.Fatal(fmt.Sprintf("--distro flag has to be one of the following values: %v", slices.Sorted(maps.Keys(distroToVersionRegex))))
+		log.Fatalf("--distro flag has to be one of the following values: %v", slices.Sorted(maps.Keys(supportedDistros)))
 	}
 
 	if config.LastUSNsJSON == "" {
@@ -100,6 +119,12 @@ func main() {
 
 	if config.PackagesJSON == "" {
 		config.PackagesJSON = `[]`
+	}
+
+	if ghUsnBaseUrl, exists := os.LookupEnv("GITHUB_USN_BASE_URL"); exists {
+		config.GhUsnUrl = ghUsnBaseUrl
+	} else {
+		config.GhUsnUrl = DEFAULT_GITHUB_USNS_URL
 	}
 
 	retryTimeLimit, err := time.ParseDuration(config.RetryTimeLimit)
@@ -145,7 +170,7 @@ func main() {
 		}
 	}
 
-	newUSNs, err := getNewUSNsFromFeed(config.RSSURL, lastUSNs, distroToVersionRegex[config.Distro], retryTimeLimit)
+	newUSNs, err := getNewUSNsFromFeed(config.RSSURL, lastUSNs, retryTimeLimit, config.GhUsnUrl, config.Distro)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -153,12 +178,6 @@ func main() {
 	filtered := filterUSNsByPackages(newUSNs, packages)
 
 	fmt.Println("Getting CVE metadata for relevant USNs...")
-	for i := range filtered {
-		err = addCVEs(&filtered[i])
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
 
 	output, err := json.Marshal(filtered)
 	if err != nil {
@@ -168,16 +187,6 @@ func main() {
 	if len(filtered) == 0 {
 		output = []byte(`[]`)
 	}
-
-	outputFileName, ok := os.LookupEnv("GITHUB_OUTPUT")
-	if !ok {
-		log.Fatal("GITHUB_OUTPUT is not set, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-output-parameter")
-	}
-	file, err := os.OpenFile(outputFileName, os.O_APPEND|os.O_WRONLY, 0)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
 
 	if config.Output != "" {
 		path, err := filepath.Abs(config.Output)
@@ -189,6 +198,16 @@ func main() {
 			log.Fatal(err)
 		}
 	} else {
+		outputFileName, ok := os.LookupEnv("GITHUB_OUTPUT")
+		if !ok {
+			log.Fatal("GITHUB_OUTPUT is not set, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-output-parameter")
+		}
+		file, err := os.OpenFile(outputFileName, os.O_APPEND|os.O_WRONLY, 0)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+
 		fmt.Fprintf(file, "usns=%s\n", string(output))
 	}
 }
@@ -215,25 +234,7 @@ func filterUSNsByPackages(usns []USN, packages []string) (filtered []USN) {
 	return filtered
 }
 
-func addCVEs(usn *USN) error {
-	usnBody, code, err := get(usn.URL.String())
-	if err != nil {
-		return fmt.Errorf("error getting USN: %w", err)
-	}
-
-	if code != http.StatusOK {
-		return fmt.Errorf("unexpected status code getting USN: %d", code)
-	}
-
-	cves, err := extractCVEs(usnBody, usn.URL)
-	if err != nil {
-		return fmt.Errorf("error extracting CVEs from USN %s: %w", usn.Title, err)
-	}
-	usn.CVEs = cves
-	return nil
-}
-
-func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string, retryTimeLimit time.Duration) ([]USN, error) {
+func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, retryTimeLimit time.Duration, ghUsnUrl string, distro string) ([]USN, error) {
 	fp := gofeed.NewParser()
 
 	var feed *gofeed.Feed
@@ -259,7 +260,7 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string, retryTimeL
 		},
 	)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	fmt.Println("Looking for new USNs...")
@@ -267,13 +268,10 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string, retryTimeL
 	for _, item := range feed.Items {
 		// regex extracts 'USN-5464-1' from 'USN-5464-1: e2fsprogs vulnerability'
 		re := regexp.MustCompile(`USN\-\d+\-\d+`)
-		id := re.FindString(item.Title)
+		usnId := re.FindString(item.Title)
 
-		// Matching on IDs is stricter since titles are sometimes edited after
-		// publication. Matching on titles guards against ID parsing errors.
-		if (len(lastUSNs) > 0) && (id == lastUSNs[0].ID || item.Title == lastUSNs[0].Title) {
-			fmt.Println("No more new USNs.")
-			break
+		if !isNewUSN(usnId, lastUSNs) {
+			continue
 		}
 		fmt.Printf("New USN found: %s\n", item.Title)
 
@@ -281,17 +279,24 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string, retryTimeL
 		if err != nil {
 			return nil, fmt.Errorf("error parsing URL of USN %s: %w", item.Title, err)
 		}
+		usnNumId := strings.TrimPrefix(usnId, "USN-")
+		usnGithubURL := fmt.Sprintf("%s/%s", ghUsnUrl, usnNumId+".json")
 
-		var usnBody string
+		var usnBody []byte
 		var code int
+		var parsedUSNBody usnGithubJsonResponse
 
 		err = backoff.RetryNotify(func() error {
-			usnBody, code, err = get(usnURL.String())
+			usnBody, code, err = get(usnGithubURL)
 			if err != nil {
 				return fmt.Errorf("error getting USN: %w", err)
 			}
 			if code != http.StatusOK {
 				return fmt.Errorf("unexpected status code getting USN: %d", code)
+			}
+			err = json.Unmarshal(usnBody, &parsedUSNBody)
+			if err != nil {
+				return fmt.Errorf("error unmarshalling USN body: %w", err)
 			}
 			return nil
 		},
@@ -302,96 +307,63 @@ func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, distro string, retryTimeL
 			},
 		)
 
+		if err != nil {
+			return nil, err
+		}
+
+		var CVEs []CVE
+		for _, cve := range parsedUSNBody.CVEs {
+			CVE := CVE{
+				Title: cve,
+				URL:   path.Join(UBUNTU_CVE_URL, cve),
+			}
+			CVEs = append(CVEs, CVE)
+		}
+
 		feedUSNs = append(feedUSNs, USN{
-			ID:               id,
+			ID:               usnId,
 			Title:            item.Title,
+			CVEs:             CVEs,
 			URL:              *usnURL,
-			URLString:        usnURL.String(),
-			AffectedPackages: getAffectedPackages(usnBody, distro),
+			AffectedPackages: getAffectedPackages(parsedUSNBody, distro),
 		})
 	}
 
 	return feedUSNs, nil
 }
 
-func getAffectedPackages(usnBody, versionRegex string) []string {
-	re := regexp.MustCompile("Update instructions</h2>(.*?)References")
-	packagesList := re.FindString(usnBody)
+func isNewUSN(id string, lastUSNs []USN) bool {
+	for _, lastUSN := range lastUSNs {
+		if id == lastUSN.ID {
+			return false
+		}
+	}
+	return true
+}
 
-	re = regexp.MustCompile(fmt.Sprintf(`%s.*?</ul>`, versionRegex))
-	bionicPackages := re.FindString(packagesList)
-
-	re = regexp.MustCompile(`<li class="p-list__item">(.*?)</li>`)
-	listMatches := re.FindAllStringSubmatch(bionicPackages, -1)
+func getAffectedPackages(usnBody usnGithubJsonResponse, distro string) []string {
 
 	packages := make([]string, 0)
-	for _, listItem := range listMatches {
-		packages = append(packages, getPackageNameFromHTML(strings.TrimSpace(listItem[1])))
+
+	for packageName := range usnBody.Releases[distro].Binaries {
+		packages = append(packages, packageName)
 	}
 
 	return packages
 }
 
-func get(url string) (string, int, error) {
+func get(url string) ([]byte, int, error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", 0, err
+		return nil, 0, err
 	}
 
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", 0, err
+		return nil, 0, err
 	}
-
-	body := html.UnescapeString(string(respBody))
-	body = strings.ReplaceAll(body, "\n", " ")
-	body = strings.ReplaceAll(body, "<br />", " ")
-	body = strings.ReplaceAll(body, "<br>", " ")
-	body = strings.ReplaceAll(body, "</br>", " ")
 
 	return body, resp.StatusCode, nil
-}
-func extractCVEs(usnBody string, usnURL url.URL) ([]CVE, error) {
-
-	// regex matches '<a href="/security/CVE-2022-1664">CVE-2022-1664</a>' or
-	// '<a href="/cve/CVE-2022-1664">CVE-2022-1664</a>'
-	re := regexp.MustCompile(`<a.*?href="([\S]*?(:?cve|security)\/CVE.*?)">(.*?)<\/a.*?>`)
-	cves := re.FindAllStringSubmatch(usnBody, -1)
-
-	re = regexp.MustCompile(`.*?href="([\S]*?launchpad\.net/bugs.*?)">(.*?)</li`)
-	lps := re.FindAllStringSubmatch(usnBody, -1)
-
-	var cveArray []CVE
-	for _, cve := range cves {
-		cveURL := url.URL{
-			Scheme: "https",
-			Host:   usnURL.Hostname(),
-			Path:   cve[1],
-		}
-
-		cveArray = append(cveArray, CVE{
-			Title: cve[3],
-			URL:   cveURL.String(),
-		})
-	}
-
-	for _, lp := range lps {
-		cveArray = append(cveArray, CVE{
-			Title: lp[2],
-			URL:   lp[1],
-		})
-	}
-
-	return cveArray, nil
-}
-
-func getPackageNameFromHTML(listItem string) string {
-	if strings.HasPrefix(listItem, "<a href=") {
-		re := regexp.MustCompile(`<a href=".*?">(.*?)</a>`)
-		packageMatch := re.FindStringSubmatch(listItem)
-		return packageMatch[1]
-	}
-	return strings.Split(listItem, " ")[0]
 }
