@@ -2,7 +2,7 @@ name: Update builder.toml files and Send Pull Request
 
 on:
   schedule:
-  - cron: '27 2,14 * * *' # daily at 02:27 and 14:27 UTC
+  - cron: '27 2,14 * * *'  # daily at 02:27 and 14:27 UTC
   workflow_dispatch: {}
 
 concurrency: builder_update
