@@ -2,19 +2,5 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "github>paketo-buildpacks/github-config//renovate/renovate-default"
-  ],
-  "customManagers": [
-    {
-      "customType": "regex",
-      "fileMatch": [
-        "^buildpack.toml$"
-      ],
-      "matchStrings": [
-        "api = \"(?<currentValue>\\d+?\\.\\d+?)\""
-      ],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "buildpacks/spec",
-      "extractVersionTemplate": "^buildpack/v?(?<version>.*)$"
-    }
   ]
 }
