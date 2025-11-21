@@ -9,5 +9,6 @@ module.exports = {
         "paketo-buildpacks/github-config",
         "paketo-buildpacks/libnodejs",
         "paketo-buildpacks/cpython",
+        "paketo-buildpacks/builder-jammy-base",
     ],
 }
