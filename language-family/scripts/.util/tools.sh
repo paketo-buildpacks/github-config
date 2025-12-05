@@ -149,7 +149,7 @@ function util::tools::pack::install() {
 
     util::print::title "Installing pack ${version}"
 
-    os=$(util::tools::os macos)
+    os=$(util::tools::os)
     arch=$(util::tools::arch --blank-amd64)
 
     curl "https://github.com/buildpacks/pack/releases/download/${version}/pack-${version}-${os}${arch:+-$arch}.tgz" \
