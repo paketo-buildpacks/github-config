@@ -135,12 +135,10 @@ function util::tools::pack::install() {
 
     version="$(jq -r .pack "$(dirname "${BASH_SOURCE[0]}")/tools.json")"
 
-    tmp_location="/tmp/pack.tgz"
     curl_args=(
       "--fail"
       "--silent"
       "--location"
-      "--output" "${tmp_location}"
     )
 
     if [[ "${token}" != "" ]]; then
@@ -153,12 +151,9 @@ function util::tools::pack::install() {
     arch=$(util::tools::arch --blank-amd64)
 
     curl "https://github.com/buildpacks/pack/releases/download/${version}/pack-${version}-${os}${arch:+-$arch}.tgz" \
-      "${curl_args[@]}"
-
-    tar xzf "${tmp_location}" -C "${dir}"
+      "${curl_args[@]}" | \
+       tar xzf - -C "${dir}"
     chmod +x "${dir}/pack"
-
-    rm "${tmp_location}"
   else
     util::print::info "Using pack $("${dir}"/pack version)"
   fi
