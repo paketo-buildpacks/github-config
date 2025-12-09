@@ -23,12 +23,13 @@ jobs:
       compilation-length: ${{ steps.retrieve.outputs.compilation-length }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version-file: go.mod
+          # hashFiles returns empty string if file does not exist
+          go-version-file: ${{ hashFiles('dependency/retrieval/go.mod') != '' && 'dependency/retrieval/go.mod' || 'go.mod' }}
 
       - name: Run Retrieve
         id: retrieve
@@ -86,7 +87,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Has Compilation Action?
         id: compile-check
@@ -121,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Make Temporary Artifact Directory
         id: make-outputdir
@@ -191,7 +192,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download artifact files
         uses: actions/download-artifact@v4
@@ -284,7 +285,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Checkout Branch
         uses: paketo-buildpacks/github-config/actions/pull-request/checkout-branch@main

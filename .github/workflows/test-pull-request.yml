@@ -16,7 +16,7 @@ jobs:
       with:
         go-version: stable
     - name: Checkout
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
     - name: Check repo structure
       run: ./scripts/sanity.sh
     - name: Run Unit Tests
