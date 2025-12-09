@@ -2,12 +2,12 @@ module github.com/paketo-buildpacks/github-config/scripts/publish-draft-releases
 
 go 1.21
 
-toolchain go1.24.6
+toolchain go1.25.3
 
 require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/fatih/color v1.18.0
-	github.com/spf13/pflag v1.0.7
+	github.com/spf13/pflag v1.0.10
 )
 
 require (
