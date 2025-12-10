@@ -19,8 +19,8 @@ inputs:
   aptquietflags:
     # avoid excessive logging during CI
     description: "default to make apt-less noisy"
-    required:    false
-    default:     " -qq -o=Dpkg::Use-Pty=0 "
+    required: false
+    default: " -qq -o=Dpkg::Use-Pty=0 "
 
   mandb:
     description: "Remove mandb and disable apt triggers"
@@ -188,7 +188,6 @@ runs:
           df -a
           printSeparationLine '=' 80
         }
-
 
 
         # ======
@@ -378,7 +377,6 @@ runs:
         fi
 
 
-
         # Output saved space statistic
 
         AVAILABLE_END=$(getAvailableSpace)
@@ -406,4 +404,3 @@ runs:
            printf "TIME_REPORT: %15s | %-10s seconds | %-12s |\n" "${subsection}" "${times_mapping[$subsection]}" "${saved_mapping[$subsection]}"
         done
         echo "TIME_REPORT: == ${{ inputs.removalmode }} ===================================================="
-
