@@ -1,0 +1,409 @@
+# Taken from on https://github.com/jlumbroso/free-disk-space/pull/48/
+# SPDX-License-Identifier: MIT
+
+name: "Free Disk Space (Ubuntu)"
+description: "A configurable GitHub Action to free up disk space on an Ubuntu GitHub Actions runner."
+
+# See: https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions#branding
+branding:
+  icon: "trash-2"
+  color: "green"
+
+inputs:
+  removalmode:
+    # See analysis in https://github.com/SUPERCILEX/fuc/tree/master/comparisons
+    description: "File removal mode [rmz, find, rsync, rm]"
+    required: false
+    default: "rmz"
+
+  aptquietflags:
+    # avoid excessive logging during CI
+    description: "default to make apt-less noisy"
+    required:    false
+    default:     " -qq -o=Dpkg::Use-Pty=0 "
+
+  mandb:
+    description: "Remove mandb and disable apt triggers"
+    required: false
+    default: "true"
+  android:
+    description: "Remove Android runtime"
+    required: false
+    default: "true"
+  dotnet:
+    description: "Remove .NET runtime"
+    required: false
+    default: "true"
+  haskell:
+    description: "Remove Haskell runtime"
+    required: false
+    default: "true"
+
+  # option inspired by:
+  # https://github.com/apache/flink/blob/master/tools/azure-pipelines/free_disk_space.sh
+  large-packages:
+    description: "Remove large packages"
+    required: false
+    default: "true"
+
+  docker-images:
+    description: "Remove Docker images"
+    required: false
+    default: "true"
+
+  # option inspired by:
+  # https://github.com/actions/virtual-environments/issues/2875#issuecomment-1163392159
+  tool-cache:
+    description: "Remove image tool cache"
+    required: false
+    default: "false"
+
+  swap-storage:
+    description: "Remove swap storage"
+    required: false
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: |
+        declare -A times_mapping
+        declare -A saved_mapping
+        # ======
+        # MACROS
+        # ======
+
+        setup_rmz() {
+          curl -fsSL --tlsv1.2 --proto '=https' https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash > /dev/null 2>&1
+          cargo binstall -qy rmz
+          ln -s ~/.cargo/bin/rmz /usr/local/bin/rmz
+        }
+
+        fast_rmdir() {
+          # See analysis in https://github.com/SUPERCILEX/fuc/tree/master/comparisons
+          #
+          if [[ -d "$1" ]] && [[ -n "$1" ]] && [[ ! "$1" = "/" ]] && [[ ! "$1" = "~" ]]; then
+            echo "Removing directory: $1"
+            case "${{ inputs.removalmode }}" in
+              "rmz")
+                # Remove with rmz (requires separate download step)
+                sudo rmz -f "$1" || true
+                ;;
+              "find")
+                # Remove with find (available by default)
+                sudo find "$1" -type f -delete -print | wc -l
+                sudo rm -rf "$1"
+                ;;
+              "rsync")
+                # Remove with rsync (availble by default)
+                # https://runcloud.io/blog/delete-directory-linux --> tldr; rsync of an empty directory is often the fastest way to bulk delete files
+                # Experimentation disproved this assertion that rsync is faster.
+                sudo mkdir -p /tmp/empty
+                sudo rsync -a --delete /tmp/empty/ "$1"/
+                sudo rm -rf /tmp/empty "$1"
+                ;;
+              "rm")
+                # Remove with standard unix command
+                sudo rm -rf "$1"
+                ;;
+              "*")
+                echo "ERROR: Invalid removalmode specified.  Valid values are [rmz, find, rsync, rm]"
+                exit -1
+                ;;
+            esac
+          fi
+        }
+
+        list_installed_dpkg() {
+          dpkg --get-selections $@ | grep -v deinstall | awk '{print $1}'
+        }
+
+        # macro to print a line of equals
+        # (silly but works)
+        printSeparationLine() {
+          str=${1:=}
+          num=${2:-80}
+          counter=1
+          output=""
+          while [ $counter -le $num ]
+          do
+             output="${output}${str}"
+             counter=$((counter+1))
+          done
+          echo "${output}"
+        }
+
+        # macro to compute available space
+        # REF: https://unix.stackexchange.com/a/42049/60849
+        # REF: https://stackoverflow.com/a/450821/408734
+        getAvailableSpace() { echo $(df -a $1 | awk 'NR > 1 {avail+=$4} END {print avail}'); }
+
+        # macro to make Kb human readable (assume the input is Kb)
+        # REF: https://unix.stackexchange.com/a/44087/60849
+        formatByteCount() {
+          bytes=$1
+          if [ "$bytes" -lt "0" ]; then
+            kilobytes=$(awk "BEGIN {printf \"%.2f\",  $1 * -1000}")
+            sign_symbol="-"
+          else
+            kilobytes=$(awk "BEGIN {printf \"%.2f\",  $1 * 1000}")
+            sign_symbol="+"
+          fi
+          echo ${sign_symbol}$(numfmt --to=iec-i --suffix=B --padding=7 ${kilobytes});
+        }
+
+        # macro to output saved space
+        printSavedSpace() {
+          saved=${1}
+          title=${2}
+          time=${3}
+
+          printSeparationLine '*' 80
+          epsilon=0.001 # avoid divide by zero failures
+          # $saved in in bytes, so convert to GB with  division by 1000000.0
+          RATE=$(awk "BEGIN {printf \"%.2f\", ( $saved / 1000000.0 ) /($time + $epsilon)}")
+          gigabytes_saved=$(formatByteCount $saved)
+          gigabytes_saved=$(formatByteCount $saved)
+          echo "=> ${title}: Saved $gigabytes_saved: in ${time} seconds : rate = ${RATE} GB/sec"
+          printSeparationLine '*' 80
+          echo ""
+        }
+
+        # macro to print output of df with caption
+        printDF() {
+          caption=${1:-}
+
+          printSeparationLine '=' 80
+          echo "${caption}"
+          echo ""
+          echo "$ df -h /"
+          echo ""
+          df -h /
+          echo "$ df -a /"
+          echo ""
+          df -a /
+          echo "$ df -a"
+          echo ""
+          df -a
+          printSeparationLine '=' 80
+        }
+
+
+
+        # ======
+        # SCRIPT
+        # ======
+
+        # Display initial disk space stats
+        GLOBAL_START_TIME=$(date +%s)
+        AVAILABLE_INITIAL=$(getAvailableSpace)
+        AVAILABLE_ROOT_INITIAL=$(getAvailableSpace '/')
+
+        if [[ ${{ inputs.removalmode }} == 'rmz' ]]; then
+          setup_rmz
+        fi
+
+        printDF "BEFORE CLEAN-UP:"
+        echo ""
+
+        # Option: Remove man-page updates
+        #
+        # Disabling manpage generation and localization post-processing, can dramatically
+        # speed up apt operations (install/remove) on GitHub Actions or CI hosts.
+        # Why it’s slow:
+        # During apt install or apt remove, Ubuntu/Debian automatically runs dpkg triggers such as:
+        #        man-db (to update the whatis database and pre-compress man pages)
+        #        update-initramfs, update-grub, etc.
+        #        locale updates via language-pack-* or localepurge
+        # Preventing these triggers can save 30–90 seconds per large apt-get block in Ubuntu CI environments.
+
+        # prevent initramfs-tools from updating RAM filesystem
+        # updating the initial RAM filesystem image needed for reboot
+        # is not necessary for these transient images
+        export INITRD=No
+        if [[ ${{ inputs.mandb }} == 'true' ]]; then
+          STAGE_START_TIME=$(date +%s)
+          BEFORE=$(getAvailableSpace)
+
+          sudo rm -f /var/lib/man-db/auto-update
+          sudo apt-get purge ${{ inputs.aptquietflags }} -y man-db manpages manpages-dev
+          sudo apt-get autoremove ${{ inputs.aptquietflags }} -y
+          # Clean caches
+          sudo rm -rf /var/lib/apt/lists/* /var/cache/apt/* || true
+
+          AFTER=$(getAvailableSpace)
+          SAVED=$((AFTER-BEFORE))
+          STAGE_STOP_TIME=$(date +%s)
+          STAGE_ELAPSE_TIME=$((STAGE_STOP_TIME - STAGE_START_TIME))
+          times_mapping["mandb"]="${STAGE_ELAPSE_TIME}"
+          saved_mapping["mandb"]="$(formatByteCount $SAVED)"
+          printSavedSpace $SAVED "man page indexing intial removals and disabling" ${STAGE_ELAPSE_TIME}
+        fi
+
+
+        # Option: Remove Android library
+
+        if [[ ${{ inputs.android }} == 'true' ]]; then
+          STAGE_START_TIME=$(date +%s)
+          BEFORE=$(getAvailableSpace)
+
+          fast_rmdir /usr/local/lib/android || true
+
+          AFTER=$(getAvailableSpace)
+          SAVED=$((AFTER-BEFORE))
+          STAGE_STOP_TIME=$(date +%s)
+          STAGE_ELAPSE_TIME=$((STAGE_STOP_TIME - STAGE_START_TIME))
+          times_mapping["android"]="${STAGE_ELAPSE_TIME}"
+          saved_mapping["android"]="$(formatByteCount $SAVED)"
+          printSavedSpace $SAVED "Android library" ${STAGE_ELAPSE_TIME}
+        fi
+
+        # Option: Remove .NET runtime
+
+        if [[ ${{ inputs.dotnet }} == 'true' ]]; then
+          STAGE_START_TIME=$(date +%s)
+          BEFORE=$(getAvailableSpace)
+
+          # https://github.community/t/bigger-github-hosted-runners-disk-space/17267/11
+          fast_rmdir /usr/share/dotnet || true
+
+          AFTER=$(getAvailableSpace)
+          SAVED=$((AFTER-BEFORE))
+          STAGE_STOP_TIME=$(date +%s)
+          STAGE_ELAPSE_TIME=$((STAGE_STOP_TIME - STAGE_START_TIME))
+          times_mapping["dotnet"]="${STAGE_ELAPSE_TIME}"
+          saved_mapping["dotnet"]="$(formatByteCount $SAVED)"
+          printSavedSpace $SAVED ".NET runtime" ${STAGE_ELAPSE_TIME}
+        fi
+
+        # Option: Remove Haskell runtime
+
+        if [[ ${{ inputs.haskell }} == 'true' ]]; then
+          STAGE_START_TIME=$(date +%s)
+          BEFORE=$(getAvailableSpace)
+
+          fast_rmdir /opt/ghc || true
+          fast_rmdir /usr/local/.ghcup || true
+
+          AFTER=$(getAvailableSpace)
+          SAVED=$((AFTER-BEFORE))
+          STAGE_STOP_TIME=$(date +%s)
+          STAGE_ELAPSE_TIME=$((STAGE_STOP_TIME - STAGE_START_TIME))
+          times_mapping["haskell"]="${STAGE_ELAPSE_TIME}"
+          saved_mapping["haskell"]="$(formatByteCount $SAVED)"
+          printSavedSpace $SAVED "Haskell runtime" ${STAGE_ELAPSE_TIME}
+        fi
+
+        # Option: Remove large packages
+        # REF: https://github.com/apache/flink/blob/master/tools/azure-pipelines/free_disk_space.sh
+
+        if [[ ${{ inputs.large-packages }} == 'true' ]]; then
+          STAGE_START_TIME=$(date +%s)
+          BEFORE=$(getAvailableSpace)
+
+          pkgs=$(list_installed_dpkg 'aspnetcore-*' 'dotnet-*' 'llvm-*' '*php*' 'mongodb-*' 'mysql-*' azure-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri 'google-cloud-*' 'gcloud-*' || true)
+
+          if [ -d "/usr/lib/google-cloud-sdk" ]; then
+            echo "Cleaning Google Cloud CLI files..."
+            fast_rmdir /usr/lib/google-cloud-sdk || true
+            echo "Cleaning Google Cloud CLI manuals..."
+            fast_rmdir  /usr/share/man || true
+          fi
+
+          sudo apt-get remove ${{ inputs.aptquietflags }} --autoremove -y $pkgs || echo "::warning::The command [sudo apt-get remove -y] failed to complete successfully. Proceeding..."
+          sudo apt-get clean ${{ inputs.aptquietflags }} || echo "::warning::The command [sudo apt-get clean] failed to complete successfully. Proceeding..."
+
+          AFTER=$(getAvailableSpace)
+          SAVED=$((AFTER-BEFORE))
+          STAGE_STOP_TIME=$(date +%s)
+          STAGE_ELAPSE_TIME=$((STAGE_STOP_TIME - STAGE_START_TIME))
+          times_mapping["large-packages"]="${STAGE_ELAPSE_TIME}"
+          saved_mapping["large-packages"]="$(formatByteCount $SAVED)"
+          printSavedSpace $SAVED "Large misc. packages" ${STAGE_ELAPSE_TIME}
+        fi
+
+        # Option: Remove Docker images
+
+        if [[ ${{ inputs.docker-images }} == 'true' ]]; then
+          STAGE_START_TIME=$(date +%s)
+          BEFORE=$(getAvailableSpace)
+
+          sudo docker image prune --all --force || true
+
+          AFTER=$(getAvailableSpace)
+          SAVED=$((AFTER-BEFORE))
+          STAGE_STOP_TIME=$(date +%s)
+          STAGE_ELAPSE_TIME=$((STAGE_STOP_TIME - STAGE_START_TIME))
+          times_mapping["docker-images"]="${STAGE_ELAPSE_TIME}"
+          saved_mapping["docker-images"]="$(formatByteCount $SAVED)"
+          printSavedSpace $SAVED "Docker images" ${STAGE_ELAPSE_TIME}
+        fi
+
+        # Option: Remove tool cache
+        # REF: https://github.com/actions/virtual-environments/issues/2875#issuecomment-1163392159
+
+        if [[ ${{ inputs.tool-cache }} == 'true' ]]; then
+          STAGE_START_TIME=$(date +%s)
+          BEFORE=$(getAvailableSpace)
+
+          fast_rmdir "$AGENT_TOOLSDIRECTORY" || true
+
+          AFTER=$(getAvailableSpace)
+          SAVED=$((AFTER-BEFORE))
+          STAGE_STOP_TIME=$(date +%s)
+          STAGE_ELAPSE_TIME=$((STAGE_STOP_TIME - STAGE_START_TIME))
+          times_mapping["tool-cache"]="${STAGE_ELAPSE_TIME}"
+          saved_mapping["tool-cache"]="$(formatByteCount $SAVED)"
+          printSavedSpace $SAVED "Tool cache" ${STAGE_ELAPSE_TIME}
+        fi
+
+        # Option: Remove Swap storage
+
+        if [[ ${{ inputs.swap-storage }} == 'true' ]]; then
+          STAGE_START_TIME=$(date +%s)
+          BEFORE=$(getAvailableSpace)
+
+          sudo swapoff -a || true
+          sudo rm -f /mnt/swapfile || true
+          free -h
+
+          AFTER=$(getAvailableSpace)
+          SAVED=$((AFTER-BEFORE))
+          STAGE_STOP_TIME=$(date +%s)
+          STAGE_ELAPSE_TIME=$((STAGE_STOP_TIME - STAGE_START_TIME))
+          times_mapping["swap-storage"]="${STAGE_ELAPSE_TIME}"
+          saved_mapping["swap-storage"]="$(formatByteCount $SAVED)"
+          printSavedSpace $SAVED "Swap storage" ${STAGE_ELAPSE_TIME}
+        fi
+
+
+
+        # Output saved space statistic
+
+        AVAILABLE_END=$(getAvailableSpace)
+        AVAILABLE_ROOT_END=$(getAvailableSpace '/')
+        GLOBAL_STOP_TIME=$(date +%s)
+
+        echo ""
+        printDF "AFTER CLEAN-UP:"
+
+        echo ""
+        echo ""
+
+        printSavedSpace $((AVAILABLE_ROOT_END - AVAILABLE_ROOT_INITIAL)) "/dev/root:" $((GLOBAL_STOP_TIME - GLOBAL_START_TIME))
+        times_mapping["root"]="$((GLOBAL_STOP_TIME - GLOBAL_START_TIME))"
+        saved_mapping["root"]="$(formatByteCount $((AVAILABLE_ROOT_END - AVAILABLE_ROOT_INITIAL)) )"
+        printSavedSpace $((AVAILABLE_END - AVAILABLE_INITIAL)) "Overall:" $((GLOBAL_STOP_TIME - GLOBAL_START_TIME))
+        times_mapping["overall"]="$((GLOBAL_STOP_TIME - GLOBAL_START_TIME))"
+        saved_mapping["overall"]="$(formatByteCount $((AVAILABLE_END - AVAILABLE_INITIAL)) )"
+
+        # Iterate over keys
+        echo "TIME_REPORT: == ${{ inputs.removalmode }} ===================================================="
+        printf "TIME_REPORT: %15s | %-10s seconds | %-12s |\n" "subsection" "time" "size"
+        echo "TIME_REPORT: ============================================================="
+        for subsection in "${!times_mapping[@]}"; do
+           printf "TIME_REPORT: %15s | %-10s seconds | %-12s |\n" "${subsection}" "${times_mapping[$subsection]}" "${saved_mapping[$subsection]}"
+        done
+        echo "TIME_REPORT: == ${{ inputs.removalmode }} ===================================================="
+

@@ -52,7 +52,8 @@ jobs:
       uses: actions/checkout@v6
 
     - name: Free Disk Space
-      uses: jlumbroso/free-disk-space@main
+      if: env.RECLAIM_DISK_SPACE == 'true'
+      uses: paketo-buildpacks/github-config/actions/pull-request/reclaim-disk-space@main
       with:
         tool-cache: false
         android: true
