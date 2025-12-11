@@ -52,7 +52,7 @@ jobs:
       uses: actions/checkout@v6
 
     - name: Free Disk Space
-      if: env.RECLAIM_DISK_SPACE == 'true'
+      if: vars.RECLAIM_DISK_SPACE == 'true'
       uses: paketo-buildpacks/github-config/actions/pull-request/reclaim-disk-space@main
       with:
         tool-cache: false
