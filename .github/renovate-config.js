@@ -6,6 +6,7 @@ module.exports = {
     forkProcessing: 'enabled',
     repositories: [
         "paketo-buildpacks/occam",
+        "paketo-buildpacks/jam",
         "paketo-buildpacks/github-config",
         "paketo-buildpacks/libnodejs",
         "paketo-buildpacks/cpython",
