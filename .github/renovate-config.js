@@ -11,5 +11,6 @@ module.exports = {
         "paketo-buildpacks/libnodejs",
         "paketo-buildpacks/cpython",
         "paketo-buildpacks/builder-jammy-base",
+        "paketo-buildpacks/blog",
     ],
 }
