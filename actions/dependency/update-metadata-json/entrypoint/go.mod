@@ -1,6 +1,8 @@
 module github.com/paketo-buildpacks/github-config/actions/dependency/update-metadata-json/entrypoint
 
 go 1.25.5
+toolchain go1.25.6
+
 
 require (
 	github.com/onsi/gomega v1.39.0
