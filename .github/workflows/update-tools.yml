@@ -3,7 +3,7 @@ name: Update Tools
 
 on:
   schedule:
-  - cron: '42 19 * * *' # daily at 19:42 UTC
+  - cron: '42 19 * * *'  # daily at 19:42 UTC
   workflow_dispatch: {}
 
 concurrency: tools_update
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Checkout Branch
       uses: paketo-buildpacks/github-config/actions/pull-request/checkout-branch@main
@@ -87,13 +87,17 @@ jobs:
         JAM_VERSION: ${{ steps.latest-jam.outputs.version }}
         PACK_VERSION: ${{ steps.latest-pack.outputs.version }}
         YJ_VERSION: "v5.1.0"
+        CREATE_PACKAGE_VERSION: "v1.73.0"
+        LIBPAK_TOOLS_VERSION: ${{ steps.latest-libpak-tools.outputs.version }}
       run: |
         jq --null-input \
            --sort-keys \
+           --arg createpackage "${CREATE_PACKAGE_VERSION}" \
            --arg pack "${PACK_VERSION}" \
            --arg jam "${JAM_VERSION}" \
+           --arg libpaktools "${LIBPAK_TOOLS_VERSION}" \
            --arg yj "${YJ_VERSION}" \
-           '{ pack: $pack, jam: $jam, yj: $yj }' > ./language-family/scripts/.util/tools.json
+           '{ createpackage: $createpackage, pack: $pack, jam: $jam, libpaktools: $libpaktools, yj: $yj }' > ./language-family/scripts/.util/tools.json
 
     - name: Update stack tools.json
       env:

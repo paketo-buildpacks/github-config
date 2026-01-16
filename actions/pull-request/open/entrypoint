@@ -50,9 +50,7 @@ function main() {
 
   echo "${token}" | gh auth login --with-token
 
-  count="$(gh pr list --repo "${GITHUB_REPOSITORY}" \
-    | awk -v branch="${branch}" '{ if ($(NF-1) == branch) { print }}' \
-    | wc -l)"
+  count="$(gh pr list --repo "${GITHUB_REPOSITORY}" --head "${branch}" | wc -l)"
 
   if [[ "${count}" != "0" ]]; then
     echo "PR already exists, updated with new commit."
