@@ -1,15 +1,11 @@
 package main_test
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/http/httputil"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"testing"
 	"time"
@@ -35,9 +31,7 @@ func TestEntrypoint(t *testing.T) {
 			Expect     = NewWithT(t).Expect
 			Eventually = NewWithT(t).Eventually
 
-			api      *httptest.Server
-			requests []*http.Request
-
+			api            *httptest.Server
 			outputFilepath string
 		)
 
@@ -46,36 +40,42 @@ func TestEntrypoint(t *testing.T) {
 			outputFilepath = filepath.Join(tempDir, "output-file")
 
 			api = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				dump, _ := httputil.DumpRequest(req, true)
-				receivedRequest, _ := http.ReadRequest(bufio.NewReader(bytes.NewBuffer(dump)))
+				// Handle pagination based on offset query param
+				offset := req.URL.Query().Get("offset")
 
-				requests = append(requests, receivedRequest)
+				var filename string
+				switch offset {
+				case "0":
+					filename = "notices0-20.json"
+				case "20":
+					filename = "notices20-40.json"
+				default:
+					filename = "notices0-20.json"
+				}
 
-				requestedFile := path.Base(req.URL.Path)
-
-				data, err := os.ReadFile(filepath.Join("testdata", requestedFile))
+				data, err := os.ReadFile(filepath.Join("testdata", filename))
 				if err != nil {
 					w.WriteHeader(http.StatusNotFound)
 					_, _ = w.Write([]byte{})
 					return
 				}
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write(data)
-
 			}))
 		})
 
-		context("previous usns are empty", func() {
-			it.Before(func() {
-				os.Setenv("GITHUB_USN_BASE_URL", api.URL)
-			})
+		it.After(func() {
+			api.Close()
+		})
 
+		context("previous usns are empty", func() {
 			it("outputs the correct patched usns", func() {
 				command := exec.Command(
 					entrypoint,
-					"--packages", "[\"squid\", \"fetchmail\"]",
+					"--api-url", api.URL,
+					"--packages", `["avahi", "simgear"]`,
 					"--distro", "noble",
-					"--feed-url", fmt.Sprintf("%s/rss_feed_1.xml", api.URL),
 					"--output", outputFilepath,
 				)
 
@@ -91,24 +91,19 @@ func TestEntrypoint(t *testing.T) {
 				contents, err := os.ReadFile(outputFilepath)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(contents).To(ContainSubstring(`"affected_packages":["squid"]`))
-				Expect(contents).To(ContainSubstring(`"affected_packages":["fetchmail"]`))
+				Expect(string(contents)).To(ContainSubstring(`"id":"USN-7967-1"`))
+				Expect(string(contents)).To(ContainSubstring(`"avahi"`))
 			})
-
 		})
 
 		context("previous usns are NOT empty", func() {
-			it.Before(func() {
-				os.Setenv("GITHUB_USN_BASE_URL", api.URL)
-			})
-
-			it("and the fetchmail package is on previous usns", func() {
+			it("excludes USNs that are already in previous usns", func() {
 				command := exec.Command(
 					entrypoint,
-					"--packages", "[\"squid\", \"fetchmail\"]",
+					"--api-url", api.URL,
+					"--packages", `["avahi", "simgear"]`,
 					"--distro", "noble",
-					"--feed-url", fmt.Sprintf("%s/rss_feed_1.xml", api.URL),
-					"--last-usns-filepath", "testdata/previous_patched_usns_fetchmail.json",
+					"--last-usns", `[{"id":"USN-7967-1","title":"Avahi vulnerabilities","url":"","affected_packages":[],"cves":[]}]`,
 					"--output", outputFilepath,
 				)
 
@@ -118,23 +113,22 @@ func TestEntrypoint(t *testing.T) {
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
-				Expect(string(buffer.Contents())).To(ContainSubstring("New USN found:"))
 
 				Expect(outputFilepath).To(BeARegularFile())
 				contents, err := os.ReadFile(outputFilepath)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(contents).To(ContainSubstring(`"affected_packages":["squid"]`))
-				Expect(contents).ToNot(ContainSubstring(`"affected_packages":["fetchmail"]`))
+				Expect(string(contents)).ToNot(ContainSubstring(`"id":"USN-7967-1"`))
+				Expect(string(contents)).To(ContainSubstring(`"id":"USN-7965-1"`))
 			})
 
-			it("fetchmail and squid package is on previous usns", func() {
+			it("returns empty array when all matching USNs are already patched", func() {
 				command := exec.Command(
 					entrypoint,
-					"--packages", "[\"squid\", \"fetchmail\"]",
+					"--api-url", api.URL,
+					"--packages", `["avahi"]`,
 					"--distro", "noble",
-					"--feed-url", fmt.Sprintf("%s/rss_feed_1.xml", api.URL),
-					"--last-usns-filepath", "testdata/previous_patched_usns_fetchmail_squid.json",
+					"--last-usns", `[{"id":"USN-7967-1","title":"Avahi vulnerabilities","url":"","affected_packages":[],"cves":[]}]`,
 					"--output", outputFilepath,
 				)
 
@@ -144,56 +138,28 @@ func TestEntrypoint(t *testing.T) {
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
-				Expect(string(buffer.Contents())).To(ContainSubstring("New USN found:"))
 
 				Expect(outputFilepath).To(BeARegularFile())
 				contents, err := os.ReadFile(outputFilepath)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(contents).ToNot(ContainSubstring(`"affected_packages":["squid"]`))
-				Expect(contents).ToNot(ContainSubstring(`"affected_packages":["fetchmail"]`))
 				Expect(string(contents)).To(Equal("[]"))
 			})
-
-			it("fetchmail and squid package is on previous usns with different order", func() {
-				command := exec.Command(
-					entrypoint,
-					"--packages", "[\"squid\", \"fetchmail\"]",
-					"--distro", "noble",
-					"--feed-url", fmt.Sprintf("%s/rss_feed_1.xml", api.URL),
-					"--last-usns-filepath", "testdata/previous_patched_usns_squid_fetchmail.json",
-					"--output", outputFilepath,
-				)
-
-				buffer := gbytes.NewBuffer()
-
-				session, err := gexec.Start(command, buffer, buffer)
-				Expect(err).NotTo(HaveOccurred())
-
-				Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
-				Expect(string(buffer.Contents())).To(ContainSubstring("New USN found:"))
-
-				Expect(outputFilepath).To(BeARegularFile())
-				contents, err := os.ReadFile(outputFilepath)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(contents).ToNot(ContainSubstring(`"affected_packages":["squid"]`))
-				Expect(contents).ToNot(ContainSubstring(`"affected_packages":["fetchmail"]`))
-				Expect(string(contents)).To(Equal("[]"))
-			})
-
 		})
 
 		context("failure cases", func() {
-			context("when the http request to the rss feed returns status code 404", func() {
+			context("when the API returns a non-200 status", func() {
 				it("prints an error and exits non-zero", func() {
+					failingAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+						w.WriteHeader(http.StatusInternalServerError)
+					}))
+					defer failingAPI.Close()
+
 					command := exec.Command(
 						entrypoint,
-						"--packages", "[\"squid\", \"fetchmail\"]",
+						"--api-url", failingAPI.URL,
+						"--packages", `["avahi"]`,
 						"--distro", "noble",
-						"--retry-time-limit", "2s",
-						"--feed-url", fmt.Sprintf("%s/does_not_exist.xml", api.URL),
-						"--last-usns-filepath", "testdata/previous_patched_usns_squid_fetchmail.json",
 						"--output", outputFilepath,
 					)
 
@@ -203,23 +169,17 @@ func TestEntrypoint(t *testing.T) {
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
-					Expect(string(buffer.Contents())).To(ContainSubstring("error parsing rss feed: http error: 404 Not Found"))
+					Expect(string(buffer.Contents())).To(ContainSubstring("API request failed with status: 500"))
 				})
 			})
 
-			context("when the usn url does not exist and return http 404", func() {
-				it.Before(func() {
-					os.Setenv("GITHUB_USN_BASE_URL", api.URL)
-				})
-
+			context("when the distro flag is invalid", func() {
 				it("prints an error and exits non-zero", func() {
 					command := exec.Command(
 						entrypoint,
-						"--packages", "[\"squid\", \"fetchmail\"]",
-						"--distro", "noble",
-						"--retry-time-limit", "2s",
-						"--feed-url", fmt.Sprintf("%s/rss_feed_with_404_usns.xml", api.URL),
-						"--last-usns-filepath", "testdata/previous_patched_usns_squid_fetchmail.json",
+						"--api-url", api.URL,
+						"--packages", `["avahi"]`,
+						"--distro", "invalid-distro",
 						"--output", outputFilepath,
 					)
 
@@ -229,35 +189,7 @@ func TestEntrypoint(t *testing.T) {
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
-					Expect(string(buffer.Contents())).To(ContainSubstring("New USN found: USN-4040-1"))
-					Expect(string(buffer.Contents())).To(ContainSubstring("unexpected status code getting USN: 404"))
-				})
-			})
-
-			context("when the usn JSON body is malformed and", func() {
-				it.Before(func() {
-					os.Setenv("GITHUB_USN_BASE_URL", api.URL)
-				})
-
-				it("prints an error and exits non-zero", func() {
-					command := exec.Command(
-						entrypoint,
-						"--packages", "[\"squid\", \"fetchmail\"]",
-						"--distro", "noble",
-						"--retry-time-limit", "2s",
-						"--feed-url", fmt.Sprintf("%s/rss_feed_with_malformed_usn.xml", api.URL),
-						"--last-usns-filepath", "testdata/previous_patched_usns_squid_fetchmail.json",
-						"--output", outputFilepath,
-					)
-
-					buffer := gbytes.NewBuffer()
-
-					session, err := gexec.Start(command, buffer, buffer)
-					Expect(err).NotTo(HaveOccurred())
-
-					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
-					Expect(string(buffer.Contents())).To(ContainSubstring("New USN found: USN-0001-1"))
-					Expect(string(buffer.Contents())).To(ContainSubstring("error unmarshalling USN body"))
+					Expect(string(buffer.Contents())).To(ContainSubstring("--distro flag has to be one of the following values"))
 				})
 			})
 		})
