@@ -25,16 +25,15 @@ runs:
   - id: packages
     shell: bash
     run: |
-      #!/usr/bin/env bash
-      set -euo pipefail
-      shopt -s inherit_errexit
-
-      packages=$(jq  '.components[] |  .name' "${{ inputs.build_receipt }}" "${{ inputs.run_receipt }}" \
-        | jq --null-input --compact-output '[inputs]')
-
-      if [ -n "${{ inputs.output_path }}" ]; then
-        echo "${packages}" > "${{ inputs.output_path }}"
-        printf "output_path=%s\n" "${{ inputs.output_path }}" >> "$GITHUB_OUTPUT"
+      if [[ -n "${{ inputs.output_path }}" ]]; then
+        result=$("${{ github.action_path }}/generate-package-list.sh" \
+          --build-receipt "${{ inputs.build_receipt }}" \
+          --run-receipt "${{ inputs.run_receipt }}" \
+          --output "${{ inputs.output_path }}")
+        printf "output_path=%s\n" "${result}" >> "$GITHUB_OUTPUT"
       else
-        printf "packages=%s\n" "${packages}" >> "$GITHUB_OUTPUT"
+        result=$("${{ github.action_path }}/generate-package-list.sh" \
+          --build-receipt "${{ inputs.build_receipt }}" \
+          --run-receipt "${{ inputs.run_receipt }}")
+        printf "packages=%s\n" "${result}" >> "$GITHUB_OUTPUT"
       fi
