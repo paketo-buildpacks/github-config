@@ -41,13 +41,11 @@ type Notice struct {
 	ReleasePackages map[string][]UbuntuPackage `json:"release_packages"`
 }
 
-// CVE represents the linked vulnerabilities
 type CVE struct {
 	ID  string `json:"id"`
 	URL string `json:"url"`
 }
 
-// UbuntuPackage represents the specific package versions fixed
 type UbuntuPackage struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
