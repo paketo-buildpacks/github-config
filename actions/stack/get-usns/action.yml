@@ -9,10 +9,6 @@ outputs:
     description: JSON array of patched USNs or path to JSON file, if usns_output_path flag is specified
 
 inputs:
-  feed_url:
-    description: 'URL of RSS feed to scrape'
-    required: false
-    default: 'https://ubuntu.com/security/notices/rss.xml'
   last_usns:
     description: 'JSON array of last known USNs'
     required: false
@@ -38,8 +34,6 @@ runs:
   using: 'docker'
   image: 'docker://ghcr.io/paketo-buildpacks/actions/stack/get-usns:latest'
   args:
-  - "--feed-url"
-  - "${{ inputs.feed_url }}"
   - "--last-usns"
   - "${{ inputs.last_usns }}"
   - "--last-usns-filepath"
