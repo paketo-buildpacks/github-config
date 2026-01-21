@@ -22,45 +22,25 @@ var supportedDistros = []string{
 }
 
 type USN struct {
-	AffectedPackages []UbuntuPackage `json:"affected_packages"`
-	CVEs             []CVE           `json:"cves"`
-	Title            string          `json:"title"`
-	ID               string          `json:"id"`
-	URL              string          `json:"url"`
+	CVEs []struct {
+		ID string `json:"id"`
+	} `json:"cves"`
+	Title           string `json:"title"`
+	ID              string `json:"id"`
+	ReleasePackages map[string][]struct {
+		Name    string `json:"name"`
+		Version string `json:"version"`
+	} `json:"release_packages"`
 }
 
-type USNsResponse struct {
-	Notices []Notice `json:"notices"`
-}
-
-type Notice struct {
-	ID              string                     `json:"id"`
-	Title           string                     `json:"title"`
-	Published       string                     `json:"published"`
-	CVEs            []CVE                      `json:"cves"`
-	ReleasePackages map[string][]UbuntuPackage `json:"release_packages"`
-}
-
-type CVE struct {
-	ID  string `json:"id"`
-	URL string `json:"url"`
-}
-
-type UbuntuPackage struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
-}
-
-type USNOutput struct {
-	AffectedPackages []string    `json:"affected_packages"`
-	CVEs             []CVEOutput `json:"cves"`
-	Title            string      `json:"title"`
-	ID               string      `json:"id"`
-	URL              string      `json:"url"`
-}
-
-type CVEOutput struct {
+type PatchedUsnsInputOutput struct {
+	AffectedPackages []string `json:"affected_packages"`
+	CVEs             []struct {
+		Title string `json:"title"`
+		URL   string `json:"url"`
+	} `json:"cves"`
 	Title string `json:"title"`
+	ID    string `json:"id"`
 	URL   string `json:"url"`
 }
 
@@ -110,18 +90,12 @@ func main() {
 		log.Fatalf("--distro flag has to be one of the following values: %v", supportedDistros)
 	}
 
-	if config.LastUSNsJSON == "" {
-		config.LastUSNsJSON = `[]`
-	}
-
-	if config.PackagesJSON == "" {
-		config.PackagesJSON = `[]`
-	}
-
-	var lastUSNs []USN
-	err := json.Unmarshal([]byte(config.LastUSNsJSON), &lastUSNs)
-	if err != nil {
-		log.Fatal(err)
+	lastPatchedUSNs := []PatchedUsnsInputOutput{}
+	if config.LastUSNsJSON != "" {
+		err := json.Unmarshal([]byte(config.LastUSNsJSON), &lastPatchedUSNs)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if config.LastUSNsJSONFilepath != "" {
@@ -131,20 +105,21 @@ func main() {
 			log.Fatal(err)
 		}
 
-		err = json.Unmarshal(lastUSNsFilepath, &lastUSNs)
+		err = json.Unmarshal(lastUSNsFilepath, &lastPatchedUSNs)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	var packages []string
-	err = json.Unmarshal([]byte(config.PackagesJSON), &packages)
-	if err != nil {
-		log.Fatal(err)
+	packages := []string{}
+	if config.PackagesJSON != "" {
+		err := json.Unmarshal([]byte(config.PackagesJSON), &packages)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if config.PackagesJSONFilepath != "" {
-
 		packagesFilepath, err := os.ReadFile(config.PackagesJSONFilepath)
 		if err != nil {
 			log.Fatal(err)
@@ -156,14 +131,14 @@ func main() {
 		}
 	}
 
-	newUSNs, err := getNewUSNsFromJSONApi(config.APIUrl, lastUSNs, config.Distro)
+	newUSNs, err := getNewUSNsFromJSONApi(config.APIUrl, lastPatchedUSNs, config.Distro)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	filtered := filterUSNsByPackages(newUSNs, packages)
+	filteredUSNs := filterUSNsByPackages(newUSNs, packages, config.Distro)
 
-	transformed := transformUSNsForOutput(filtered)
+	transformed := transformUSNsForOutput(filteredUSNs, config.Distro)
 
 	output, err := json.Marshal(transformed)
 	if err != nil {
@@ -194,7 +169,7 @@ func main() {
 	}
 }
 
-func filterUSNsByPackages(usns []USN, packages []string) (filtered []USN) {
+func filterUSNsByPackages(usns []USN, packages []string, distro string) (filtered []USN) {
 	if len(packages) == 0 {
 		fmt.Println("No packages specified. Skipping filtering.")
 		return usns
@@ -203,7 +178,7 @@ func filterUSNsByPackages(usns []USN, packages []string) (filtered []USN) {
 	fmt.Println("Filtering USNs by affected packages...")
 	for _, usn := range usns {
 	matchPkgs:
-		for _, affected := range usn.AffectedPackages {
+		for _, affected := range usn.ReleasePackages[distro] {
 			for _, pkg := range packages {
 				if pkg == affected.Name {
 					filtered = append(filtered, usn)
@@ -216,81 +191,94 @@ func filterUSNsByPackages(usns []USN, packages []string) (filtered []USN) {
 	return filtered
 }
 
-func transformUSNsForOutput(usns []USN) []USNOutput {
-	output := []USNOutput{}
+func transformUSNsForOutput(usns []USN, distro string) []PatchedUsnsInputOutput {
+	output := []PatchedUsnsInputOutput{}
 	for _, usn := range usns {
 		var packageNames []string
-		for _, pkg := range usn.AffectedPackages {
+		for _, pkg := range usn.ReleasePackages[distro] {
 			packageNames = append(packageNames, pkg.Name)
 		}
 
-		var cves []CVEOutput
+		var cves []struct {
+			Title string `json:"title"`
+			URL   string `json:"url"`
+		}
 		for _, cve := range usn.CVEs {
-			cves = append(cves, CVEOutput{
+			cves = append(cves, struct {
+				Title string `json:"title"`
+				URL   string `json:"url"`
+			}{
 				Title: cve.ID,
 				URL:   fmt.Sprintf("https://ubuntu.com/security/%s", cve.ID),
 			})
 		}
 
-		output = append(output, USNOutput{
+		output = append(output, PatchedUsnsInputOutput{
 			ID:               usn.ID,
 			Title:            fmt.Sprintf("%s: %s", usn.ID, usn.Title),
 			CVEs:             cves,
-			URL:              usn.URL,
+			URL:              fmt.Sprintf("https://ubuntu.com/security/notices/%s", usn.ID),
 			AffectedPackages: packageNames,
 		})
 	}
 	return output
 }
 
-func getNewUSNsFromJSONApi(jsonApiUrl string, lastUSNs []USN, distro string) ([]USN, error) {
-	var allNotices []Notice
+func getNewUSNsFromJSONApi(jsonApiUrl string, lastPatchedUSNs []PatchedUsnsInputOutput, distro string) ([]USN, error) {
+	var allUSNs []USN
 
 	offsets := []int{0, 20}
 	for _, offset := range offsets {
 		paginatedUrl := fmt.Sprintf("%s?release=%s&limit=%d&offset=%d", jsonApiUrl, distro, 20, offset)
-		notices, err := fetchUSNPage(paginatedUrl)
+		usns, err := fetchUSNPage(paginatedUrl)
 		if err != nil {
 			return nil, err
 		}
-		allNotices = append(allNotices, notices...)
+		allUSNs = append(allUSNs, usns...)
 	}
 
 	fmt.Println("Looking for new USNs...")
-	var feedUSNs []USN
-	for _, item := range allNotices {
-		usnId := item.ID
+	var newUSNs []USN
+	for _, usn := range allUSNs {
 
-		fmt.Printf("USN ID: %s\n", usnId)
-		if !isNewUSN(usnId, lastUSNs) {
+		if !isNewUSN(usn.ID, lastPatchedUSNs) {
 			continue
 		}
-		fmt.Printf("New USN found: %s\n", item.Title)
 
-		usnURL := fmt.Sprintf("https://ubuntu.com/security/notices/%s", usnId)
-
-		feedUSNs = append(feedUSNs, USN{
-			ID:               usnId,
-			Title:            item.Title,
-			CVEs:             item.CVEs,
-			URL:              usnURL,
-			AffectedPackages: item.ReleasePackages[distro],
+		newUSNs = append(newUSNs, USN{
+			ID:              usn.ID,
+			Title:           usn.Title,
+			CVEs:            usn.CVEs,
+			ReleasePackages: usn.ReleasePackages,
 		})
 	}
 
-	return feedUSNs, nil
+	if len(newUSNs) > 0 {
+		for _, usn := range newUSNs {
+			fmt.Printf("New USN found: %s with name %s\n", usn.ID, usn.Title)
+		}
+	} else {
+		fmt.Println("No new USNs found")
+	}
+
+	return newUSNs, nil
 }
 
-func isNewUSN(id string, lastUSNs []USN) bool {
-	for _, lastUSN := range lastUSNs {
-		if id == lastUSN.ID {
+func isNewUSN(id string, lastPatchedUSNs []PatchedUsnsInputOutput) bool {
+	for _, lastPatchedUSN := range lastPatchedUSNs {
+		if id == lastPatchedUSN.ID {
 			return false
 		}
 	}
 	return true
 }
 
-func fetchUSNPage(url string) ([]Notice, error) {
+func fetchUSNPage(url string) ([]USN, error) {
+
+	type USNsResponse struct {
+		Notices []USN `json:"notices"`
+	}
+
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Get(url)
 	if err != nil {

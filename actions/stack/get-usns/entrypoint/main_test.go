@@ -145,6 +145,33 @@ func TestEntrypoint(t *testing.T) {
 
 				Expect(string(contents)).To(Equal("[]"))
 			})
+
+			it("outputs USNs matching the expected output file", func() {
+				command := exec.Command(
+					entrypoint,
+					"--api-url", api.URL,
+					"--packages-filepath", "testdata/amd64-package-list-jammy-tiny.json",
+					"--distro", "jammy",
+					"--last-usns-filepath", "testdata/amd64-jammy-tiny-last-patched-usns.json",
+					"--output", outputFilepath,
+				)
+
+				buffer := gbytes.NewBuffer()
+
+				session, err := gexec.Start(command, buffer, buffer)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+
+				Expect(outputFilepath).To(BeARegularFile())
+				contents, err := os.ReadFile(outputFilepath)
+				Expect(err).NotTo(HaveOccurred())
+
+				expectedOutput, err := os.ReadFile("testdata/patched-usns_jammy-output.json")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(string(contents)).To(Equal(string(expectedOutput)))
+			})
 		})
 
 		context("failure cases", func() {
