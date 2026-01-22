@@ -2,64 +2,46 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"log"
-	"maps"
 	"net/http"
-	"net/url"
 	"os"
-	"path"
 	"path/filepath"
-	"regexp"
 	"slices"
-	"strings"
 	"time"
-
-	"github.com/mmcdole/gofeed"
-
-	backoff "github.com/cenkalti/backoff/v4"
 )
 
-const DEFAULT_GITHUB_USNS_URL = "https://raw.githubusercontent.com/canonical/ubuntu-security-notices/refs/heads/main/usn"
-const UBUNTU_CVE_URL = "https://ubuntu.com/security/cve"
-const FEED_RSS_URL = "https://ubuntu.com/security/notices/rss.xml"
+const JSON_API_URL = "https://ubuntu.com/security/notices.json"
 
-var supportedDistros = map[string]string{
-	"noble":  `24\.04`,
-	"jammy":  `22\.04`,
-	"focal":  `20\.04`,
-	"bionic": `18\.04`,
+var supportedDistros = []string{
+	"noble",
+	"jammy",
+	"focal",
+	"bionic",
 }
 
 type USN struct {
+	CVEs []struct {
+		ID string `json:"id"`
+	} `json:"cves"`
+	Title           string `json:"title"`
+	ID              string `json:"id"`
+	ReleasePackages map[string][]struct {
+		Name    string `json:"name"`
+		Version string `json:"version"`
+	} `json:"release_packages"`
+}
+
+type PatchedUsnsInputOutput struct {
 	AffectedPackages []string `json:"affected_packages"`
-	CVEs             []CVE    `json:"cves"`
-	Title            string   `json:"title"`
-	ID               string   `json:"id"`
-	URL              url.URL  `json:"-"`
-}
-
-type CVE struct {
+	CVEs             []struct {
+		Title string `json:"title"`
+		URL   string `json:"url"`
+	} `json:"cves"`
 	Title string `json:"title"`
+	ID    string `json:"id"`
 	URL   string `json:"url"`
-}
-
-type Binary struct {
-	Pocket  string `json:"pocket"`
-	Version string `json:"version"`
-}
-
-type ReleaseData struct {
-	Binaries map[string]Binary `json:"binaries"`
-}
-
-type usnGithubJsonResponse struct {
-	CVEs     []string               `json:"cves"`
-	ID       string                 `json:"id"`
-	Releases map[string]ReleaseData `json:"releases"`
 }
 
 func main() {
@@ -70,9 +52,7 @@ func main() {
 		Output               string
 		PackagesJSON         string
 		PackagesJSONFilepath string
-		RSSURL               string
-		RetryTimeLimit       string
-		GhUsnUrl             string
+		APIUrl               string
 	}
 
 	flag.StringVar(&config.LastUSNsJSON,
@@ -83,10 +63,10 @@ func main() {
 		"last-usns-filepath",
 		"",
 		"Filepath that points to the JSON array of last known USNs")
-	flag.StringVar(&config.RSSURL,
-		"feed-url",
-		FEED_RSS_URL,
-		"URL of RSS feed")
+	flag.StringVar(&config.APIUrl,
+		"api-url",
+		JSON_API_URL,
+		"URL of the Ubuntu security notices JSON API")
 	flag.StringVar(&config.PackagesJSON,
 		"packages",
 		"",
@@ -104,38 +84,18 @@ func main() {
 		"",
 		"Path to output JSON file")
 
-	flag.StringVar(&config.RetryTimeLimit, "retry-time-limit", "5m", "How long to retry failures for")
-
 	flag.Parse()
 
-	_, ok := supportedDistros[config.Distro]
-	if !ok {
-		log.Fatalf("--distro flag has to be one of the following values: %v", slices.Sorted(maps.Keys(supportedDistros)))
+	if !slices.Contains(supportedDistros, config.Distro) {
+		log.Fatalf("--distro flag has to be one of the following values: %v", supportedDistros)
 	}
 
-	if config.LastUSNsJSON == "" {
-		config.LastUSNsJSON = `[]`
-	}
-
-	if config.PackagesJSON == "" {
-		config.PackagesJSON = `[]`
-	}
-
-	if ghUsnBaseUrl, exists := os.LookupEnv("GITHUB_USN_BASE_URL"); exists {
-		config.GhUsnUrl = ghUsnBaseUrl
-	} else {
-		config.GhUsnUrl = DEFAULT_GITHUB_USNS_URL
-	}
-
-	retryTimeLimit, err := time.ParseDuration(config.RetryTimeLimit)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var lastUSNs []USN
-	err = json.Unmarshal([]byte(config.LastUSNsJSON), &lastUSNs)
-	if err != nil {
-		log.Fatal(err)
+	lastPatchedUSNs := []PatchedUsnsInputOutput{}
+	if config.LastUSNsJSON != "" {
+		err := json.Unmarshal([]byte(config.LastUSNsJSON), &lastPatchedUSNs)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if config.LastUSNsJSONFilepath != "" {
@@ -145,20 +105,21 @@ func main() {
 			log.Fatal(err)
 		}
 
-		err = json.Unmarshal(lastUSNsFilepath, &lastUSNs)
+		err = json.Unmarshal(lastUSNsFilepath, &lastPatchedUSNs)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	var packages []string
-	err = json.Unmarshal([]byte(config.PackagesJSON), &packages)
-	if err != nil {
-		log.Fatal(err)
+	packages := []string{}
+	if config.PackagesJSON != "" {
+		err := json.Unmarshal([]byte(config.PackagesJSON), &packages)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if config.PackagesJSONFilepath != "" {
-
 		packagesFilepath, err := os.ReadFile(config.PackagesJSONFilepath)
 		if err != nil {
 			log.Fatal(err)
@@ -170,22 +131,18 @@ func main() {
 		}
 	}
 
-	newUSNs, err := getNewUSNsFromFeed(config.RSSURL, lastUSNs, retryTimeLimit, config.GhUsnUrl, config.Distro)
+	newUSNs, err := getNewUSNsFromJSONApi(config.APIUrl, lastPatchedUSNs, config.Distro)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	filtered := filterUSNsByPackages(newUSNs, packages)
+	filteredUSNs := filterUSNsByPackages(newUSNs, packages, config.Distro)
 
-	fmt.Println("Getting CVE metadata for relevant USNs...")
+	transformed := transformUSNsForOutput(filteredUSNs, config.Distro)
 
-	output, err := json.Marshal(filtered)
+	output, err := json.Marshal(transformed)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	if len(filtered) == 0 {
-		output = []byte(`[]`)
 	}
 
 	if config.Output != "" {
@@ -212,7 +169,7 @@ func main() {
 	}
 }
 
-func filterUSNsByPackages(usns []USN, packages []string) (filtered []USN) {
+func filterUSNsByPackages(usns []USN, packages []string, distro string) (filtered []USN) {
 	if len(packages) == 0 {
 		fmt.Println("No packages specified. Skipping filtering.")
 		return usns
@@ -221,11 +178,11 @@ func filterUSNsByPackages(usns []USN, packages []string) (filtered []USN) {
 	fmt.Println("Filtering USNs by affected packages...")
 	for _, usn := range usns {
 	matchPkgs:
-		for _, affected := range usn.AffectedPackages {
+		for _, affected := range usn.ReleasePackages[distro] {
 			for _, pkg := range packages {
-				if pkg == affected {
+				if pkg == affected.Name {
 					filtered = append(filtered, usn)
-					fmt.Printf("USN '%s' contains affected package '%s'\n", usn.Title, affected)
+					fmt.Printf("USN '%s' contains affected package '%s'\n", usn.Title, affected.Name)
 					break matchPkgs
 				}
 			}
@@ -234,136 +191,109 @@ func filterUSNsByPackages(usns []USN, packages []string) (filtered []USN) {
 	return filtered
 }
 
-func getNewUSNsFromFeed(rssURL string, lastUSNs []USN, retryTimeLimit time.Duration, ghUsnUrl string, distro string) ([]USN, error) {
-	fp := gofeed.NewParser()
-
-	var feed *gofeed.Feed
-	var err error
-
-	exponentialBackoff := backoff.NewExponentialBackOff()
-	exponentialBackoff.MaxElapsedTime = retryTimeLimit
-	err = backoff.RetryNotify(func() error {
-		feed, err = fp.ParseURL(rssURL)
-		if err == nil {
-			return nil
+func transformUSNsForOutput(usns []USN, distro string) []PatchedUsnsInputOutput {
+	output := []PatchedUsnsInputOutput{}
+	for _, usn := range usns {
+		var packageNames []string
+		for _, pkg := range usn.ReleasePackages[distro] {
+			packageNames = append(packageNames, pkg.Name)
 		}
-		var httpError gofeed.HTTPError
-		if errors.As(err, &httpError) {
-			return fmt.Errorf("error parsing rss feed: %w", err)
+
+		var cves []struct {
+			Title string `json:"title"`
+			URL   string `json:"url"`
 		}
-		return &backoff.PermanentError{Err: err}
-	},
-		exponentialBackoff,
-		func(err error, t time.Duration) {
-			log.Println(err)
-			log.Printf("Retrying in %s\n", t)
-		},
-	)
-	if err != nil {
-		return nil, err
+		for _, cve := range usn.CVEs {
+			cves = append(cves, struct {
+				Title string `json:"title"`
+				URL   string `json:"url"`
+			}{
+				Title: cve.ID,
+				URL:   fmt.Sprintf("https://ubuntu.com/security/%s", cve.ID),
+			})
+		}
+
+		output = append(output, PatchedUsnsInputOutput{
+			ID:               usn.ID,
+			Title:            fmt.Sprintf("%s: %s", usn.ID, usn.Title),
+			CVEs:             cves,
+			URL:              fmt.Sprintf("https://ubuntu.com/security/notices/%s", usn.ID),
+			AffectedPackages: packageNames,
+		})
 	}
+	return output
+}
 
-	fmt.Println("Looking for new USNs...")
-	var feedUSNs []USN
-	for _, item := range feed.Items {
-		// regex extracts 'USN-5464-1' from 'USN-5464-1: e2fsprogs vulnerability'
-		re := regexp.MustCompile(`USN\-\d+\-\d+`)
-		usnId := re.FindString(item.Title)
+func getNewUSNsFromJSONApi(jsonApiUrl string, lastPatchedUSNs []PatchedUsnsInputOutput, distro string) ([]USN, error) {
+	var allUSNs []USN
 
-		if !isNewUSN(usnId, lastUSNs) {
-			continue
-		}
-		fmt.Printf("New USN found: %s\n", item.Title)
-
-		usnURL, err := url.Parse(item.Link)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing URL of USN %s: %w", item.Title, err)
-		}
-		usnNumId := strings.TrimPrefix(usnId, "USN-")
-		usnGithubURL := fmt.Sprintf("%s/%s", ghUsnUrl, usnNumId+".json")
-
-		var usnBody []byte
-		var code int
-		var parsedUSNBody usnGithubJsonResponse
-
-		err = backoff.RetryNotify(func() error {
-			usnBody, code, err = get(usnGithubURL)
-			if err != nil {
-				return fmt.Errorf("error getting USN: %w", err)
-			}
-			if code != http.StatusOK {
-				return fmt.Errorf("unexpected status code getting USN: %d", code)
-			}
-			err = json.Unmarshal(usnBody, &parsedUSNBody)
-			if err != nil {
-				return fmt.Errorf("error unmarshalling USN body: %w", err)
-			}
-			return nil
-		},
-			backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 3),
-			func(err error, t time.Duration) {
-				fmt.Println(err)
-				fmt.Printf("Retrying in %s seconds\n", t)
-			},
-		)
-
+	offsets := []int{0, 20}
+	for _, offset := range offsets {
+		paginatedUrl := fmt.Sprintf("%s?release=%s&limit=%d&offset=%d", jsonApiUrl, distro, 20, offset)
+		usns, err := fetchUSNPage(paginatedUrl)
 		if err != nil {
 			return nil, err
 		}
+		allUSNs = append(allUSNs, usns...)
+	}
 
-		var CVEs []CVE
-		for _, cve := range parsedUSNBody.CVEs {
-			CVE := CVE{
-				Title: cve,
-				URL:   path.Join(UBUNTU_CVE_URL, cve),
-			}
-			CVEs = append(CVEs, CVE)
+	fmt.Println("Looking for new USNs...")
+	var newUSNs []USN
+	for _, usn := range allUSNs {
+
+		if !isNewUSN(usn.ID, lastPatchedUSNs) {
+			continue
 		}
 
-		feedUSNs = append(feedUSNs, USN{
-			ID:               usnId,
-			Title:            item.Title,
-			CVEs:             CVEs,
-			URL:              *usnURL,
-			AffectedPackages: getAffectedPackages(parsedUSNBody, distro),
+		newUSNs = append(newUSNs, USN{
+			ID:              usn.ID,
+			Title:           usn.Title,
+			CVEs:            usn.CVEs,
+			ReleasePackages: usn.ReleasePackages,
 		})
 	}
 
-	return feedUSNs, nil
+	if len(newUSNs) > 0 {
+		for _, usn := range newUSNs {
+			fmt.Printf("New USN found: %s with name %s\n", usn.ID, usn.Title)
+		}
+	} else {
+		fmt.Println("No new USNs found")
+	}
+
+	return newUSNs, nil
 }
 
-func isNewUSN(id string, lastUSNs []USN) bool {
-	for _, lastUSN := range lastUSNs {
-		if id == lastUSN.ID {
+func isNewUSN(id string, lastPatchedUSNs []PatchedUsnsInputOutput) bool {
+	for _, lastPatchedUSN := range lastPatchedUSNs {
+		if id == lastPatchedUSN.ID {
 			return false
 		}
 	}
 	return true
 }
 
-func getAffectedPackages(usnBody usnGithubJsonResponse, distro string) []string {
+func fetchUSNPage(url string) ([]USN, error) {
 
-	packages := make([]string, 0)
-
-	for packageName := range usnBody.Releases[distro].Binaries {
-		packages = append(packages, packageName)
+	type USNsResponse struct {
+		Notices []USN `json:"notices"`
 	}
 
-	return packages
-}
-
-func get(url string) ([]byte, int, error) {
-	resp, err := http.Get(url)
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get(url)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, 0, err
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API request failed with status: %d", resp.StatusCode)
 	}
 
-	return body, resp.StatusCode, nil
+	var data USNsResponse
+	if err = json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+
+	return data.Notices, nil
 }
