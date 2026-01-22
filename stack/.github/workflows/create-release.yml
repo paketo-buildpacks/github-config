@@ -670,7 +670,7 @@ jobs:
         fetch-depth: 0  # gets full history
 
     - name: Download Current Receipt(s)
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         pattern: current-*-receipt-${{ matrix.stacks.name }}
         path: receipt-files
@@ -837,7 +837,7 @@ jobs:
 
     - name: Download USN File(s)
       if: ${{ needs.preparation.outputs.polling_type == 'usn' }}
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         path: "patched-usns"
         pattern: ${{ matrix.arch.name }}-*${{ env.PATCHED_USNS_FILENAME }}
@@ -938,7 +938,7 @@ jobs:
       packages_changed: ${{ steps.compare.outputs.packages_changed }}
     steps:
     - name: Download diff-${{ matrix.arch.name }}-${{ matrix.stacks.name }}
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         name: diff-${{ matrix.arch.name }}-${{ matrix.stacks.name }}
 
@@ -988,12 +988,12 @@ jobs:
         go-version-file: go.mod
 
     - name: Download Build Image(s)
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         pattern: current-build-image-*
 
     - name: Download Run Image(s)
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         pattern: current-run-image-*
 
@@ -1036,13 +1036,13 @@ jobs:
         fetch-depth: 0  # gets full history
 
     - name: Download current build image(s)
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         path: image-files
         pattern: current-build-image-*
 
     - name: Download current run image(s)
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         path: image-files
         pattern: current-run-image-*
@@ -1051,14 +1051,14 @@ jobs:
       run: ls image-files
 
     - name: Download Build Receipt(s)
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         path: receipt-files
         pattern: current-build-receipt-*
         merge-multiple: true
 
     - name: Download Run Receipt(s)
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         path: receipt-files
         pattern: current-run-receipt-*
@@ -1068,7 +1068,7 @@ jobs:
       run: ls receipt-files
 
     - name: Download Release Note File(s)
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         path: release-notes
         pattern: "*release-notes.md"
@@ -1079,7 +1079,7 @@ jobs:
 
     - name: Download hash code Files
       if: ${{ needs.preparation.outputs.polling_type == 'hash' }}
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         path: hash-code-files
         pattern: hash-code-*
@@ -1091,7 +1091,7 @@ jobs:
 
     - name: Download USN Files
       if: ${{ needs.preparation.outputs.polling_type == 'usn' }}
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v6
       with:
         path: usn-files
         pattern: "*${{ env.PATCHED_USNS_FILENAME }}"
