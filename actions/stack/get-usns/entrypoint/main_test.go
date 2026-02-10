@@ -66,7 +66,9 @@ func TestEntrypoint(t *testing.T) {
 		})
 
 		it.After(func() {
-			api.Close()
+			if api != nil {
+				api.Close()
+			}
 		})
 
 		context("previous usns are empty", func() {
@@ -195,7 +197,7 @@ func TestEntrypoint(t *testing.T) {
 					session, err := gexec.Start(command, buffer, buffer)
 					Expect(err).NotTo(HaveOccurred())
 
-					Eventually(session).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+					Eventually(session, 20*time.Second).Should(gexec.Exit(1), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
 					Expect(string(buffer.Contents())).To(ContainSubstring("API request failed with status: 500"))
 				})
 			})

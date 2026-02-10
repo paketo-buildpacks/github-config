@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -273,27 +274,44 @@ func isNewUSN(id string, lastPatchedUSNs []PatchedUsnsInputOutput) bool {
 	return true
 }
 
+const (
+	httpTimeout = 90 * time.Second
+	maxRetries  = 3
+	retryDelay  = 5 * time.Second
+)
+
 func fetchUSNPage(url string) ([]USN, error) {
 
 	type USNsResponse struct {
 		Notices []USN `json:"notices"`
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+	client := &http.Client{Timeout: httpTimeout}
+	for attempt := range maxRetries {
+		if attempt > 0 {
+			log.Printf("Retrying request to %s (attempt %d/%d) after %v seconds", url, attempt+1, maxRetries, retryDelay.Seconds())
+			time.Sleep(retryDelay)
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status: %d", resp.StatusCode)
-	}
+		resp, err := client.Get(url)
+		if err != nil {
+			log.Printf("Request to %s failed with: %v", url, err)
+			continue
+		}
+		defer resp.Body.Close()
 
-	var data USNsResponse
-	if err = json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, err
-	}
+		if resp.StatusCode != http.StatusOK {
+			_, _ = io.Copy(io.Discard, resp.Body)
+			log.Printf("API request failed with status: %d", resp.StatusCode)
+			continue
+		}
 
-	return data.Notices, nil
+		var data USNsResponse
+		if err = json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			log.Printf("Failed to decode JSON response with: %v", err)
+			continue
+		}
+		return data.Notices, nil
+	}
+	return nil, fmt.Errorf("failed after %d attempts", maxRetries)
 }
