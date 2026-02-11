@@ -2,7 +2,7 @@ module github.com/paketo-buildpacks/github-config/actions/dependency/update-meta
 
 go 1.25.5
 
-toolchain go1.25.7
+toolchain go1.26.0
 
 require (
 	github.com/onsi/gomega v1.39.0
