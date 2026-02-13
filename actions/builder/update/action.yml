@@ -57,5 +57,8 @@ runs:
       #!/usr/bin/env bash
       set -euo pipefail
       shopt -s inherit_errexit
+      builder_file="${PWD}/${{ inputs.filename }}"
       jam update-builder \
-        --builder-file "${PWD}/${{ inputs.filename }}"
+        --builder-file "$builder_file"
+      # Pin lifecycle version to 0.21.1
+      sed -i '/^\[lifecycle\]/,/^\[/ { s/version = "[^"]*"/version = "0.21.1"/ }' "$builder_file"
