@@ -47,13 +47,15 @@ type PatchedUsnsInputOutput struct {
 
 func main() {
 	var config struct {
-		Distro               string
-		LastUSNsJSON         string
-		LastUSNsJSONFilepath string
-		Output               string
-		PackagesJSON         string
-		PackagesJSONFilepath string
-		APIUrl               string
+		APIUrl                string
+		Distro                string
+		FetchUSNsFromFilepath string
+		LastUSNsJSON          string
+		LastUSNsJSONFilepath  string
+		Output                string
+		PackagesJSON          string
+		PackagesJSONFilepath  string
+		Pages                 int
 	}
 
 	flag.StringVar(&config.LastUSNsJSON,
@@ -68,6 +70,10 @@ func main() {
 		"api-url",
 		JSON_API_URL,
 		"URL of the Ubuntu security notices JSON API")
+	flag.StringVar(&config.FetchUSNsFromFilepath,
+		"fetch-usns-from-filepath",
+		"",
+		"Filepath that points to the JSON object of USNs by release")
 	flag.StringVar(&config.PackagesJSON,
 		"packages",
 		"",
@@ -84,11 +90,18 @@ func main() {
 		"output",
 		"",
 		"Path to output JSON file")
+	flag.IntVar(&config.Pages,
+		"pages",
+		1,
+		"Number of pages to fetch from the API (default: 1)")
 
 	flag.Parse()
 
 	if !slices.Contains(supportedDistros, config.Distro) {
 		log.Fatalf("--distro flag has to be one of the following values: %v", supportedDistros)
+	}
+	if config.Pages < 1 {
+		log.Fatalf("--pages must be at least 1, got %d", config.Pages)
 	}
 
 	lastPatchedUSNs := []PatchedUsnsInputOutput{}
@@ -132,9 +145,23 @@ func main() {
 		}
 	}
 
-	newUSNs, err := getNewUSNsFromJSONApi(config.APIUrl, lastPatchedUSNs, config.Distro)
-	if err != nil {
-		log.Fatal(err)
+	var newUSNs []USN
+	var err error
+	if config.FetchUSNsFromFilepath != "" {
+		newUSNs, err = getNewUSNsFromFilepath(config.FetchUSNsFromFilepath)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		newUSNs, err = getNewUSNsFromJSONApi(config.APIUrl, lastPatchedUSNs, config.Distro, config.Pages)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	fmt.Println("Recent USNs found:")
+	for _, usn := range newUSNs {
+		fmt.Printf("%s with name %s\n", usn.ID, usn.Title)
 	}
 
 	filteredUSNs := filterUSNsByPackages(newUSNs, packages, config.Distro)
@@ -225,12 +252,29 @@ func transformUSNsForOutput(usns []USN, distro string) []PatchedUsnsInputOutput 
 	return output
 }
 
-func getNewUSNsFromJSONApi(jsonApiUrl string, lastPatchedUSNs []PatchedUsnsInputOutput, distro string) ([]USN, error) {
+func getNewUSNsFromFilepath(path string) ([]USN, error) {
+	fileContent, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var data struct {
+		Notices []USN `json:"notices"`
+	}
+	if err = json.Unmarshal(fileContent, &data); err != nil {
+		return nil, err
+	}
+	return data.Notices, nil
+}
+
+const pageSize = 20
+
+func getNewUSNsFromJSONApi(jsonApiUrl string, lastPatchedUSNs []PatchedUsnsInputOutput, distro string, numPages int) ([]USN, error) {
 	var allUSNs []USN
 
-	offsets := []int{0, 20}
-	for _, offset := range offsets {
-		paginatedUrl := fmt.Sprintf("%s?release=%s&limit=%d&offset=%d", jsonApiUrl, distro, 20, offset)
+	for page := 0; page < numPages; page++ {
+		offset := page * pageSize
+		paginatedUrl := fmt.Sprintf("%s?release=%s&limit=%d&offset=%d", jsonApiUrl, distro, pageSize, offset)
 		usns, err := fetchUSNPage(paginatedUrl)
 		if err != nil {
 			return nil, err
@@ -238,7 +282,6 @@ func getNewUSNsFromJSONApi(jsonApiUrl string, lastPatchedUSNs []PatchedUsnsInput
 		allUSNs = append(allUSNs, usns...)
 	}
 
-	fmt.Println("Looking for new USNs...")
 	var newUSNs []USN
 	for _, usn := range allUSNs {
 
@@ -252,14 +295,6 @@ func getNewUSNsFromJSONApi(jsonApiUrl string, lastPatchedUSNs []PatchedUsnsInput
 			CVEs:            usn.CVEs,
 			ReleasePackages: usn.ReleasePackages,
 		})
-	}
-
-	if len(newUSNs) > 0 {
-		for _, usn := range newUSNs {
-			fmt.Printf("New USN found: %s with name %s\n", usn.ID, usn.Title)
-		}
-	} else {
-		fmt.Println("No new USNs found")
 	}
 
 	return newUSNs, nil

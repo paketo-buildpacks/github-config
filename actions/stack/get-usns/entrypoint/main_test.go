@@ -87,7 +87,34 @@ func TestEntrypoint(t *testing.T) {
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
-				Expect(string(buffer.Contents())).To(ContainSubstring("New USN found:"))
+				Expect(string(buffer.Contents())).To(ContainSubstring("Recent USNs found:"))
+
+				Expect(outputFilepath).To(BeARegularFile())
+				contents, err := os.ReadFile(outputFilepath)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(string(contents)).To(ContainSubstring(`"id":"USN-7967-1"`))
+				Expect(string(contents)).To(ContainSubstring(`"avahi"`))
+			})
+		})
+
+		context("Fetches usns from a file and previous usns are empty", func() {
+			it("outputs the correct patched usns", func() {
+				command := exec.Command(
+					entrypoint,
+					"--fetch-usns-from-filepath", "/home/cpapasta/Desktop/buildpacks/github-config/actions/stack/get-usns/entrypoint/testdata/notices0-20.json",
+					"--packages", `["avahi", "simgear"]`,
+					"--distro", "noble",
+					"--output", outputFilepath,
+				)
+
+				buffer := gbytes.NewBuffer()
+
+				session, err := gexec.Start(command, buffer, buffer)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(session).Should(gexec.Exit(0), func() string { return fmt.Sprintf("output -> \n%s\n", buffer.Contents()) })
+				Expect(string(buffer.Contents())).To(ContainSubstring("Recent USNs found:"))
 
 				Expect(outputFilepath).To(BeARegularFile())
 				contents, err := os.ReadFile(outputFilepath)
@@ -156,6 +183,7 @@ func TestEntrypoint(t *testing.T) {
 					"--distro", "jammy",
 					"--last-usns-filepath", "testdata/amd64-jammy-tiny-last-patched-usns.json",
 					"--output", outputFilepath,
+					"--pages", "2",
 				)
 
 				buffer := gbytes.NewBuffer()
