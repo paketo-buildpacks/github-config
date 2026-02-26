@@ -43,7 +43,7 @@ inputs:
 
 runs:
   using: 'docker'
-  image: 'docker://ghcr.io/paketo-buildpacks/actions/stack/get-usns:latest'
+  image: 'Dockerfile'
   args:
   - "--last-usns"
   - "${{ inputs.last_usns }}"
