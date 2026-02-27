@@ -7,9 +7,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -47,13 +49,14 @@ type PatchedUsnsInputOutput struct {
 
 func main() {
 	var config struct {
+		APIUrl               string
 		Distro               string
 		LastUSNsJSON         string
 		LastUSNsJSONFilepath string
 		Output               string
 		PackagesJSON         string
 		PackagesJSONFilepath string
-		APIUrl               string
+		Pages                int
 	}
 
 	flag.StringVar(&config.LastUSNsJSON,
@@ -67,7 +70,7 @@ func main() {
 	flag.StringVar(&config.APIUrl,
 		"api-url",
 		JSON_API_URL,
-		"URL of the Ubuntu security notices JSON API")
+		"URL of the Ubuntu security notices JSON API (https or file:// for a local JSON file)")
 	flag.StringVar(&config.PackagesJSON,
 		"packages",
 		"",
@@ -84,11 +87,18 @@ func main() {
 		"output",
 		"",
 		"Path to output JSON file")
+	flag.IntVar(&config.Pages,
+		"pages",
+		1,
+		"Number of pages to fetch from the API (default: 1)")
 
 	flag.Parse()
 
 	if !slices.Contains(supportedDistros, config.Distro) {
 		log.Fatalf("--distro flag has to be one of the following values: %v", supportedDistros)
+	}
+	if config.Pages < 1 {
+		log.Fatalf("--pages must be at least 1, got %d", config.Pages)
 	}
 
 	lastPatchedUSNs := []PatchedUsnsInputOutput{}
@@ -132,9 +142,23 @@ func main() {
 		}
 	}
 
-	newUSNs, err := getNewUSNsFromJSONApi(config.APIUrl, lastPatchedUSNs, config.Distro)
-	if err != nil {
-		log.Fatal(err)
+	var newUSNs []USN
+	var err error
+	if path, ok := fileURLPath(config.APIUrl); ok {
+		newUSNs, err = getNewUSNsFromFilepath(path)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		newUSNs, err = getNewUSNsFromJSONApi(config.APIUrl, lastPatchedUSNs, config.Distro, config.Pages)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	fmt.Println("Recent USNs found:")
+	for _, usn := range newUSNs {
+		fmt.Printf("%s with name %s\n", usn.ID, usn.Title)
 	}
 
 	filteredUSNs := filterUSNsByPackages(newUSNs, packages, config.Distro)
@@ -225,12 +249,41 @@ func transformUSNsForOutput(usns []USN, distro string) []PatchedUsnsInputOutput 
 	return output
 }
 
-func getNewUSNsFromJSONApi(jsonApiUrl string, lastPatchedUSNs []PatchedUsnsInputOutput, distro string) ([]USN, error) {
+func fileURLPath(rawURL string) (string, bool) {
+	u, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil || u.Scheme != "file" {
+		return "", false
+	}
+	path := u.Path
+	if u.Host != "" {
+		path = u.Host + path
+	}
+	return path, true
+}
+
+func getNewUSNsFromFilepath(path string) ([]USN, error) {
+	fileContent, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var data struct {
+		Notices []USN `json:"notices"`
+	}
+	if err = json.Unmarshal(fileContent, &data); err != nil {
+		return nil, err
+	}
+	return data.Notices, nil
+}
+
+const pageSize = 20
+
+func getNewUSNsFromJSONApi(jsonApiUrl string, lastPatchedUSNs []PatchedUsnsInputOutput, distro string, numPages int) ([]USN, error) {
 	var allUSNs []USN
 
-	offsets := []int{0, 20}
-	for _, offset := range offsets {
-		paginatedUrl := fmt.Sprintf("%s?release=%s&limit=%d&offset=%d", jsonApiUrl, distro, 20, offset)
+	for page := 0; page < numPages; page++ {
+		offset := page * pageSize
+		paginatedUrl := fmt.Sprintf("%s?release=%s&limit=%d&offset=%d", jsonApiUrl, distro, pageSize, offset)
 		usns, err := fetchUSNPage(paginatedUrl)
 		if err != nil {
 			return nil, err
@@ -238,7 +291,6 @@ func getNewUSNsFromJSONApi(jsonApiUrl string, lastPatchedUSNs []PatchedUsnsInput
 		allUSNs = append(allUSNs, usns...)
 	}
 
-	fmt.Println("Looking for new USNs...")
 	var newUSNs []USN
 	for _, usn := range allUSNs {
 
@@ -252,14 +304,6 @@ func getNewUSNsFromJSONApi(jsonApiUrl string, lastPatchedUSNs []PatchedUsnsInput
 			CVEs:            usn.CVEs,
 			ReleasePackages: usn.ReleasePackages,
 		})
-	}
-
-	if len(newUSNs) > 0 {
-		for _, usn := range newUSNs {
-			fmt.Printf("New USN found: %s with name %s\n", usn.ID, usn.Title)
-		}
-	} else {
-		fmt.Println("No new USNs found")
 	}
 
 	return newUSNs, nil
