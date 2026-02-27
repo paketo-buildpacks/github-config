@@ -1,0 +1,31 @@
+name: 'Download Latest USNs'
+
+description: |
+  Fetches the USNs form ubuntu.com/security/notices.json and stores them locally in a json format.
+
+inputs:
+  distro:
+    description: 'Ubuntu distro codename to fetch (e.g. jammy, noble)'
+    required: true
+  limit:
+    description: 'The page size of ubuntu API. Maximum items per page: 20'
+    required: false
+  offset:
+    description: 'Number of notices to skip (optional). When omitted, the API starts from the first notice.'
+    required: false
+  usns-output-path:
+    description: 'Exact path to output the USNs JSON file.'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+  - id: fetch
+    name: Fetch USNs
+    shell: bash
+    run: |
+      "${{ github.action_path }}/fetch_usns.sh" \
+        --distro "${{ inputs.distro }}" \
+        --usns-output-path "${{ inputs.usns-output-path }}" \
+        --limit "${{ inputs.limit }}" \
+        --offset "${{ inputs.offset }}"
