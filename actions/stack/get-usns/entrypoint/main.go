@@ -7,9 +7,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -47,15 +49,14 @@ type PatchedUsnsInputOutput struct {
 
 func main() {
 	var config struct {
-		APIUrl                string
-		Distro                string
-		FetchUSNsFromFilepath string
-		LastUSNsJSON          string
-		LastUSNsJSONFilepath  string
-		Output                string
-		PackagesJSON          string
-		PackagesJSONFilepath  string
-		Pages                 int
+		APIUrl               string
+		Distro               string
+		LastUSNsJSON         string
+		LastUSNsJSONFilepath string
+		Output               string
+		PackagesJSON         string
+		PackagesJSONFilepath string
+		Pages                int
 	}
 
 	flag.StringVar(&config.LastUSNsJSON,
@@ -69,11 +70,7 @@ func main() {
 	flag.StringVar(&config.APIUrl,
 		"api-url",
 		JSON_API_URL,
-		"URL of the Ubuntu security notices JSON API")
-	flag.StringVar(&config.FetchUSNsFromFilepath,
-		"fetch-usns-from-filepath",
-		"",
-		"Filepath that points to the JSON object of USNs by release")
+		"URL of the Ubuntu security notices JSON API (https or file:// for a local JSON file)")
 	flag.StringVar(&config.PackagesJSON,
 		"packages",
 		"",
@@ -147,8 +144,8 @@ func main() {
 
 	var newUSNs []USN
 	var err error
-	if config.FetchUSNsFromFilepath != "" {
-		newUSNs, err = getNewUSNsFromFilepath(config.FetchUSNsFromFilepath)
+	if path, ok := fileURLPath(config.APIUrl); ok {
+		newUSNs, err = getNewUSNsFromFilepath(path)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -250,6 +247,18 @@ func transformUSNsForOutput(usns []USN, distro string) []PatchedUsnsInputOutput 
 		})
 	}
 	return output
+}
+
+func fileURLPath(rawURL string) (string, bool) {
+	u, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil || u.Scheme != "file" {
+		return "", false
+	}
+	path := u.Path
+	if u.Host != "" {
+		path = u.Host + path
+	}
+	return path, true
 }
 
 func getNewUSNsFromFilepath(path string) ([]USN, error) {

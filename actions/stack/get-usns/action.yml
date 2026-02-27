@@ -17,12 +17,9 @@ inputs:
     description: 'Similar to last_usns, but instead of pointing into a variable, it points to a file'
     required: false
   api_url:
-    description: 'URL of the Ubuntu security notices JSON API'
+    description: 'URL of the Ubuntu security notices JSON API (https or file:// for a local JSON file)'
     required: false
     default: 'https://ubuntu.com/security/notices.json'
-  fetch_usns_from_filepath:
-    description: 'Similar to api_url, but instead of fetching the usns from the api, it reads them from a file'
-    required: false
   packages:
     description: 'JSON array of stack package names'
     required: false
@@ -51,8 +48,6 @@ runs:
   - "${{ inputs.last_usns_filepath }}"
   - "--api-url"
   - "${{ inputs.api_url }}"
-  - "--fetch-usns-from-filepath"
-  - "${{ inputs.fetch_usns_from_filepath }}"
   - "--packages"
   - "${{ inputs.packages }}"
   - "--packages-filepath"

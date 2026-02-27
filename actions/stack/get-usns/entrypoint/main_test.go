@@ -98,11 +98,15 @@ func TestEntrypoint(t *testing.T) {
 			})
 		})
 
-		context("Fetches usns from a file and previous usns are empty", func() {
+		context("Fetches usns from a file (file://) and previous usns are empty", func() {
 			it("outputs the correct patched usns", func() {
+				testdataPath, err := filepath.Abs("testdata/notices0-20.json")
+				Expect(err).NotTo(HaveOccurred())
+				apiURL := "file://" + testdataPath
+
 				command := exec.Command(
 					entrypoint,
-					"--fetch-usns-from-filepath", "/home/cpapasta/Desktop/buildpacks/github-config/actions/stack/get-usns/entrypoint/testdata/notices0-20.json",
+					"--api-url", apiURL,
 					"--packages", `["avahi", "simgear"]`,
 					"--distro", "noble",
 					"--output", outputFilepath,
