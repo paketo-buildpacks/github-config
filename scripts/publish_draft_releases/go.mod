@@ -2,7 +2,7 @@ module github.com/paketo-buildpacks/github-config/scripts/publish-draft-releases
 
 go 1.21
 
-toolchain go1.25.7
+toolchain go1.26.0
 
 require (
 	github.com/Masterminds/semver/v3 v3.4.0
