@@ -5,7 +5,7 @@ set -o pipefail
 
 function main() {
   local distro=""
-  local limit=""
+  local limit="20"
   local offset=""
   local usns_output_path=""
   while [[ "${#}" != 0 ]]; do
@@ -85,7 +85,7 @@ USAGE
 
 OPTIONS
   --distro <name>     -d <name>  Ubuntu distro to fetch (e.g. bionic, focal, jammy, noble). Required.
-  --limit   <n>       -l <n>     Maximum number of notices to fetch (optional). When omitted, the API returns 20 items.
+  --limit   <n>       -l <n>     Maximum number of notices to fetch (optional). Default: 20.
   --offset  <n>       -o <n>     Number of notices to skip (optional). When omitted, the API starts from the first notice.
   --usns-output-path <path>    -u <path>  Path to output USNs JSON file. Required.
   --help              -h         prints the command usage
