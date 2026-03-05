@@ -11,6 +11,7 @@
     },
     "packageRules": [
         {
+            "matchUpdateTypes": ["patch", "pin", "digest"],
             "matchManagers": [
                 "gomod"
             ],
