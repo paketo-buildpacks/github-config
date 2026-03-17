@@ -1,0 +1,40 @@
+name: 'Rebase branch'
+
+description: |
+  Rebases a branch against the base branch
+
+inputs:
+  branch:
+    description: 'Name of the branch to rebase'
+    required: true
+  committer_name:
+    description: 'Name of the committer'
+    required: false
+    default: 'paketo-bot'
+  committer_email:
+    description: 'Email of the committer'
+    required: false
+    default: 'paketobuildpacks@gmail.com'
+  keyid:
+    description: 'ID of GPG signing key to use for signed commit'
+    required: false
+    default: ''
+  key:
+    description: 'GPG signing key to use for signed commit'
+    required: false
+    default: ''
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+  - "--branch"
+  - ${{ inputs.branch }}
+  - "--committer-name"
+  - ${{ inputs.committer_name }}
+  - "--committer-email"
+  - ${{ inputs.committer_email }}
+  - "--keyid"
+  - ${{ inputs.keyid }}
+  - "--key"
+  - ${{ inputs.key }}
