@@ -4,9 +4,10 @@ description: |
   Rebases a branch against the base branch
 
 inputs:
-  branch:
-    description: 'Name of the branch to rebase'
-    required: true
+  base_branch:
+    description: 'Name of the base branch to rebase onto (the current branch is rebased on top of this branch)'
+    required: false
+    default: 'main'
   committer_name:
     description: 'Name of the committer'
     required: false
@@ -32,8 +33,8 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-  - "--branch"
-  - ${{ inputs.branch }}
+  - "--base-branch"
+  - ${{ inputs.base_branch }}
   - "--committer-name"
   - ${{ inputs.committer_name }}
   - "--committer-email"

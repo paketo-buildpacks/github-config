@@ -3,12 +3,13 @@ set -euo pipefail
 shopt -s inherit_errexit
 
 function main() {
-  local branch committer_name committer_email keyid key
+  local base_branch committer_name committer_email keyid key
+  base_branch=main
   fail_on_rebase_failure=false
   while [ "${#}" != 0 ]; do
     case "${1}" in
-      --branch)
-        branch="${2}"
+      --base-branch)
+        base_branch="${2}"
         shift 2
         ;;
 
@@ -62,7 +63,7 @@ function main() {
   git config --global user.email "${committer_email}"
 
   trap cleanup_rebase EXIT
-  git rebase origin/"${branch}"
+  git rebase origin/"${base_branch}"
   trap - EXIT
 }
 
