@@ -4,6 +4,7 @@ shopt -s inherit_errexit
 
 function main() {
   local branch committer_name committer_email keyid key
+  fail_on_rebase_failure=false
   while [ "${#}" != 0 ]; do
     case "${1}" in
       --branch)
@@ -31,6 +32,11 @@ function main() {
         shift 2
         ;;
 
+      --fail-on-rebase-failure)
+        fail_on_rebase_failure="${2}"
+        shift 2
+        ;;
+
       "")
         shift
         ;;
@@ -55,7 +61,21 @@ function main() {
   git config --global user.name "${committer_name}"
   git config --global user.email "${committer_email}"
 
+  trap cleanup_rebase EXIT
   git rebase origin/"${branch}"
+  trap - EXIT
+}
+
+cleanup_rebase() {
+  local exit_code=$?
+  if [ "$exit_code" -ne 0 ]; then
+    echo "Rebase failed. Aborting rebase to leave branch in a clean state."
+    git rebase --abort
+    if [ "${fail_on_rebase_failure}" != "true" ]; then
+      exit 0
+    fi
+  fi
+  exit "$exit_code"
 }
 
 main "${@:-}"
