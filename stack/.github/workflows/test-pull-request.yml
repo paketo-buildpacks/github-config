@@ -79,7 +79,7 @@ jobs:
 
 
     - name: Upload run image
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: current-run-image-${{ matrix.stacks.name }}
         path: "${{ matrix.stacks.output_dir }}/run.oci"
@@ -87,7 +87,7 @@ jobs:
 
     - name: Upload build image
       if: ${{ matrix.stacks.create_build_image == true }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: current-build-image-${{ matrix.stacks.name }}
         path: "${{ matrix.stacks.output_dir }}/build.oci"
@@ -137,7 +137,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - name: Upload Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: event-payload
         path: ${{ github.event_path }}
