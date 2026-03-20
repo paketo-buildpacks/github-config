@@ -1,0 +1,82 @@
+#!/bin/bash
+set -euo pipefail
+shopt -s inherit_errexit
+
+function main() {
+  local base_branch committer_name committer_email keyid key
+  base_branch=main
+  fail_on_rebase_failure=false
+  while [ "${#}" != 0 ]; do
+    case "${1}" in
+      --base-branch)
+        base_branch="${2}"
+        shift 2
+        ;;
+
+      --committer-name)
+        committer_name="${2}"
+        shift 2
+        ;;
+
+      --committer-email)
+        committer_email="${2}"
+        shift 2
+        ;;
+
+      --keyid)
+        keyid="${2}"
+        shift 2
+        ;;
+
+      --key)
+        key="${2}"
+        shift 2
+        ;;
+
+      --fail-on-rebase-failure)
+        fail_on_rebase_failure="${2}"
+        shift 2
+        ;;
+
+      "")
+        shift
+        ;;
+
+      *)
+        echo "unknown argument \"${1}\""
+        exit 1
+    esac
+  done
+
+  git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+  if [ -n "$keyid" ] && [ -n "$key" ]; then
+    mkdir -p ~/.gnupg/
+    printf "quiet" > ~/.gnupg/options
+    printf "%s" "$key" | base64 -d > ~/.gnupg/private.key
+    gpg --options ~/.gnupg/options --import ~/.gnupg/private.key
+
+    git config --global user.signingkey "$keyid"
+    git config --global commit.gpgsign true
+  fi
+
+  git config --global user.name "${committer_name}"
+  git config --global user.email "${committer_email}"
+
+  trap cleanup_rebase EXIT
+  git rebase origin/"${base_branch}"
+  trap - EXIT
+}
+
+cleanup_rebase() {
+  local exit_code=$?
+  if [ "$exit_code" -ne 0 ]; then
+    echo "Rebase failed. Aborting rebase to leave branch in a clean state."
+    git rebase --abort
+    if [ "${fail_on_rebase_failure}" != "true" ]; then
+      exit 0
+    fi
+  fi
+  exit "$exit_code"
+}
+
+main "${@:-}"
