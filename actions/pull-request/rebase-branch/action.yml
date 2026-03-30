@@ -30,18 +30,15 @@ inputs:
     default: 'false'
 
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
-  args:
-  - "--base-branch"
-  - ${{ inputs.base_branch }}
-  - "--committer-name"
-  - ${{ inputs.committer_name }}
-  - "--committer-email"
-  - ${{ inputs.committer_email }}
-  - "--keyid"
-  - ${{ inputs.keyid }}
-  - "--key"
-  - ${{ inputs.key }}
-  - "--fail-on-rebase-failure"
-  - ${{ inputs.fail_on_rebase_failure }}
+  using: composite
+  steps:
+    - name: Rebase branch
+      shell: bash
+      run: |
+        bash "${{ github.action_path }}/entrypoint" \
+          --base-branch "${{ inputs.base_branch }}" \
+          --committer-name "${{ inputs.committer_name }}" \
+          --committer-email "${{ inputs.committer_email }}" \
+          --keyid "${{ inputs.keyid }}" \
+          --key "${{ inputs.key }}" \
+          --fail-on-rebase-failure "${{ inputs.fail_on_rebase_failure }}"
