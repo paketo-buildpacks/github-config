@@ -34,7 +34,8 @@ For the github-config repository:
 
 For the repository you are adding renovate:
 - Remove current dependency update configuration `.github/dependabot.yml`
-- Add `dependabot.yml` and `renovate.json` to `.github/.syncignore`
+- Add `dependabot.yml` to `.github/.syncignore`
+- Disable dependabot from the repository: Settings -> Advanced Security -> Dependabot security updates -> click on the disable button
 - Add `renovate.json` to the `.github` directory with following content:
 ```json
 {
@@ -44,4 +45,6 @@ For the repository you are adding renovate:
     ]
 }
 ```
+- Add `renovate.json` to `.github/.syncignore`
+
 You can add additional configuration (like repository-specific labels depending on minor, major or patch updates) to the repository owned `renovate.json`. The documentation for all configuration options can be found here: https://docs.renovatebot.com/configuration-options/
