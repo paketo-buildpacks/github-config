@@ -2,7 +2,7 @@ module github.com/paketo-buildpacks/github-config/actions/release/reset-draft/en
 
 go 1.24.0
 
-toolchain go1.26.0
+toolchain go1.26.2
 
 require (
 	github.com/onsi/gomega v1.39.1

@@ -2,7 +2,7 @@ module github.com/paketo-buildpacks/github-config/actions/tag/calculate-semver-t
 
 go 1.24.0
 
-toolchain go1.26.0
+toolchain go1.26.2
 
 require (
 	github.com/Masterminds/semver/v3 v3.4.0
