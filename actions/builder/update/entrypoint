@@ -1,0 +1,94 @@
+#!/bin/bash
+set -euo pipefail
+shopt -s inherit_errexit
+
+function usage() {
+  cat <<'EOF'
+Install paketo jam (linux amd64) and run update-builder.
+
+Usage:
+  entrypoint [options]
+
+Options:
+  --token TOKEN       Optional GitHub token.
+  --filename PATH     builder.toml path relative to the working directory (default: builder.toml).
+  --jam-version VER   Jam version without leading v, or "latest", or omit to resolve latest from the API.
+  -h, --help          Show this help and exit.
+EOF
+}
+
+function main() {
+  local token filename jam_version curl_args
+  token=""
+  filename="builder.toml"
+  jam_version=""
+  while [ "${#}" != 0 ]; do
+    case "${1}" in
+      -h | --help)
+        usage
+        exit 0
+        ;;
+
+      --token)
+        token="${2}"
+        shift 2
+        ;;
+
+      --filename)
+        filename="${2}"
+        shift 2
+        ;;
+
+      --jam-version)
+        jam_version="${2}"
+        shift 2
+        ;;
+
+      "")
+        shift
+        ;;
+
+      *)
+        echo "unknown argument \"${1}\"" >&2
+        usage >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  curl_args=(
+    "--fail-with-body"
+    "--show-error"
+    "--location"
+    "--silent"
+  )
+
+  if [[ "${token}" != "" ]]; then
+    curl_args+=("--header" "Authorization: Token ${token}")
+  fi
+
+  if [[ -z "${jam_version}" || "${jam_version}" == "latest" ]]; then
+    jam_version="$(
+      curl "${curl_args[@]}" \
+        "https://api.github.com/repos/paketo-buildpacks/jam/releases/latest" \
+      | jq -r -S .tag_name
+    )"
+  fi
+
+  jam_version="${jam_version#v}"
+
+  mkdir -p "${HOME}/bin"
+
+  curl "${curl_args[@]}" \
+    "https://github.com/paketo-buildpacks/jam/releases/download/v${jam_version}/jam-linux" \
+    --output "${HOME}/bin/jam"
+
+  echo "curl ${curl_args[@]} https://github.com/paketo-buildpacks/jam/releases/download/v${jam_version}/jam-linux --output ${HOME}/bin/jam"
+
+  chmod +x "${HOME}/bin/jam"
+
+  "${HOME}/bin/jam" update-builder \
+    --builder-file "${PWD}/${filename}"
+}
+
+main "${@:-}"
