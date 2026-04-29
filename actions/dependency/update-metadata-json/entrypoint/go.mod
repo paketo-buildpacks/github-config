@@ -3,7 +3,7 @@ module github.com/paketo-buildpacks/github-config/actions/dependency/update-meta
 go 1.26.1
 
 require (
-	github.com/onsi/gomega v1.39.1
+	github.com/onsi/gomega v1.40.0
 	github.com/paketo-buildpacks/occam v0.31.2
 	github.com/paketo-buildpacks/packit/v2 v2.25.4
 	github.com/sclevine/spec v1.4.0
