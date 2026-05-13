@@ -22,6 +22,7 @@ var supportedDistros = []string{
 	"jammy",
 	"focal",
 	"bionic",
+	"resolute",
 }
 
 type USN struct {
