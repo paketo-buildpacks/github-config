@@ -20,7 +20,7 @@ jobs:
           branch: automation/go-mod-update/update-main
       - name: Setup Go
         id: setup-go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         # Fetching the latest stable Go version
         with:
           go-version: stable
