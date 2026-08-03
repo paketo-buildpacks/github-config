@@ -22,6 +22,10 @@ inputs:
     description: 'If an issue already exists on the repo with the provided label, comment on the existing issue'
     required: false
     default: "false"
+  reopen_closed_issues:
+    description: "When false and comment_if_exists is also true, only search for open issues. Closed issues will be treated as if they do not exist (a new issue will be created)."
+    required: false
+    default: "true"
   issue_title:
     description: 'Title to use when filing issue'
     required: true
@@ -83,13 +87,19 @@ runs:
           exit 1
         fi
 
-        # if there is already an issue with the same title, then comment
-        # the failure on that issue, rather than opening a new issue.
-        issue_number=$(gh issue list --repo "${{ inputs.repo }}" --state all --label "${{ inputs.label }}" --search "${{ inputs.issue_title }} in:title" --json number --jq .[0].number)
+        # if there is already an issue with the same label and title,
+        # comment on it rather than opening a new issue.
+        issue_state="all"
+        if [[ "${{ inputs.reopen_closed_issues }}" == "false" ]]; then
+          issue_state="open"
+        fi
+        issue_number=$(gh issue list --repo "${{ inputs.repo }}" --state "${issue_state}" --label "${{ inputs.label }}" --search "${{ inputs.issue_title }} in:title" --json number --jq .[0].number)
 
         if [ -n "${issue_number}" ]; then
-          gh issue reopen "${issue_number}" \
-            --repo "${{ inputs.repo }}"
+          if [[ "${{ inputs.reopen_closed_issues }}" != "false" ]]; then
+            gh issue reopen "${issue_number}" \
+              --repo "${{ inputs.repo }}"
+          fi
           gh issue comment "${issue_number}" \
             --body "${{ inputs.comment_body }}" \
             --repo "${{ inputs.repo }}"
