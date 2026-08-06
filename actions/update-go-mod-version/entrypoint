@@ -30,8 +30,18 @@ function main() {
     exit 1
   fi
 
+  local -a go_mod_files
+  go_mod_files=("go.mod" "dependency/retrieval/go.mod")
+
   echo "Setting go version to: '${go_version}'"
-  sed -i "s/^go .*/go ${go_version}/g" go.mod
+
+  for go_mod_file in "${go_mod_files[@]}"; do
+    if [[ ! -f "${go_mod_file}" ]]; then
+      continue
+    fi
+
+    sed -i "s/^go .*/go ${go_version}/g" "${go_mod_file}"
+  done
 }
 
 main "${@:-}"
