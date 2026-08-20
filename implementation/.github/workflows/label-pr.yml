@@ -25,6 +25,8 @@ jobs:
     permissions:
       issues: read # read the issue's current labels
       pull-requests: read # read the pull request's metadata
+    timeout-minutes: 5
+
     steps:
     - name: Check Minimal Semver Labels
       uses: mheap/github-action-required-labels@23e10fde7e062233401931a0eece796cd9bf3177 # v5.6.0

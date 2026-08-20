@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: read
       security-events: write # upload CodeQL results to GitHub code scanning
+    timeout-minutes: 30
 
     strategy:
       fail-fast: false

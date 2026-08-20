@@ -46,6 +46,7 @@ jobs:
     permissions:
       actions: write # upload the compiled dependency artifact
       contents: read
+    timeout-minutes: 60
 
     steps:
     - name: Check out code
