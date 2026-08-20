@@ -23,6 +23,7 @@ jobs:
   builders:
     name: Get Builders for Testing
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     outputs:
       builders: ${{ steps.builders.outputs.builders }}
     steps:
@@ -41,6 +42,7 @@ jobs:
   integration:
     name: Integration Tests
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     needs: [builders]
     strategy:
       matrix:
@@ -72,6 +74,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     needs: integration
     permissions:
       contents: write # create and update the draft release
@@ -143,6 +146,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [ integration, release ]
     permissions:
       contents: read
