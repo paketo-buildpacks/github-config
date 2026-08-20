@@ -12,6 +12,7 @@ jobs:
   unit:
     name: Unit Tests
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
     - name: Setup Go
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
@@ -31,6 +32,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       actions: write
+    timeout-minutes: 5
     steps:
     - name: Upload Artifact
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
