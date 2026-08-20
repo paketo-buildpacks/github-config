@@ -12,6 +12,7 @@ jobs:
   publish:
     name: Publish
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - name: Publish Draft Release With Highest Semantic Version
         id: drafts
@@ -24,6 +25,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [ publish ]
     if: ${{ always() && needs.publish.result == 'failure' }}
     steps:
