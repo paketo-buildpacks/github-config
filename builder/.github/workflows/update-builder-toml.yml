@@ -14,6 +14,7 @@ jobs:
   preparation:
     name: Preparation
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     outputs:
       builders: ${{ steps.get-builders.outputs.builders }}
     steps:
@@ -74,6 +75,7 @@ jobs:
   update:
     name: Update builder.toml
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     needs: preparation
     strategy:
       max-parallel: 1
@@ -113,6 +115,7 @@ jobs:
   open-pull-request:
     name: Open pull request
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     needs: update
     steps:
     - name: Check out
@@ -146,6 +149,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [update, open-pull-request]
     if: ${{ always() && ( needs.update.result == 'failure' || needs.open-pull-request.result == 'failure' ) }}
     steps:
