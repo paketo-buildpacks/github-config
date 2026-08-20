@@ -29,6 +29,7 @@ jobs:
   preparation:
     name: Preparation
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     outputs:
       architectures: ${{ steps.lookup.outputs.platforms }}
       archs_added: ${{ steps.lookup.outputs.platforms_added }}
@@ -210,6 +211,7 @@ jobs:
   download_usns:
     name: Download USNs
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     needs: [preparation]
     if: ${{ needs.preparation.outputs.polling_type == 'usn' }}
     steps:
@@ -231,6 +233,7 @@ jobs:
   poll_usns:
     name: Poll USNs
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     needs: [preparation, download_usns]
     if: ${{ needs.preparation.outputs.polling_type == 'usn' }}
     strategy:
@@ -437,6 +440,7 @@ jobs:
   poll_images:
     name: Poll Images based on the hash code
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     if: ${{ needs.preparation.outputs.polling_type == 'hash' }}
     needs: preparation
     strategy:
@@ -551,6 +555,7 @@ jobs:
   stack_files_changed:
     name: Determine If Stack Files Changed
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     needs: [ preparation, poll_usns, poll_images ]
     if: ${{
       !failure() && !cancelled() &&
@@ -585,6 +590,7 @@ jobs:
   usns_or_sha_changed:
     name: USNs or SHAs have changed
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     outputs:
       changed: ${{ steps.usns_or_sha_changed.outputs.changed }}
     needs: [ preparation, poll_usns, poll_images ]
@@ -624,6 +630,7 @@ jobs:
     # and the event is schedule, then there is no need to run below workflow as nothing has changed
     if: ${{ !failure() && !cancelled() && !( needs.usns_or_sha_changed.outputs.changed == 'false' && github.event_name == 'schedule') }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     strategy:
       matrix:
         stacks: ${{ fromJSON(needs.preparation.outputs.stacks) }}
@@ -702,6 +709,7 @@ jobs:
       removed_with_force: ${{ steps.removed_with_force.outputs.packages_removed }}
     needs: [ create_stack, preparation ]
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -972,6 +980,7 @@ jobs:
     name: Determine If Packages Changed
     needs: [ diff, preparation ]
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     if: ${{ !cancelled() && !failure() && needs.diff.result != 'skipped' }}
     strategy:
       fail-fast: false
@@ -1022,6 +1031,7 @@ jobs:
     needs: [ preparation, create_stack ]
     if: ${{ !cancelled() && !failure() && needs.create_stack.result != 'skipped' }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
     - name: Checkout
       uses: actions/checkout@v6
@@ -1060,6 +1070,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     needs: [create_stack, diff, stack_files_changed, test, preparation, packages_changed]
     if: ${{ always() && needs.diff.result == 'success' && needs.test.result == 'success' && ( needs.packages_changed.outputs.packages_changed == 'true' ||  needs.stack_files_changed.outputs.stack_files_changed == 'true' || github.event.inputs.force == 'true' ) }}
     outputs:
@@ -1502,6 +1513,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [ preparation, poll_usns, poll_images, create_stack, diff, test, release ]
     if: ${{ always() && needs.preparation.result == 'failure' || needs.poll_images.result == 'failure' || needs.poll_usns.result == 'failure' || needs.create_stack.result == 'failure' || needs.diff.result == 'failure' || needs.test.result == 'failure' || needs.release.result == 'failure' }}
     steps:

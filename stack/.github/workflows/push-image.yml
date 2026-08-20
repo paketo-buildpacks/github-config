@@ -21,6 +21,7 @@ jobs:
   preparation:
     name: Preparation
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       DOCKERHUB_ORG: ${{ steps.set-dockerhub-org-namespace.outputs.DOCKERHUB_ORG }}
@@ -194,6 +195,7 @@ jobs:
   push:
     name: Push
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     needs: preparation
     strategy:
       max-parallel: 4
@@ -268,6 +270,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [push]
     if: ${{ always() && needs.push.result == 'failure' }}
     steps:
