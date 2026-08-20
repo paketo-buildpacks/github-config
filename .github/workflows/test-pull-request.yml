@@ -9,6 +9,7 @@ jobs:
   unit:
     name: Unit Tests
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
     - name: Setup Go
       uses: actions/setup-go@v6
@@ -24,6 +25,7 @@ jobs:
   upload:
     name: Upload Workflow Event Payload
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
     - name: Upload Artifact
       uses: actions/upload-artifact@v6
