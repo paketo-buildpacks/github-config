@@ -17,6 +17,7 @@ jobs:
   push:
     name: Push
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
 
     - name: Checkout
@@ -128,6 +129,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [push]
     if: ${{ always() && needs.push.result == 'failure' }}
     steps:
