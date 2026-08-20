@@ -1,4 +1,5 @@
 name: Set / Validate PR Labels
+
 on:
   pull_request_target:
     branches:

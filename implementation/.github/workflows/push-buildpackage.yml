@@ -21,7 +21,6 @@ jobs:
       DOCKERHUB_PASSWORD: ${{ secrets.PAKETO_BUILDPACKS_DOCKERHUB_PASSWORD }}
 
     steps:
-
     - name: Checkout
       uses: actions/checkout@v6
 
