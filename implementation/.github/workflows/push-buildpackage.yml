@@ -12,6 +12,7 @@ jobs:
   push:
     name: Push
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     env:
       GCR_REGISTRY: "gcr.io"
       GCR_PASSWORD: ${{ secrets.GCR_PUSH_BOT_JSON_KEY }}
@@ -164,6 +165,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [push]
     if: ${{ always() && needs.push.result == 'failure' }}
     steps:

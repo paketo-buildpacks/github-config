@@ -9,6 +9,7 @@ jobs:
   retrieve:
     name: Retrieve New Versions and Generate Metadata
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     outputs:
       metadata-filepath: ${{ steps.retrieve.outputs.metadata-filepath }}
       metadata-json: ${{ steps.retrieve.outputs.metadata-json }}
@@ -85,6 +86,7 @@ jobs:
       should-compile: ${{ steps.compile-check.outputs.should-compile }}
       should-test: ${{ steps.test-check.outputs.should-test }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Check out code
         uses: actions/checkout@v6
@@ -120,6 +122,7 @@ jobs:
     #   (3) there is at least one new version to test
     if: ${{ needs.retrieve.outputs.length > 0 && needs.get-compile-and-test.outputs.should-test == 'true' && needs.get-compile-and-test.outputs.should-compile == 'false' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Check out code
         uses: actions/checkout@v6
@@ -190,6 +193,7 @@ jobs:
         includes: ${{ fromJSON(needs.retrieve.outputs.compilation-json) }}
     if: ${{ needs.retrieve.outputs.compilation-length > 0 && needs.get-compile-and-test.outputs.should-compile == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Check out code
         uses: actions/checkout@v6
@@ -283,6 +287,7 @@ jobs:
     #   (4) Update metadata step has succeeded OR been skipped
     if: always() && needs.retrieve.result == 'success' && needs.retrieve.outputs.length > 0 && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.compile.result == 'success' || needs.compile.result == 'skipped') && (needs.update-metadata.result == 'success' || needs.update-metadata.result == 'skipped')
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Check out code
         uses: actions/checkout@v6
@@ -361,6 +366,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [ retrieve, get-compile-and-test, test, compile, update-metadata, assemble ]
     if: ${{ always() && needs.retrieve.result == 'failure' || needs.get-compile-and-test.result == 'failure' || needs.test.result == 'failure' || needs.compile.result == 'failure' || needs.update-metadata.result == 'failure' || needs.assemble.result == 'failure' }}
     steps:

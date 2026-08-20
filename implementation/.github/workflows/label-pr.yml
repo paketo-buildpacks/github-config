@@ -17,6 +17,7 @@ jobs:
   autolabel:
     name: Ensure Minimal Semver Labels
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
     - name: Check Minimal Semver Labels
       uses: mheap/github-action-required-labels@v5
