@@ -241,7 +241,7 @@ jobs:
       usns: ${{ steps.new_usns.outputs.usns }}
     steps:
     - name: Download USNs notices
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@v4
       with:
         name: ${{ env.USNS_NOTICES_ARTIFACT }}
 
