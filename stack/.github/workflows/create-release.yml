@@ -1112,7 +1112,7 @@ jobs:
       run: ls receipt-files
 
     - name: Download Release Note File(s)
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@v4
       with:
         path: release-notes
         pattern: "*release-notes.md"
