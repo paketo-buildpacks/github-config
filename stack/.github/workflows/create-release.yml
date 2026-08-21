@@ -659,7 +659,7 @@ jobs:
                             --run-receipt current-run-receipt-${{ matrix.stacks.name }}
 
     - name: Upload run image
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: current-run-image-${{ matrix.stacks.name }}
         path: "${{ matrix.stacks.output_dir }}/run.oci"
