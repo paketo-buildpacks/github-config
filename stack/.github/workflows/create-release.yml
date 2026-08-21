@@ -1080,7 +1080,7 @@ jobs:
         fetch-depth: 0  # gets full history
 
     - name: Download current build image(s)
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@v4
       with:
         path: image-files
         pattern: current-build-image-*
