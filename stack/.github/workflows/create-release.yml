@@ -682,7 +682,7 @@ jobs:
         if-no-files-found: error
 
     - name: Upload Run receipt
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: current-run-receipt-${{ matrix.stacks.name }}
         path: "*current-run-receipt-${{ matrix.stacks.name }}"
