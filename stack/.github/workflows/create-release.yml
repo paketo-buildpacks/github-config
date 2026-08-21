@@ -518,7 +518,7 @@ jobs:
         fi
 
     - name: Upload run image hash code
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: hash-code-current-run-image-${{ matrix.arch.name }}-${{ matrix.stacks.name }}
         path: hash-code-current-run-image-${{ matrix.arch.name }}-${{ matrix.stacks.name }}
