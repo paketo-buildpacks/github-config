@@ -526,7 +526,7 @@ jobs:
 
     - name: Upload build image hash code
       if: ${{ matrix.stacks.create_build_image == true }}
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: hash-code-current-build-image-${{ matrix.arch.name }}-${{ matrix.stacks.name }}
         path: hash-code-current-build-image-${{ matrix.arch.name }}-${{ matrix.stacks.name }}
