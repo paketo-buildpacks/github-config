@@ -1032,7 +1032,7 @@ jobs:
         go-version-file: go.mod
 
     - name: Download Build Image(s)
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@v4
       with:
         pattern: current-build-image-*
 
