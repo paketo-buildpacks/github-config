@@ -11,6 +11,7 @@ jobs:
     name: Download PR Artifact
     if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     outputs:
       pr-author: ${{ steps.pr-data.outputs.author }}
       pr-number: ${{ steps.pr-data.outputs.number }}
@@ -33,6 +34,7 @@ jobs:
     needs: download
     if: ${{ needs.download.outputs.pr-author == 'paketo-bot' || needs.download.outputs.pr-author == 'dependabot[bot]' }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
     - name: Check Commit Verification
       id: unverified-commits
@@ -71,6 +73,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [download, approve]
     if: ${{ always() && needs.download.result == 'failure' || needs.approve.result == 'failure' }}
     steps:

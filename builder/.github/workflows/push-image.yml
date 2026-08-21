@@ -12,6 +12,7 @@ jobs:
   preparation:
     name: Preparation
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     outputs:
       builders: ${{ steps.get-builders.outputs.builders }}
       tag: ${{ steps.event.outputs.tag }}
@@ -59,11 +60,11 @@ jobs:
     name: Push
     needs: preparation
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     strategy:
       matrix:
         builders: ${{ fromJSON(needs.preparation.outputs.builders) }}
     steps:
-
     - name: Checkout
       uses: actions/checkout@v6
 
@@ -91,6 +92,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [push]
     if: ${{ always() && needs.push.result == 'failure' }}
     steps:

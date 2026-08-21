@@ -14,6 +14,7 @@ jobs:
   preparation:
     name: Preparation
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     outputs:
       builders: ${{ steps.get-builders.outputs.builders }}
       combos: ${{ steps.get_combos.outputs.combos }}
@@ -83,6 +84,7 @@ jobs:
   builder_files_changed:
     name: Builder Files Changed
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     needs: preparation
     outputs:
       builders_changed: ${{ steps.compare_previous_release.outputs.builders_changed }}
@@ -115,6 +117,7 @@ jobs:
     name: Smoke Test
     needs: [preparation, builder_files_changed]
     if: ${{ needs.builder_files_changed.outputs.builders_changed == 'true' }}
+    timeout-minutes: 30
     strategy:
       matrix:
         combos: ${{ fromJSON(needs.preparation.outputs.combos) }}
@@ -135,6 +138,7 @@ jobs:
   get_builders_info:
     name: Get Builders Info
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     needs: [preparation, builder_files_changed, smoke]
     strategy:
       matrix:
@@ -189,6 +193,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     needs: [preparation, get_builders_info]
     steps:
     - name: Checkout With History
@@ -304,6 +309,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [ smoke, release, get_builders_info, preparation ]
     if: ${{ always() && needs.smoke.result == 'failure' ||  needs.release.result == 'failure' || needs.get_builders_info.result == 'failure' || needs.preparation.result == 'failure' }}
     steps:

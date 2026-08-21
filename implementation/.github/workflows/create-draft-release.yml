@@ -18,6 +18,7 @@ jobs:
   unit:
     name: Unit Tests
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     outputs:
       builders: ${{ steps.builders.outputs.builders }}
     steps:
@@ -40,6 +41,7 @@ jobs:
   integration:
     name: Integration Tests
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     needs: unit
     strategy:
       matrix:
@@ -79,6 +81,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     needs: integration
     services:
       registry:
@@ -231,6 +234,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [ unit, integration, release ]
     if: ${{ always() && needs.unit.result == 'failure' || needs.integration.result == 'failure' || needs.release.result == 'failure' }}
     steps:

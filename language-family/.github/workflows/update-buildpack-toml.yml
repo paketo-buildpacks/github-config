@@ -10,6 +10,7 @@ concurrency: buildpack_update
 jobs:
   update-buildpack-toml:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     name: Update buildpack.toml
     steps:
 
@@ -60,6 +61,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [update-buildpack-toml]
     if: ${{ always() && needs.update-buildpack-toml.result == 'failure' }}
     steps:
