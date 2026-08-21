@@ -220,7 +220,7 @@ jobs:
           usns-output-path: "${{ github.workspace }}/${{ env.USNS_NOTICES_ARTIFACT }}.json"
 
       - name: Upload USNs notices
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.USNS_NOTICES_ARTIFACT }}
           path: "${{ github.workspace }}/${{ env.USNS_NOTICES_ARTIFACT }}.json"
