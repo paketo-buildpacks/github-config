@@ -1095,7 +1095,7 @@ jobs:
       run: ls image-files
 
     - name: Download Build Receipt(s)
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@v4
       with:
         path: receipt-files
         pattern: current-build-receipt-*
