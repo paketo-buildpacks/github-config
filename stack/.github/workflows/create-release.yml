@@ -348,7 +348,7 @@ jobs:
         output_path: "${{ github.workspace }}/${{ matrix.arch.name }}-package-list-${{ matrix.stacks.name }}"
 
     - name: Upload package list file
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: "${{ matrix.arch.name }}-${{ matrix.stacks.name }}-package-list.json"
         path: "${{ github.workspace }}/${{ matrix.arch.name }}-package-list-${{ matrix.stacks.name }}"
