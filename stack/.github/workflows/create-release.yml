@@ -675,7 +675,7 @@ jobs:
 
     - name: Upload Build receipt
       if: ${{ matrix.stacks.create_build_image == true }}
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
         name: current-build-receipt-${{ matrix.stacks.name }}
         path: "*current-build-receipt-${{ matrix.stacks.name }}"
