@@ -84,14 +84,14 @@ jobs:
         util::tools::crane::install --directory "./.bin"
 
         DOCKERHUB_ORG="${GITHUB_REPOSITORY_OWNER/-/}" # translates 'paketo-buildpacks' to 'paketobuildpacks'
-        container_repository=${{ matrix.builders.container_repository }}
-
-        echo "${PAKETO_BUILDPACKS_DOCKERHUB_PASSWORD}" | docker login --username "${PAKETO_BUILDPACKS_DOCKERHUB_USERNAME}" --password-stdin
+        CONTAINER_REPO="${{ matrix.builders.container_repository }}"
+        VERSION_TAG="${{ needs.preparation.outputs.tag }}"
+        IMAGE_REF="${DOCKERHUB_ORG}/${CONTAINER_REPO}:${VERSION_TAG}"
 
         ./scripts/publish.sh --builder-toml-path "${{ matrix.builders.path }}/builder.toml" \
-          --builder-image-ref "${DOCKERHUB_ORG}/${container_repository}:${{ needs.preparation.outputs.tag }}"
+          --builder-image-ref "${IMAGE_REF}"
 
-        ./.bin/crane copy "${DOCKERHUB_ORG}/${container_repository}:${{ needs.preparation.outputs.tag }}" "${DOCKERHUB_ORG}/${container_repository}:latest"
+        ./.bin/crane tag "${IMAGE_REF}" latest
 
   failure:
     name: Alert on Failure
