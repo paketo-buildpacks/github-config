@@ -4,7 +4,7 @@ go 1.26.5
 
 require (
 	github.com/aclements/go-moremath v0.0.0-20241023150245-c8bbc672ef66
-	github.com/onsi/gomega v1.42.1
+	github.com/onsi/gomega v1.43.0
 	github.com/paketo-buildpacks/occam v0.31.4
 	github.com/sclevine/spec v1.4.0
 )
