@@ -2,7 +2,7 @@ module github.com/paketo-buildpacks/github-config/actions/release/create/entrypo
 
 go 1.24.0
 
-toolchain go1.27.0
+toolchain go1.27.1
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
