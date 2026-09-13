@@ -6,6 +6,9 @@ on:
     - '**.yml'
     - '**.yaml'
 
+permissions:
+  contents: read
+
 jobs:
   lintYaml:
     runs-on: ubuntu-24.04

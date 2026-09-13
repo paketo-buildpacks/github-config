@@ -8,10 +8,15 @@ on:
 
 concurrency: tools_update
 
+permissions:
+  contents: read
+
 jobs:
   update:
     name: Update
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     steps:
     - name: Checkout
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -143,6 +148,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [update]
     if: ${{ always() && needs.update.result == 'failure' }}
+    permissions:
+      contents: read
+      issues: write
     steps:
     - name: File Failure Alert Issue
       uses: paketo-buildpacks/github-config/actions/issue/file@main

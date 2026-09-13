@@ -2,6 +2,9 @@ name: Build and Push action images
 "on":
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 jobs:
   build-and-push:
     name: Build and Push action images

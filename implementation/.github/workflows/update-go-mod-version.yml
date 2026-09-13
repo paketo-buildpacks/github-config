@@ -7,6 +7,9 @@ on:
 
 concurrency: update-go
 
+permissions:
+  contents: read
+
 jobs:
   update-go:
     name: Update go toolchain in go.mod
@@ -81,6 +84,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [update-go]
     if: ${{ always() && needs.update-go.result == 'failure' }}
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: File Failure Alert Issue
         uses: paketo-buildpacks/github-config/actions/issue/file@main

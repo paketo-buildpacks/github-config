@@ -6,6 +6,9 @@ name: Synchronize Labels
         paths:
             - .github/labels.yml
     workflow_dispatch: {}
+permissions:
+    contents: read
+    issues: write
 jobs:
     synchronize:
         name: Synchronize Labels

@@ -6,6 +6,9 @@ on:
     types:
     - completed
 
+permissions:
+  contents: read
+
 jobs:
   download:
     name: Download PR Artifact
@@ -64,15 +67,19 @@ jobs:
     - name: Enable Auto-Merge
       if: steps.human-commits.outputs.human_commits == 'false' && steps.unverified-commits.outputs.unverified_commits == 'false'
       run: |
-        gh pr merge ${{ needs.download.outputs.pr-number }} --auto --rebase
+        gh pr merge "${PR_NUMBER}" --auto --rebase
       env:
         GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        PR_NUMBER: ${{ needs.download.outputs.pr-number }}
 
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
     needs: [download, approve]
     if: ${{ always() && needs.download.result == 'failure' || needs.approve.result == 'failure' }}
+    permissions:
+      contents: read
+      issues: write
     steps:
     - name: File Failure Alert Issue
       uses: paketo-buildpacks/github-config/actions/issue/file@main

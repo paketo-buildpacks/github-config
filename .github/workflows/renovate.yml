@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "30 4 * * *"
+
+permissions:
+  contents: read
+
 jobs:
   renovate:
     runs-on: ubuntu-24.04

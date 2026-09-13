@@ -10,7 +10,6 @@ env:
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   push:
@@ -84,9 +83,11 @@ jobs:
         echo "push_to_gcr=${push_to_gcr}" >> "$GITHUB_OUTPUT"
 
     - name: Validate version
+      env:
+        TAG_FULL: ${{ steps.event.outputs.tag_full }}
       run: |
         buidpackTomlVersion=$(sudo skopeo inspect "oci-archive:${GITHUB_WORKSPACE}/buildpackage.cnb" | jq -r '.Labels."io.buildpacks.buildpackage.metadata" | fromjson | .version')
-        githubReleaseVersion="${{ steps.event.outputs.tag_full }}"
+        githubReleaseVersion="${TAG_FULL}"
         if [[ "$buidpackTomlVersion" != "$githubReleaseVersion" ]]; then
           echo "Version in buildpack.toml ($buidpackTomlVersion) and github release ($githubReleaseVersion) are not identical"
           exit 1
@@ -122,17 +123,21 @@ jobs:
       id: push
       env:
         GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+        BUILDPACK_TYPE: ${{ steps.get_buildpack_type.outputs.buildpack_type }}
+        TAG_FULL: ${{ steps.event.outputs.tag_full }}
+        TAG_MINOR: ${{ steps.event.outputs.tag_minor }}
+        TAG_MAJOR: ${{ steps.event.outputs.tag_major }}
       run: |
         IMAGE="${GITHUB_REPOSITORY_OWNER/-/}/${GITHUB_REPOSITORY#${GITHUB_REPOSITORY_OWNER}/}" # translates 'paketo-buildpacks/bundle-install' to 'paketobuildpacks/bundle-install'
         echo "${DOCKERHUB_PASSWORD}" | sudo skopeo login --username "${DOCKERHUB_USERNAME}" --password-stdin ${DOCKERHUB_REGISTRY}
 
         ./scripts/publish.sh \
           --archive-path ./buildpack.tgz \
-          --buildpack-type ${{ steps.get_buildpack_type.outputs.buildpack_type }} \
-          --image-ref "${DOCKERHUB_REGISTRY}/${IMAGE}:${{ steps.event.outputs.tag_full }}"
+          --buildpack-type "${BUILDPACK_TYPE}" \
+          --image-ref "${DOCKERHUB_REGISTRY}/${IMAGE}:${TAG_FULL}"
 
         ## Validate that the image index digest pushed to registry matches with the one on the release notes
-        pushed_image_index_digest=$(crane digest "${DOCKERHUB_REGISTRY}/${IMAGE}:${{ steps.event.outputs.tag_full }}" | xargs)
+        pushed_image_index_digest=$(crane digest "${DOCKERHUB_REGISTRY}/${IMAGE}:${TAG_FULL}" | xargs)
 
         echo "Index digest from release notes: $(cat ./index-digest.sha256)"
         echo "Index digest pushed to registry: $pushed_image_index_digest"
@@ -142,21 +147,27 @@ jobs:
           exit 1;
         fi
 
-        sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${IMAGE}:${{ steps.event.outputs.tag_full }}" "docker://${DOCKERHUB_REGISTRY}/${IMAGE}:${{ steps.event.outputs.tag_minor }}" --multi-arch all
-        sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${IMAGE}:${{ steps.event.outputs.tag_full }}" "docker://${DOCKERHUB_REGISTRY}/${IMAGE}:${{ steps.event.outputs.tag_major }}" --multi-arch all
-        sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${IMAGE}:${{ steps.event.outputs.tag_full }}" "docker://${DOCKERHUB_REGISTRY}/${IMAGE}:latest" --multi-arch all
+        sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${IMAGE}:${TAG_FULL}" "docker://${DOCKERHUB_REGISTRY}/${IMAGE}:${TAG_MINOR}" --multi-arch all
+        sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${IMAGE}:${TAG_FULL}" "docker://${DOCKERHUB_REGISTRY}/${IMAGE}:${TAG_MAJOR}" --multi-arch all
+        sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${IMAGE}:${TAG_FULL}" "docker://${DOCKERHUB_REGISTRY}/${IMAGE}:latest" --multi-arch all
         echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
         echo "digest=$pushed_image_index_digest" >> "$GITHUB_OUTPUT"
 
     - name: Push to GCR
       if: ${{ steps.parse_configs.outputs.push_to_gcr == 'true' }}
+      env:
+        PUSH_IMAGE: ${{ steps.push.outputs.image }}
+        REPOSITORY: ${{ github.repository }}
+        TAG_FULL: ${{ steps.event.outputs.tag_full }}
+        TAG_MINOR: ${{ steps.event.outputs.tag_minor }}
+        TAG_MAJOR: ${{ steps.event.outputs.tag_major }}
       run: |
         echo "${GCR_PASSWORD}" | sudo skopeo login --username "${GCR_USERNAME}" --password-stdin "${GCR_REGISTRY}"
 
-        sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${{ steps.push.outputs.image }}" "docker://${GCR_REGISTRY}/${{ github.repository }}:${{ steps.event.outputs.tag_full }}" --multi-arch all
-        sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${{ steps.push.outputs.image }}" "docker://${GCR_REGISTRY}/${{ github.repository }}:${{ steps.event.outputs.tag_minor }}" --multi-arch all
-        sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${{ steps.push.outputs.image }}" "docker://${GCR_REGISTRY}/${{ github.repository }}:${{ steps.event.outputs.tag_major }}" --multi-arch all
-        sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${{ steps.push.outputs.image }}" "docker://${GCR_REGISTRY}/${{ github.repository }}:latest" --multi-arch all
+        sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${PUSH_IMAGE}" "docker://${GCR_REGISTRY}/${REPOSITORY}:${TAG_FULL}" --multi-arch all
+        sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${PUSH_IMAGE}" "docker://${GCR_REGISTRY}/${REPOSITORY}:${TAG_MINOR}" --multi-arch all
+        sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${PUSH_IMAGE}" "docker://${GCR_REGISTRY}/${REPOSITORY}:${TAG_MAJOR}" --multi-arch all
+        sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${PUSH_IMAGE}" "docker://${GCR_REGISTRY}/${REPOSITORY}:latest" --multi-arch all
 
     - name: Register with CNB Registry
       uses: docker://ghcr.io/buildpacks/actions/registry/request-add-entry@sha256:de7c15d1b8606c3189f0b5699bfdfe20afe5f6a315155932e801f334b0dae8f4
@@ -171,6 +182,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [push]
     if: ${{ always() && needs.push.result == 'failure' }}
+    permissions:
+      contents: read
+      issues: write
     steps:
     - name: File Failure Alert Issue
       uses: paketo-buildpacks/github-config/actions/issue/file@main

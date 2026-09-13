@@ -86,21 +86,28 @@ jobs:
 
     - name: Print contents of output dir
       shell: bash
-      run: ls -lah ${{ steps.compile-setup.outputs.outputdir }}
+      env:
+        OUTPUT_DIR: ${{ steps.compile-setup.outputs.outputdir }}
+      run: ls -lah "${OUTPUT_DIR}"
 
     - name: Test Dependency
       working-directory: dependency
       if: ${{ (inputs.shouldCompile == true || inputs.shouldCompile == 'true') && (inputs.shouldTest == true || inputs.shouldTest == 'true') }}
+      env:
+        VERSION: ${{ inputs.version }}
+        TARBALL_PATH: ${{ steps.compile-setup.outputs.outputdir }}/*.tgz
+        OS: ${{ inputs.os }}
+        ARCH: ${{ inputs.arch }}
       run: |
         #!/usr/bin/env bash
         set -euo pipefail
         shopt -s inherit_errexit
 
         make test \
-          version="${{ inputs.version }}" \
-          tarballPath="${{ steps.compile-setup.outputs.outputdir }}/*.tgz" \
-          os="${{ inputs.os }}" \
-          arch="${{ inputs.arch }}"
+          version="${VERSION}" \
+          tarballPath="${TARBALL_PATH}" \
+          os="${OS}" \
+          arch="${ARCH}"
 
     - name: Upload compiled artifact
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
