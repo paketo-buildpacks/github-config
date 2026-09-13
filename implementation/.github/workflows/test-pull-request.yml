@@ -6,9 +6,7 @@ on:
     - main
 
 permissions:
-  actions: write
   contents: read
-  packages: read
 
 concurrency:
   # only one instance of test suite per PR at one time
@@ -50,6 +48,9 @@ jobs:
     name: Integration Tests with Builders
     runs-on: ubuntu-24.04
     needs: unit
+    permissions:
+      contents: read
+      packages: read
     strategy:
       matrix:
         builder: ${{ fromJSON(needs.unit.outputs.builders) }}
@@ -84,10 +85,11 @@ jobs:
         sudo systemctl restart docker
 
     - name: Run Integration Tests
-      run: ./scripts/integration.sh --builder ${{ matrix.builder }} --token ${{ github.token }}
+      run: ./scripts/integration.sh --builder "${BUILDER}" --token "${GIT_TOKEN}"
       env:
         TMPDIR: "${{ runner.temp }}"
         GIT_TOKEN: ${{ github.token }}
+        BUILDER: ${{ matrix.builder }}
 
   roundup:
     name: Integration Tests
@@ -108,6 +110,8 @@ jobs:
   upload:
     name: Upload Workflow Event Payload
     runs-on: ubuntu-24.04
+    permissions:
+      actions: write
     steps:
     - name: Upload Artifact
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
