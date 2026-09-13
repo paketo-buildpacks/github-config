@@ -35,6 +35,10 @@ on:
         required: true
         type: string
 
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   compile:
     # Speed up compilation by using runners that match os and arch when they are set, otherwise fall back to emulation.

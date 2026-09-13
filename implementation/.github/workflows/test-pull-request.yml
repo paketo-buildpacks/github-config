@@ -5,6 +5,11 @@ on:
     branches:
     - main
 
+permissions:
+  actions: write
+  contents: read
+  packages: read
+
 concurrency:
   # only one instance of test suite per PR at one time
   group: pr-${{ github.event.number }}
@@ -19,6 +24,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v7
+      with:
+        persist-credentials: false
 
     - name: Setup Go
       uses: actions/setup-go@v7
@@ -50,6 +57,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v7
+      with:
+        persist-credentials: false
 
     - name: Free Disk Space
       if: vars.RECLAIM_DISK_SPACE == 'true'

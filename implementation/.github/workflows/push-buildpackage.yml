@@ -8,6 +8,10 @@ on:
 env:
   REGISTRIES_FILENAME: "registries.json"
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   push:
     name: Push
@@ -43,21 +47,21 @@ jobs:
       with:
         url: ${{ steps.event.outputs.download_cnb_file_url }}
         output: "/github/workspace/buildpackage.cnb"
-        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Download .tgz buildpack
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       with:
         url: ${{ steps.event.outputs.download_tgz_file_url }}
         output: "/github/workspace/buildpack.tgz"
-        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Download .sha digest
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       with:
         url: ${{ steps.event.outputs.download_sha256_file_url }}
         output: "/github/workspace/index-digest.sha256"
-        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Parse Configs
       id: parse_configs
