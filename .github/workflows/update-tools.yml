@@ -19,6 +19,7 @@ jobs:
       contents: write
     steps:
     - name: Checkout
+      # zizmor: ignore[artipacked] -- persistent credentials required for push-branch
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
     - name: Checkout Branch
