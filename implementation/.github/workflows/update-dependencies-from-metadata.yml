@@ -189,7 +189,7 @@ jobs:
     #   AND:
     #   (3) there is at least one version to compile/test
     if: ${{ needs.retrieve.outputs.compilation-length > 0 && (needs.get-compile-and-test.outputs.should-compile == 'true' || needs.get-compile-and-test.outputs.should-test == 'true') }}
-    uses: ./.github/workflows/compile-dependency.yml
+    uses: $/.github/workflows/compile-dependency.yml
     with:
       version: "${{ matrix.includes.version }}"
       target: "${{ matrix.includes.target }}"
