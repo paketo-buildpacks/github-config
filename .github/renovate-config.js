@@ -1,4 +1,7 @@
 module.exports = {
+    extends: [
+        'helpers:pinGitHubActionDigests',
+    ],
     username: 'paketo-bot',
     gitAuthor: 'paketo-bot <paketobuildpacks@gmail.com>',
     onboarding: false,
