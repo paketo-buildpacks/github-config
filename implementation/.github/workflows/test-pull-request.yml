@@ -63,7 +63,7 @@ jobs:
 
     - name: Free Disk Space
       if: vars.RECLAIM_DISK_SPACE == 'true'
-      uses: paketo-buildpacks/github-config/actions/pull-request/reclaim-disk-space@main
+      uses: paketo-buildpacks/github-config/actions/pull-request/reclaim-disk-space@abd8fa885780f56a5151250820a9835d2d25efb0 # main
       with:
         tool-cache: false
         android: true

@@ -20,7 +20,7 @@ jobs:
         id: drafts
         env:
           GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
-        uses: paketo-buildpacks/github-config/actions/release/publish-drafts@main
+        uses: paketo-buildpacks/github-config/actions/release/publish-drafts@abd8fa885780f56a5151250820a9835d2d25efb0 # main
         with:
           repo: ${{ github.repository }}
 
@@ -34,7 +34,7 @@ jobs:
       issues: write
     steps:
       - name: File Failure Alert Issue
-        uses: paketo-buildpacks/github-config/actions/issue/file@main
+        uses: paketo-buildpacks/github-config/actions/issue/file@abd8fa885780f56a5151250820a9835d2d25efb0 # main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           repo: ${{ github.repository }}
