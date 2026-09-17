@@ -13,5 +13,15 @@
         "<!-- {\"depName\":\"{{depName}}\",\"currentVersion\":\"{{#unless (containsString currentVersion 'v')}}v{{/unless}}{{currentVersion}}\",\"newVersion\":\"{{prettyNewVersion}}\"} -->"
     ],
     "prConcurrentLimit": 0,
-    "prHourlyLimit": 0
+    "prHourlyLimit": 0,
+    "github-actions": {
+        "packageRules": [
+            {
+                "matchPackageNames": [
+                    "!paketo-buildpacks/github-config"
+                ],
+                "enabled": false
+            }
+        ]
+    }
 }
