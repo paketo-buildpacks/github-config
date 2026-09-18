@@ -25,6 +25,12 @@
             ],
             "matchUpdateTypes": ["minor", "patch"],
             "matchManagers": ["gomod"]
+        },
+        {
+            "matchPackageNames": [
+                "!paketo-buildpacks/github-config"
+            ],
+            "enabled": false
         }
     ],
     "customManagers": [

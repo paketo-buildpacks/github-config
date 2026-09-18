@@ -19,6 +19,12 @@
                 "dependencies",
                 "go"
             ]
+        },
+        {
+            "matchPackageNames": [
+                "!paketo-buildpacks/github-config"
+            ],
+            "enabled": false
         }
     ]
 }

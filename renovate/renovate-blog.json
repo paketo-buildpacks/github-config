@@ -2,5 +2,15 @@
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "enabledManagers": [
         "github-actions"
-    ]
+    ],
+    "github-actions": {
+        "packageRules": [
+            {
+                "matchPackageNames": [
+                    "!paketo-buildpacks/github-config"
+                ],
+                "enabled": false
+            }
+        ]
+    }
 }
