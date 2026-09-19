@@ -35,7 +35,7 @@ runs:
   steps:
     - name: Find Asset
       id: find
-      uses: paketo-buildpacks/github-config/actions/release/find-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/find-asset@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         asset_pattern: ${{ inputs.asset_pattern }}
         search_depth: ${{ inputs.search_depth }}
@@ -47,7 +47,7 @@ runs:
     - name: Download Asset
       id: download
       if: ${{ steps.find.outputs.url != '' }}
-      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/download-asset@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         url: ${{ steps.find.outputs.url }}
         output: ${{ inputs.output_path }}

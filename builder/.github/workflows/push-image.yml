@@ -100,7 +100,7 @@ jobs:
     if: ${{ always() && needs.push.result == 'failure' }}
     steps:
     - name: File Failure Alert Issue
-      uses: paketo-buildpacks/github-config/actions/issue/file@main
+      uses: paketo-buildpacks/github-config/actions/issue/file@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         repo: ${{ github.repository }}
