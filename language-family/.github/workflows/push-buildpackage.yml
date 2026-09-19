@@ -34,7 +34,7 @@ jobs:
         echo "download_tgz_file_url=$(jq -r '.release.assets[] | select(.name | endswith(".tgz")) | .url' "${GITHUB_EVENT_PATH}")" >> "$GITHUB_OUTPUT"
 
     - name: Download .tgz buildpack release artifact
-      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/download-asset@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         url: ${{ steps.event.outputs.download_tgz_file_url }}
         output: "/github/workspace/buildpack-release-artifact.tgz"
@@ -132,7 +132,7 @@ jobs:
     if: ${{ always() && needs.push.result == 'failure' }}
     steps:
     - name: File Failure Alert Issue
-      uses: paketo-buildpacks/github-config/actions/issue/file@main
+      uses: paketo-buildpacks/github-config/actions/issue/file@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         repo: ${{ github.repository }}

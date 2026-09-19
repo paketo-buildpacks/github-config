@@ -70,14 +70,14 @@ jobs:
         fetch-tags: true
     - name: Reset Draft Release
       id: reset
-      uses: paketo-buildpacks/github-config/actions/release/reset-draft@main
+      uses: paketo-buildpacks/github-config/actions/release/reset-draft@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         repo: ${{ github.repository }}
         token: ${{ github.token }}
     - name: Calculate Semver Tag
       if: github.event.inputs.version == ''
       id: semver
-      uses: paketo-buildpacks/github-config/actions/tag/calculate-semver@main
+      uses: paketo-buildpacks/github-config/actions/tag/calculate-semver@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         repo: ${{ github.repository }}
         token: ${{ github.token }}
@@ -94,12 +94,12 @@ jobs:
       run: ./scripts/package.sh --version "${{ steps.tag.outputs.tag }}"
     - name: Create Release Notes
       id: create-release-notes
-      uses: paketo-buildpacks/github-config/actions/release/notes@main
+      uses: paketo-buildpacks/github-config/actions/release/notes@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         repo: ${{ github.repository }}
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
     - name: Create Draft Release
-      uses: paketo-buildpacks/github-config/actions/release/create@main
+      uses: paketo-buildpacks/github-config/actions/release/create@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         repo: ${{ github.repository }}
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
@@ -129,7 +129,7 @@ jobs:
     if: ${{ always() && needs.integration.result == 'failure' || needs.release.result == 'failure' }}
     steps:
     - name: File Failure Alert Issue
-      uses: paketo-buildpacks/github-config/actions/issue/file@main
+      uses: paketo-buildpacks/github-config/actions/issue/file@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         repo: ${{ github.repository }}

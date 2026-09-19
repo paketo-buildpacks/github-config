@@ -25,12 +25,12 @@ jobs:
         path: github-config
 
     - name: Checkout Branch
-      uses: paketo-buildpacks/github-config/actions/pull-request/checkout-branch@main
+      uses: paketo-buildpacks/github-config/actions/pull-request/checkout-branch@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         branch: automation/github-config/update
 
     - name: Run the sync action
-      uses: paketo-buildpacks/github-config/actions/sync@main
+      uses: paketo-buildpacks/github-config/actions/sync@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         workspace: /github/workspace
         config: /github/workspace/github-config/language-family
@@ -40,7 +40,7 @@ jobs:
 
     - name: Commit
       id: commit
-      uses: paketo-buildpacks/github-config/actions/pull-request/create-commit@main
+      uses: paketo-buildpacks/github-config/actions/pull-request/create-commit@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         message: "Updating github-config"
         pathspec: "."
@@ -49,13 +49,13 @@ jobs:
 
     - name: Push Branch
       if: ${{ steps.commit.outputs.commit_sha != '' }}
-      uses: paketo-buildpacks/github-config/actions/pull-request/push-branch@main
+      uses: paketo-buildpacks/github-config/actions/pull-request/push-branch@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         branch: automation/github-config/update
 
     - name: Open Pull Request
       if: ${{ steps.commit.outputs.commit_sha != '' }}
-      uses: paketo-buildpacks/github-config/actions/pull-request/open@main
+      uses: paketo-buildpacks/github-config/actions/pull-request/open@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
         title: "Updates github-config"
@@ -68,7 +68,7 @@ jobs:
     if: ${{ always() && needs.build.result == 'failure' }}
     steps:
     - name: File Failure Alert Issue
-      uses: paketo-buildpacks/github-config/actions/issue/file@main
+      uses: paketo-buildpacks/github-config/actions/issue/file@9009c0d6ac013a3795908732d2d445fa40473a26 # main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         repo: ${{ github.repository }}
