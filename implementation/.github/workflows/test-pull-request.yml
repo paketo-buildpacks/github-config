@@ -17,6 +17,7 @@ jobs:
   unit:
     name: Unit Tests
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     outputs:
       builders: ${{ steps.builders.outputs.builders }}
     steps:
@@ -47,6 +48,7 @@ jobs:
   integration:
     name: Integration Tests with Builders
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     needs: unit
     permissions:
       contents: read
@@ -95,6 +97,7 @@ jobs:
     name: Integration Tests
     if: ${{ always() }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: integration
     steps:
     - run: |
@@ -112,6 +115,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       actions: write
+    timeout-minutes: 5
     steps:
     - name: Upload Artifact
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

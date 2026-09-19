@@ -15,6 +15,7 @@ jobs:
   push:
     name: Push
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     env:
       GCR_REGISTRY: "gcr.io"
       GCR_PASSWORD: ${{ secrets.GCR_PUSH_BOT_JSON_KEY }}
@@ -24,7 +25,6 @@ jobs:
       DOCKERHUB_PASSWORD: ${{ secrets.PAKETO_BUILDPACKS_DOCKERHUB_PASSWORD }}
 
     steps:
-
     - name: Checkout
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
@@ -182,6 +182,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [push]
     if: ${{ always() && needs.push.result == 'failure' }}
     permissions:

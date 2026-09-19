@@ -1,4 +1,5 @@
 name: Set / Validate PR Labels
+
 on:
   pull_request_target:
     branches:
@@ -19,6 +20,7 @@ jobs:
     permissions:
       issues: read
       pull-requests: read
+    timeout-minutes: 5
     steps:
     - name: Check Minimal Semver Labels
       uses: mheap/github-action-required-labels@23e10fde7e062233401931a0eece796cd9bf3177 # v5

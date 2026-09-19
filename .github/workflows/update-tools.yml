@@ -1,4 +1,3 @@
----
 name: Update Tools
 
 on:
@@ -17,6 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+    timeout-minutes: 30
     steps:
     - name: Checkout
       # zizmor: ignore[artipacked] -- persistent credentials required for push-branch
@@ -143,10 +143,10 @@ jobs:
         title: "Updates tools"
         branch: automation/tools/update
 
-
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [update]
     if: ${{ always() && needs.update.result == 'failure' }}
     permissions:

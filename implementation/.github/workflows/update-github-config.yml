@@ -14,8 +14,8 @@ jobs:
   build:
     name: Create PR to update shared files
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-
     - name: Checkout
       # zizmor: ignore[artipacked] -- persistent credentials required for push-branch
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -69,6 +69,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [build]
     if: ${{ always() && needs.build.result == 'failure' }}
     permissions:
