@@ -7,7 +7,7 @@
         "packageRules": [
             {
                 "matchPackageNames": [
-                    "!paketo-buildpacks/github-config"
+                    "paketo-buildpacks/*"
                 ],
                 "enabled": false
             }
