@@ -211,7 +211,7 @@ jobs:
       uses: docker/setup-buildx-action@v4
 
     - name: Download ${{ matrix.oci_image.name }} Image
-      uses: paketo-buildpacks/github-config/actions/release/download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/download-asset@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         url: "${{ matrix.oci_image.oci_asset_url }}"
         output: "./saved_image.oci"
@@ -272,7 +272,7 @@ jobs:
     if: ${{ always() && needs.push.result == 'failure' }}
     steps:
     - name: File Failure Alert Issue
-      uses: paketo-buildpacks/github-config/actions/issue/file@main
+      uses: paketo-buildpacks/github-config/actions/issue/file@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         repo: ${{ github.repository }}

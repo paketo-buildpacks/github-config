@@ -308,7 +308,7 @@ jobs:
     if: ${{ always() && needs.smoke.result == 'failure' ||  needs.release.result == 'failure' || needs.get_builders_info.result == 'failure' || needs.preparation.result == 'failure' }}
     steps:
     - name: File Failure Alert Issue
-      uses: paketo-buildpacks/github-config/actions/issue/file@main
+      uses: paketo-buildpacks/github-config/actions/issue/file@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         repo: ${{ github.repository }}

@@ -23,41 +23,41 @@ jobs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
     - name: Checkout Branch
-      uses: paketo-buildpacks/github-config/actions/pull-request/checkout-branch@main
+      uses: paketo-buildpacks/github-config/actions/pull-request/checkout-branch@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         branch: automation/tools/update
 
     - name: Fetch Latest Jam
       id: latest-jam
-      uses: paketo-buildpacks/github-config/actions/tools/latest@main
+      uses: paketo-buildpacks/github-config/actions/tools/latest@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
         repo: paketo-buildpacks/jam
 
     - name: Fetch Latest pack
       id: latest-pack
-      uses: paketo-buildpacks/github-config/actions/tools/latest@main
+      uses: paketo-buildpacks/github-config/actions/tools/latest@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
         repo: buildpacks/pack
 
     - name: Fetch Latest libpak-tools
       id: latest-libpak-tools
-      uses: paketo-buildpacks/github-config/actions/tools/latest@main
+      uses: paketo-buildpacks/github-config/actions/tools/latest@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
         repo: paketo-buildpacks/libpak-tools
 
     - name: Fetch Latest syft
       id: latest-syft
-      uses: paketo-buildpacks/github-config/actions/tools/latest@main
+      uses: paketo-buildpacks/github-config/actions/tools/latest@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
         repo: anchore/syft
 
     - name: Fetch Latest crane
       id: latest-crane
-      uses: paketo-buildpacks/github-config/actions/tools/latest@main
+      uses: paketo-buildpacks/github-config/actions/tools/latest@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
         repo: google/go-containerregistry
@@ -122,7 +122,7 @@ jobs:
 
     - name: Commit
       id: commit
-      uses: paketo-buildpacks/github-config/actions/pull-request/create-commit@main
+      uses: paketo-buildpacks/github-config/actions/pull-request/create-commit@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         message: "Updating tools"
         pathspec: "."
@@ -131,13 +131,13 @@ jobs:
 
     - name: Push Branch
       if: ${{ steps.commit.outputs.commit_sha != '' }}
-      uses: paketo-buildpacks/github-config/actions/pull-request/push-branch@main
+      uses: paketo-buildpacks/github-config/actions/pull-request/push-branch@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         branch: automation/tools/update
 
     - name: Open Pull Request
       if: ${{ steps.commit.outputs.commit_sha != '' }}
-      uses: paketo-buildpacks/github-config/actions/pull-request/open@main
+      uses: paketo-buildpacks/github-config/actions/pull-request/open@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
         title: "Updates tools"
@@ -154,7 +154,7 @@ jobs:
       issues: write
     steps:
     - name: File Failure Alert Issue
-      uses: paketo-buildpacks/github-config/actions/issue/file@main
+      uses: paketo-buildpacks/github-config/actions/issue/file@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         repo: ${{ github.repository }}

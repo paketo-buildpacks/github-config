@@ -214,7 +214,7 @@ jobs:
     if: ${{ needs.preparation.outputs.polling_type == 'usn' }}
     steps:
       - name: Download latest USNs
-        uses: paketo-buildpacks/github-config/actions/stack/download-latest-usns@main
+        uses: paketo-buildpacks/github-config/actions/stack/download-latest-usns@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
         with:
           distro: ${{ needs.preparation.outputs.os_codename }}
           usns-output-path: "${{ github.workspace }}/${{ env.USNS_NOTICES_ARTIFACT }}.json"
@@ -312,7 +312,7 @@ jobs:
     - name: Find and Download Previous Build Receipt
       if: ${{ matrix.stacks.create_build_image == true && matrix.arch.is_new == false && matrix.stacks.is_new == false && steps.check_previous.outputs.exists == 'true' }}
       id: previous_build
-      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         asset_pattern: "${{ steps.receipt_pattern.outputs.build }}"
         search_depth: 1
@@ -324,7 +324,7 @@ jobs:
     - name: Find and Download Previous Run Receipt
       if: ${{ matrix.arch.is_new == false && matrix.stacks.is_new == false && steps.check_previous.outputs.exists == 'true' }}
       id: previous_run
-      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         asset_pattern: "${{ steps.receipt_pattern.outputs.run }}"
         search_depth: 1
@@ -341,7 +341,7 @@ jobs:
     - name: Get Package List
       id: packages
       if: ${{ steps.previous_run.outputs.output_path != '' }}
-      uses: paketo-buildpacks/github-config/actions/stack/generate-package-list@main
+      uses: paketo-buildpacks/github-config/actions/stack/generate-package-list@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         build_receipt: "${{ github.workspace }}/${{ matrix.arch.name }}-previous-build-receipt-${{ matrix.stacks.name }}"
         run_receipt: "${{ github.workspace }}/${{ matrix.arch.name }}-previous-run-receipt-${{ matrix.stacks.name }}"
@@ -397,7 +397,7 @@ jobs:
     - name: Find and Download Previous Patched USNs
       if: ${{ steps.check_previous.outputs.exists == 'true' && matrix.arch.is_new == false && matrix.stacks.is_new == false }}
       id: download_patched
-      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         asset_pattern: "${{ steps.usn_download_pattern.outputs.pattern }}"
         search_depth: "-1"   # Search all releases
@@ -407,7 +407,7 @@ jobs:
 
     - name: Get New USNs
       id: usns
-      uses: paketo-buildpacks/github-config/actions/stack/get-usns@main
+      uses: paketo-buildpacks/github-config/actions/stack/get-usns@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         distribution: ${{ needs.preparation.outputs.os_codename }}
         api_url: "file:///github/workspace/${{ env.USNS_NOTICES_ARTIFACT }}.json"
@@ -482,7 +482,7 @@ jobs:
 
     - name: Find and Download Previous build image hash code of stack ${{ matrix.stacks.build_image }}
       if: ${{ matrix.stacks.create_build_image == true }}
-      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         asset_pattern: "${{ steps.hashcode_pattern.outputs.build }}"
         search_depth: 1
@@ -491,7 +491,7 @@ jobs:
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Find and Download Previous run image hash code of stack ${{ matrix.stacks.run_image }}
-      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         asset_pattern: "${{ steps.hashcode_pattern.outputs.run }}"
         search_depth: 1
@@ -786,7 +786,7 @@ jobs:
 
     - name: Find and Download Previous Build Receipt
       if: ${{ matrix.stacks.create_build_image == true &&  steps.check_previous.outputs.exists == 'true' && matrix.arch.is_new == false && matrix.stacks.is_new == false }}
-      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         asset_pattern: "${{ steps.previous_receipt_download_pattern.outputs.build_filename }}"
         search_depth: 1
@@ -796,7 +796,7 @@ jobs:
 
     - name: Find and Download Previous Run Receipt
       if: ${{  steps.check_previous.outputs.exists == 'true' && matrix.arch.is_new == false && matrix.stacks.is_new == false }}
-      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
+      uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         asset_pattern: "${{ steps.previous_receipt_download_pattern.outputs.run_filename }}"
         search_depth: 1
@@ -807,7 +807,7 @@ jobs:
     - name: Compare Build Packages
       id: build_diff
       if: ${{ matrix.stacks.create_build_image == true }}
-      uses: paketo-buildpacks/github-config/actions/stack/diff-package-receipts@main
+      uses: paketo-buildpacks/github-config/actions/stack/diff-package-receipts@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         previous: "/github/workspace/${{ matrix.arch.name }}-previous-build-receipt-${{ matrix.stacks.name }}"
         current: "receipt-files/current-build-receipt-${{ matrix.stacks.name }}/${{ matrix.arch.name }}-current-build-receipt-${{ matrix.stacks.name }}"
@@ -817,7 +817,7 @@ jobs:
 
     - name: Compare Run Packages
       id: run_diff
-      uses: paketo-buildpacks/github-config/actions/stack/diff-package-receipts@main
+      uses: paketo-buildpacks/github-config/actions/stack/diff-package-receipts@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         previous: "/github/workspace/${{ matrix.arch.name }}-previous-run-receipt-${{ matrix.stacks.name }}"
         current: "receipt-files/current-run-receipt-${{ matrix.stacks.name }}/${{ matrix.arch.name }}-current-run-receipt-${{ matrix.stacks.name }}"
@@ -906,7 +906,7 @@ jobs:
     - name: Increment Tag
       if: github.event.inputs.version == ''
       id: semver
-      uses: paketo-buildpacks/github-config/actions/tag/increment-tag@main
+      uses: paketo-buildpacks/github-config/actions/tag/increment-tag@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         allow_head_tagged: true
 
@@ -948,7 +948,7 @@ jobs:
 
     - name: Create Release Notes per Arch and per Stack
       id: notes_arch_stack
-      uses: paketo-buildpacks/github-config/actions/stack/release-notes@main
+      uses: paketo-buildpacks/github-config/actions/stack/release-notes@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         build_image: ${{ steps.registry_names.outputs.build_image }}
         run_image: ${{ steps.registry_names.outputs.run_image }}
@@ -1148,7 +1148,7 @@ jobs:
     - name: Increment Tag
       if: github.event.inputs.version == ''
       id: semver
-      uses: paketo-buildpacks/github-config/actions/tag/increment-tag@main
+      uses: paketo-buildpacks/github-config/actions/tag/increment-tag@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         allow_head_tagged: true
 
@@ -1488,7 +1488,7 @@ jobs:
         echo "release_body=release_notes.md" >> "$GITHUB_OUTPUT"
 
     - name: Create Release
-      uses: paketo-buildpacks/github-config/actions/release/create@main
+      uses: paketo-buildpacks/github-config/actions/release/create@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         repo: ${{ github.repository }}
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
@@ -1506,7 +1506,7 @@ jobs:
     if: ${{ always() && needs.preparation.result == 'failure' || needs.poll_images.result == 'failure' || needs.poll_usns.result == 'failure' || needs.create_stack.result == 'failure' || needs.diff.result == 'failure' || needs.test.result == 'failure' || needs.release.result == 'failure' }}
     steps:
     - name: File Failure Alert Issue
-      uses: paketo-buildpacks/github-config/actions/issue/file@main
+      uses: paketo-buildpacks/github-config/actions/issue/file@867f63ecb8428a4f1f8f99bb8907b06e347b4275 # main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         repo: ${{ github.repository }}
