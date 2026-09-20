@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: '57 13 * * *'  # daily at 13:57 UTC
 
+concurrency:
+  group: update-dependencies-from-metadata
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -14,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      actions: write
+      actions: write # upload the generated metadata artifacts
     outputs:
       metadata-filepath: ${{ steps.retrieve.outputs.metadata-filepath }}
       metadata-json: ${{ steps.retrieve.outputs.metadata-json }}
@@ -50,7 +54,7 @@ jobs:
           OUTPUT="/tmp/metadata.json"
 
           make retrieve \
-            buildpackTomlPath="${{ github.workspace }}/buildpack.toml" \
+            buildpackTomlPath="${GITHUB_WORKSPACE}/buildpack.toml" \
             output="${OUTPUT}"
 
           id=$(jq -r .[0].id < "${OUTPUT}")
@@ -179,7 +183,7 @@ jobs:
       - get-compile-and-test
     permissions:
       contents: read
-      actions: write
+      actions: write # upload the compiled dependency artifacts
     strategy:
       matrix:
         includes: ${{ fromJSON(needs.retrieve.outputs.compilation-json) }}
@@ -208,7 +212,7 @@ jobs:
       - compile
     permissions:
       contents: read
-      actions: write
+      actions: write # upload the updated metadata artifacts
     strategy:
       matrix:
         includes: ${{ fromJSON(needs.retrieve.outputs.compilation-json) }}
@@ -265,17 +269,22 @@ jobs:
       # Due to limitations with the upload action, we can no longer modify/upload the same metadata file
       - name: Write dependency-specific metadata to new file
         id: dependency-metadata
+        env:
+          TARGET: ${{ matrix.includes.target }}
+          VERSION: ${{ matrix.includes.version }}
+          OS: ${{ matrix.includes.os }}
+          ARCH: ${{ matrix.includes.arch }}
         run: |
           #!/usr/bin/env bash
           set -euo pipefail
           shopt -s inherit_errexit
 
-          metadata_file_name="${{ matrix.includes.target }}-${{ matrix.includes.version }}-${{ matrix.includes.os != '' && matrix.includes.os || 'linux' }}-${{ matrix.includes.arch != '' && matrix.includes.arch || 'amd64' }}-metadata-file.json"
-          if [[ -z "${{ matrix.includes.os }}" && -z "${{ matrix.includes.arch }}" ]]; then
-            cat metadata.json | jq -r ['.[] | select( .version == "${{ matrix.includes.version }}" and .target == "${{ matrix.includes.target }}")'] > $metadata_file_name
+          metadata_file_name="${TARGET}-${VERSION}-${OS:-linux}-${ARCH:-amd64}-metadata-file.json"
+          if [[ -z "${OS}" && -z "${ARCH}" ]]; then
+            cat metadata.json | jq -r --arg version "${VERSION}" --arg target "${TARGET}" '[.[] | select( .version == $version and .target == $target )]' > $metadata_file_name
           else
             echo "multi-arch buildpack with os and arch specified"
-            cat metadata.json | jq -r ['.[] | select( .version == "${{ matrix.includes.version }}" and .target == "${{ matrix.includes.target }}" and .os == "${{ matrix.includes.os }}" and .arch == "${{ matrix.includes.arch }}")'] > $metadata_file_name
+            cat metadata.json | jq -r --arg version "${VERSION}" --arg target "${TARGET}" --arg os "${OS}" --arg arch "${ARCH}" '[.[] | select( .version == $version and .target == $target and .os == $os and .arch == $arch )]' > $metadata_file_name
           fi
           echo "file=$(echo $metadata_file_name)" >> "$GITHUB_OUTPUT"
 
@@ -306,7 +315,7 @@ jobs:
       - update-metadata
     permissions:
       contents: read
-      actions: read
+      actions: read # download the metadata artifacts
     # Update buildpack.toml only if ALL of the following conditions are met:
     #   (1) Retrieval step has succeeded and has found at least 1 new version
     #   (2) Testing step has succeeded OR been skipped
@@ -403,7 +412,7 @@ jobs:
     if: ${{ always() && needs.retrieve.result == 'failure' || needs.get-compile-and-test.result == 'failure' || needs.test.result == 'failure' || needs.compile.result == 'failure' || needs.update-metadata.result == 'failure' || needs.assemble.result == 'failure' }}
     permissions:
       contents: read
-      issues: write
+      issues: write # file a failure alert issue
     steps:
       - name: File Failure Alert Issue
         uses: paketo-buildpacks/github-config/actions/issue/file@main

@@ -38,9 +38,9 @@ jobs:
     - name: Get builders from integration.json
       id: builders
       run: |
-        source "${{ github.workspace }}/scripts/.util/builders.sh"
+        source "${GITHUB_WORKSPACE}/scripts/.util/builders.sh"
 
-        builders="$(util::builders::list "${{ github.workspace }}/integration.json")"
+        builders="$(util::builders::list "${GITHUB_WORKSPACE}/integration.json")"
         printf "Output: %s\n" "${builders}"
         printf "builders=%s\n" "${builders}" >> "$GITHUB_OUTPUT"
 
@@ -50,7 +50,7 @@ jobs:
     needs: unit
     permissions:
       contents: read
-      packages: read
+      packages: read # pull builder images for integration tests
     strategy:
       matrix:
         builder: ${{ fromJSON(needs.unit.outputs.builders) }}
@@ -97,8 +97,10 @@ jobs:
     runs-on: ubuntu-24.04
     needs: integration
     steps:
-    - run: |
-        result="${{ needs.integration.result }}"
+    - env:
+        RESULT: ${{ needs.integration.result }}
+      run: |
+        result="${RESULT}"
         if [[ $result == "success" ]]; then
           echo "Integration tests passed against all builders"
           exit 0
@@ -111,7 +113,7 @@ jobs:
     name: Upload Workflow Event Payload
     runs-on: ubuntu-24.04
     permissions:
-      actions: write
+      actions: write # upload the workflow event payload artifact
     steps:
     - name: Upload Artifact
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

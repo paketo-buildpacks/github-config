@@ -5,6 +5,10 @@ on:
     types:
     - published
 
+concurrency:
+  group: push-buildpackage
+  cancel-in-progress: false
+
 env:
   REGISTRIES_FILENAME: "registries.json"
 
@@ -67,7 +71,7 @@ jobs:
     - name: Parse Configs
       id: parse_configs
       run: |
-        registries_filename="${{ env.REGISTRIES_FILENAME }}"
+        registries_filename="${REGISTRIES_FILENAME}"
 
         push_to_dockerhub=true
         push_to_gcr=false
@@ -172,7 +176,7 @@ jobs:
         sudo skopeo copy "docker://${DOCKERHUB_REGISTRY}/${PUSH_IMAGE}" "docker://${GCR_REGISTRY}/${REPOSITORY}:latest" --multi-arch all
 
     - name: Register with CNB Registry
-      uses: docker://ghcr.io/buildpacks/actions/registry/request-add-entry@sha256:de7c15d1b8606c3189f0b5699bfdfe20afe5f6a315155932e801f334b0dae8f4
+      uses: docker://ghcr.io/buildpacks/actions/registry/request-add-entry@sha256:de7c15d1b8606c3189f0b5699bfdfe20afe5f6a315155932e801f334b0dae8f4 # main
       with:
         id: ${{ github.repository }}
         version: ${{ steps.event.outputs.tag_full }}
@@ -186,7 +190,7 @@ jobs:
     if: ${{ always() && needs.push.result == 'failure' }}
     permissions:
       contents: read
-      issues: write
+      issues: write # file a failure alert issue
     steps:
     - name: File Failure Alert Issue
       uses: paketo-buildpacks/github-config/actions/issue/file@main

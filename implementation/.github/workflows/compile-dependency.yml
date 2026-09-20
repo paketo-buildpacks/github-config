@@ -36,13 +36,16 @@ on:
         type: string
 
 permissions:
-  actions: write
   contents: read
 
 jobs:
   compile:
+    name: Compile dependency
     # Speed up compilation by using runners that match os and arch when they are set, otherwise fall back to emulation.
     runs-on: ${{ (inputs.os == 'linux' && inputs.arch == 'arm64') && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    permissions:
+      actions: write # upload the compiled dependency artifact
+      contents: read
 
     steps:
     - name: Check out code

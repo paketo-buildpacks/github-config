@@ -6,8 +6,12 @@ on:
     types:
     - completed
 
+concurrency:
+  group: approve-bot-pr
+  cancel-in-progress: false
+
 permissions:
-  actions: read
+  actions: read # download the event artifact from the triggering workflow run
   contents: read
 
 jobs:
