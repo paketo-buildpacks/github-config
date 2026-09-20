@@ -1,6 +1,6 @@
 module.exports = {
     extends: [
-        'helpers:pinGitHubActionDigests',
+        'helpers:pinGitHubActionDigestsToSemver',
     ],
     username: 'paketo-bot',
     gitAuthor: 'paketo-bot <paketobuildpacks@gmail.com>',
