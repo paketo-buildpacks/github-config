@@ -30,7 +30,7 @@ jobs:
     needs: [ publish ]
     permissions:
       contents: read
-      issues: write # file a failure alert issue
+      issues: write
     if: ${{ always() && needs.publish.result == 'failure' }}
     steps:
     - name: File Failure Alert Issue
