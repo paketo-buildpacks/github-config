@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   update-buildpack-toml:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: Update buildpack.toml
     permissions:
       contents: read
@@ -69,7 +69,7 @@ jobs:
 
   failure:
     name: Alert on Failure
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [update-buildpack-toml]
     permissions:
       contents: read

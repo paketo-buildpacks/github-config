@@ -22,7 +22,7 @@ permissions:
 jobs:
   unit:
     name: Unit Tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       builders: ${{ steps.builders.outputs.builders }}
     steps:
@@ -46,7 +46,7 @@ jobs:
 
   integration:
     name: Integration Tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: unit
     permissions:
       contents: read
@@ -91,7 +91,7 @@ jobs:
 
   release:
     name: Release
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: integration
     permissions:
       contents: write # create and update the draft release
@@ -259,7 +259,7 @@ jobs:
 
   failure:
     name: Alert on Failure
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [ unit, integration, release ]
     if: ${{ always() && needs.unit.result == 'failure' || needs.integration.result == 'failure' || needs.release.result == 'failure' }}
     permissions:

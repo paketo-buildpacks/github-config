@@ -17,7 +17,7 @@ jobs:
   download:
     name: Download PR Artifact
     if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       pr-author: ${{ steps.pr-data.outputs.author }}
       pr-number: ${{ steps.pr-data.outputs.number }}
@@ -39,7 +39,7 @@ jobs:
     name: Approve Bot PRs
     needs: download
     if: ${{ needs.download.outputs.pr-author == 'paketo-bot' || needs.download.outputs.pr-author == 'dependabot[bot]' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
     - name: Check Commit Verification
       id: unverified-commits

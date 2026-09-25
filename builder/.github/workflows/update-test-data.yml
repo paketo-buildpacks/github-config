@@ -13,7 +13,7 @@ env:
 jobs:
   build:
     name: Create PR to sync test data with the samples
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
 
     - name: Checkout
@@ -123,7 +123,7 @@ jobs:
 
   failure:
     name: Alert on Failure
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [build]
     if: ${{ always() && needs.build.result == 'failure' }}
     steps:
