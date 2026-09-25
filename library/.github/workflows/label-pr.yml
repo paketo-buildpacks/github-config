@@ -16,7 +16,7 @@ concurrency: pr_labels_${{ github.event.number }}
 jobs:
   autolabel:
     name: Ensure Minimal Semver Labels
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
     - name: Check Minimal Semver Labels
       uses: mheap/github-action-required-labels@23e10fde7e062233401931a0eece796cd9bf3177 # v5.6.0

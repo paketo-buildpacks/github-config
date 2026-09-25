@@ -10,7 +10,7 @@ env:
 jobs:
   preparation:
     name: Preparation
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       stacks: ${{ steps.get-stacks.outputs.stacks }}
 
@@ -51,7 +51,7 @@ jobs:
   create_stack:
     name: Create Stack
     needs: [ preparation ]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         stacks: ${{ fromJSON(needs.preparation.outputs.stacks) }}
@@ -96,7 +96,7 @@ jobs:
   test:
     name: Acceptance Test
     needs: [ preparation, create_stack ]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
     - name: Setup Go
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
@@ -144,7 +144,7 @@ jobs:
 
   upload:
     name: Upload Workflow Event Payload
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
     - name: Upload Artifact
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
