@@ -263,8 +263,7 @@ jobs:
       with:
         config-name: release-drafter-config.yml
         publish: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Update Release Notes
       run: |
