@@ -11,7 +11,7 @@ env:
 jobs:
   preparation:
     name: Preparation
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       builders: ${{ steps.get-builders.outputs.builders }}
       tag: ${{ steps.event.outputs.tag }}
@@ -58,7 +58,7 @@ jobs:
   push:
     name: Push
     needs: preparation
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         builders: ${{ fromJSON(needs.preparation.outputs.builders) }}
@@ -95,7 +95,7 @@ jobs:
 
   failure:
     name: Alert on Failure
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [push]
     if: ${{ always() && needs.push.result == 'failure' }}
     steps:
