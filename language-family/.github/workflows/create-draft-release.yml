@@ -22,7 +22,7 @@ permissions:
 jobs:
   builders:
     name: Get Builders for Testing
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       builders: ${{ steps.builders.outputs.builders }}
     steps:
@@ -40,7 +40,7 @@ jobs:
         printf "builders=%s\n" "${builders}" >> "$GITHUB_OUTPUT"
   integration:
     name: Integration Tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [builders]
     strategy:
       matrix:
@@ -71,7 +71,7 @@ jobs:
 
   release:
     name: Release
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: integration
     permissions:
       contents: write # create and update the draft release
@@ -142,7 +142,7 @@ jobs:
 
   failure:
     name: Alert on Failure
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [ integration, release ]
     permissions:
       contents: read
