@@ -6,7 +6,7 @@ toolchain go1.27.1
 
 require (
 	github.com/Masterminds/semver/v3 v3.5.0
-	github.com/onsi/gomega v1.43.1
+	github.com/onsi/gomega v1.44.0
 	github.com/sclevine/spec v1.4.0
 	golang.org/x/oauth2 v0.37.0
 )
