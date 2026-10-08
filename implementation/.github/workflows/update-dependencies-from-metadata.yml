@@ -77,13 +77,13 @@ jobs:
           echo "compilation-length=$complength" >> "$GITHUB_OUTPUT"
 
       - name: Upload `${{ steps.retrieve.outputs.metadata-filepath }}`
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: metadata.json
           path: ${{ steps.retrieve.outputs.metadata-filepath }}
 
       - name: Upload `${{ steps.retrieve.outputs.from-source-metadata-filepath }}`
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: from-source-metadata.json
           path: ${{ steps.retrieve.outputs.from-source-metadata-filepath }}
@@ -301,7 +301,7 @@ jobs:
           arch: ${{ matrix.includes.arch }}
 
       - name: Upload modified metadata
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.dependency-metadata.outputs.file }}
           path: ${{ steps.dependency-metadata.outputs.file }}
