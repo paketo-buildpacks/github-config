@@ -130,6 +130,10 @@ function rules() {
     valid=1
   fi
 
+  if ! rules::reviews::last_push_approval "$(jq .required_pull_request_reviews.require_last_push_approval <<< "${json}")"; then
+    valid=1
+  fi
+
   if ! rules::checks::strict "$(jq .required_status_checks.strict <<< "${json}")"; then
     valid=1
   fi
@@ -199,6 +203,16 @@ function rules::reviews::codeowner() {
 
   if [[ "${codeowner_review}" != "true" ]]; then
     util::print::yellow 'Merging: Require review from a codeowner - not enabled'
+    return 1
+  fi
+}
+
+function rules::reviews::last_push_approval() {
+  local last_push_approval
+  last_push_approval="${1}"
+
+  if [[ "${last_push_approval}" != "true" ]]; then
+    util::print::yellow 'Merging: Require approval of the most recent reviewable push - not enabled'
     return 1
   fi
 }
