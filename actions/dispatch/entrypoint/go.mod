@@ -2,7 +2,7 @@ module github.com/paketo-buildpacks/github-config/actions/dispatch/entrypoint
 
 go 1.25.0
 
-toolchain go1.27.1
+toolchain go1.27.2
 
 require (
 	github.com/onsi/gomega v1.39.1
