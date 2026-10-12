@@ -3,6 +3,10 @@
     "extends": [
         ":gomod"
     ],
+    "ignorePaths": [
+        "builder/.github/workflows/create-release.yml",
+        "stack/.github/workflows/create-release.yml"
+    ],
     "postUpdateOptions": [
       "gomodUpdateImportPaths",
       "gomodTidy"
