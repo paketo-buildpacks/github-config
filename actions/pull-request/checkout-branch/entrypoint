@@ -3,11 +3,19 @@ set -euo pipefail
 shopt -s inherit_errexit
 
 function main() {
-  local branch start_point
+  local branch start_point token
+  branch=""
+  start_point=""
+  token=""
   while [ "${#}" != 0 ]; do
     case "${1}" in
       --branch)
         branch="${2}"
+        shift 2
+        ;;
+
+      --token)
+        token="${2}"
         shift 2
         ;;
 
@@ -27,14 +35,24 @@ function main() {
   done
 
   git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-  git fetch origin
+
+  local git_auth=()
+  if [[ -n "${token}" ]]; then
+    local auth_header
+    auth_header="AUTHORIZATION: basic $(printf '%s' "x-access-token:${token}" | base64 | tr -d '\n')"
+    git_auth=(-c "http.https://github.com/.extraheader=${auth_header}")
+  else
+    echo "warning: no token was provided, git fetch/pull will run unauthenticated and may be subject to rate limiting" >&2
+  fi
+
+  git "${git_auth[@]}" fetch origin
 
   if [[ -n "${start_point}" ]]; then
     git checkout -b "${branch}" "${start_point}"
   else
     if git branch -a | grep "${branch}"; then
       git checkout -b "${branch}" "origin/${branch}"
-      git pull -r
+      git "${git_auth[@]}" pull -r
       chmod -R a+w .
     else
       git checkout -b "${branch}"
