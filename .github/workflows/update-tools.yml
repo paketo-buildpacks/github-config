@@ -16,16 +16,18 @@ jobs:
     name: Update
     runs-on: ubuntu-24.04
     permissions:
-      contents: write
+      contents: read
     steps:
     - name: Checkout
-      # zizmor: ignore[artipacked] -- persistent credentials required for push-branch
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
 
     - name: Checkout Branch
       uses: paketo-buildpacks/github-config/actions/pull-request/checkout-branch@main
       with:
         branch: automation/tools/update
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Fetch Latest Jam
       id: latest-jam
@@ -134,6 +136,7 @@ jobs:
       uses: paketo-buildpacks/github-config/actions/pull-request/push-branch@main
       with:
         branch: automation/tools/update
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Open Pull Request
       if: ${{ steps.commit.outputs.commit_sha != '' }}
