@@ -153,6 +153,7 @@ jobs:
     needs: [push]
     permissions:
       contents: read
+      issues: write
     if: ${{ always() && needs.push.result == 'failure' }}
     steps:
     - name: File Failure Alert Issue

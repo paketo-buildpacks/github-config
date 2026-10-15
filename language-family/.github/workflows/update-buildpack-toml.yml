@@ -74,6 +74,7 @@ jobs:
     needs: [update-buildpack-toml]
     permissions:
       contents: read
+      issues: write
     if: ${{ always() && needs.update-buildpack-toml.result == 'failure' }}
     steps:
     - name: File Failure Alert Issue

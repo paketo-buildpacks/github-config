@@ -91,6 +91,7 @@ jobs:
     needs: [update-go]
     permissions:
       contents: read
+      issues: write
     if: ${{ always() && needs.update-go.result == 'failure' }}
     steps:
     - name: File Failure Alert Issue
