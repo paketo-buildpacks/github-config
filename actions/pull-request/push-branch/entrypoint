@@ -34,21 +34,21 @@ function main() {
     esac
   done
 
-  git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-
-  local git_auth=()
-  if [[ -n "${token}" ]]; then
-    local auth_header
-    auth_header="AUTHORIZATION: basic $(printf '%s' "x-access-token:${token}" | base64 | tr -d '\n')"
-    git_auth=(-c "http.https://github.com/.extraheader=${auth_header}")
-  else
-    echo "::warning::push-branch was called without a 'token' input; falling back to persisted git credentials. This fallback is deprecated and will be removed, at which point the token will be required. Please pass 'token: \${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}'." >&2
+  if [[ -z "${token}" ]]; then
+    echo "a token is required to push a branch, but none was provided."
+    echo "please set the 'token' input on the push-branch action."
+    exit 1
   fi
 
+  git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+  local auth_header
+  auth_header="AUTHORIZATION: basic $(printf '%s' "x-access-token:${token}" | base64 | tr -d '\n')"
+
   if [[ "${force}" == "true" ]]; then
-    git "${git_auth[@]}" push origin "${branch}" --force-with-lease
+    git -c "http.https://github.com/.extraheader=${auth_header}" push origin "${branch}" --force-with-lease
   else
-    git "${git_auth[@]}" push origin "${branch}"
+    git -c "http.https://github.com/.extraheader=${auth_header}" push origin "${branch}"
   fi
 }
 
