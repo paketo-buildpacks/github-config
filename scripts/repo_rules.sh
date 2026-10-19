@@ -9,7 +9,7 @@ readonly PROGDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${PROGDIR}/.util/print.sh"
 
 function main() {
-  local repo token branch verbose
+  local repo token branch verbose repo_type
   while [[ "${#}" != 0 ]]; do
     case "${1}" in
       --repo)
@@ -24,6 +24,11 @@ function main() {
 
       --branch)
         branch="${2}"
+        shift 2
+        ;;
+
+      --repo-type)
+        repo_type="${2}"
         shift 2
         ;;
 
@@ -64,11 +69,19 @@ function main() {
     branch="main"
   fi
 
+  if [[ -z "${repo_type:-}" ]]; then
+    repo_type="implementation"
+  fi
+
+  if [[ "${repo_type}" != "implementation" && "${repo_type}" != "language-family" && "${repo_type}" != "builder" && "${repo_type}" != "stack" ]]; then
+    util::print::error "--repo-type must be one of: implementation, language-family, builder, stack"
+  fi
+
   if [[ ! "${repo}" =~ [a-z-]+/[a-z-]+ ]]; then
     util::print::error "--repo argument must match <org>/<name> format"
   fi
 
-  if rules "${token}" "${repo}" "${branch}" "${verbose}"; then
+  if rules "${token}" "${repo}" "${branch}" "${verbose}" "${repo_type}"; then
     util::print::success "Valid"
   else
     util::print::error "Invalid"
@@ -82,20 +95,22 @@ repo_rules.sh --repo <repo> --token <token> [OPTIONS]
 Validates branch protection rules for a GitHub repository.
 
 OPTIONS
-  --branch <branch>  branch to check for protection rules (default: main)
-  --help  -h         prints the command usage
-  --repo <repo>      name of the GitHub repository to check in the form <org>/<name>
-  --token <token>    GitHub token used to check the repository
-  --verbose          Print the JSON returned from the API
+  --branch <branch>        branch to check for protection rules (default: main)
+  --help  -h               prints the command usage
+  --repo <repo>            name of the GitHub repository to check in the form <org>/<name>
+  --repo-type <repo-type>  type of repo (implementation|language-family|builder|stack) (default: implementation)
+  --token <token>          GitHub token used to check the repository
+  --verbose                Print the JSON returned from the API
 USAGE
 }
 
 function rules() {
-  local token repo branch verbose json
+  local token repo branch verbose repo_type json
   token="${1}"
   repo="${2}"
   branch="${3}"
   verbose="${4}"
+  repo_type="${5}"
 
   json="$(
     curl "https://api.github.com/repos/${repo}/branches/${branch}/protection" \
@@ -130,17 +145,32 @@ function rules() {
     valid=1
   fi
 
+  if ! rules::reviews::last_push_approval "$(jq .required_pull_request_reviews.require_last_push_approval <<< "${json}")"; then
+    valid=1
+  fi
+
   if ! rules::checks::strict "$(jq .required_status_checks.strict <<< "${json}")"; then
     valid=1
   fi
 
-  if ! rules::checks::integration "$(jq '.required_status_checks.contexts | index("Integration Tests")' <<< "${json}")"; then
-    valid=1
+  if [[ "${repo_type}" == "builder" ]]; then
+    if ! rules::checks::context "Smoke Test" "$(jq '.required_status_checks.contexts | index("Smoke Test")' <<< "${json}")"; then
+      valid=1
+    fi
+  elif [[ "${repo_type}" == "stack" ]]; then
+    if ! rules::checks::context "Acceptance Test" "$(jq '.required_status_checks.contexts | index("Acceptance Test")' <<< "${json}")"; then
+      valid=1
+    fi
+  else
+    if ! rules::checks::context "Integration Tests" "$(jq '.required_status_checks.contexts | index("Integration Tests")' <<< "${json}")"; then
+      valid=1
+    fi
+
+    if ! rules::checks::context "Ensure Minimal Semver Labels" "$(jq '.required_status_checks.contexts | index("Ensure Minimal Semver Labels")' <<< "${json}")"; then
+      valid=1
+    fi
   fi
 
-  if ! rules::checks::labels "$(jq '.required_status_checks.contexts | index("Ensure Minimal Semver Labels")' <<< "${json}")"; then
-    valid=1
-  fi
 
   if ! rules::history::linear "$(jq .required_linear_history.enabled <<< "${json}")"; then
     valid=1
@@ -203,6 +233,16 @@ function rules::reviews::codeowner() {
   fi
 }
 
+function rules::reviews::last_push_approval() {
+  local last_push_approval
+  last_push_approval="${1}"
+
+  if [[ "${last_push_approval}" != "true" ]]; then
+    util::print::yellow 'Merging: Require approval of the most recent reviewable push - not enabled'
+    return 1
+  fi
+}
+
 function rules::checks::strict() {
   local status_checks
   status_checks="${1}"
@@ -213,22 +253,13 @@ function rules::checks::strict() {
   fi
 }
 
-function rules::checks::integration() {
-  local status_checks_int
-  status_checks_int="${1}"
+function rules::checks::context() {
+  local check_name index
+  check_name="${1}"
+  index="${2}"
 
-  if [[ -z "${status_checks_int}" || "${status_checks_int}" == "null" ]]; then
-    util::print::yellow 'Merging: Required status checks do not contain Integration Tests'
-    return 1
-  fi
-}
-
-function rules::checks::labels() {
-  local status_checks_labels
-  status_checks_labels="${1}"
-
-  if [[ -z "${status_checks_labels}" || "${status_checks_labels}" == "null" ]]; then
-    util::print::yellow 'Merging: Required status checks do not contain "Ensure Minimal Semver Labels"'
+  if [[ -z "${index}" || "${index}" == "null" ]]; then
+    util::print::yellow "Merging: Required status checks do not contain \"${check_name}\""
     return 1
   fi
 }
