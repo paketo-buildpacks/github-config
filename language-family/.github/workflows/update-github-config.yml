@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+    timeout-minutes: 15
     steps:
 
     - name: Checkout
@@ -74,6 +75,7 @@ jobs:
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [build]
     if: ${{ always() && needs.build.result == 'failure' }}
     permissions:
