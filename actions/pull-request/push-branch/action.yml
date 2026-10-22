@@ -8,9 +8,8 @@ inputs:
     description: 'Name of the branch to push'
     required: true
   token:
-    description: 'GitHub token used to authenticate the push. Must have write access to the repository contents. Deprecated: when omitted, the action falls back to persisted git credentials; this fallback will be removed and the token will become required.'
-    required: false
-    default: ""
+    description: 'GitHub token used to authenticate the push. Must have write access to the repository contents.'
+    required: true
   force:
     description: 'Push using --force-with-lease'
     required: false
