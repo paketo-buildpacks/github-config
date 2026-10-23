@@ -20,7 +20,7 @@ permissions:
 jobs:
   autolabel:
     name: Ensure Minimal Semver Labels
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       issues: read # read the issue's current labels
       pull-requests: read # read the pull request's metadata
