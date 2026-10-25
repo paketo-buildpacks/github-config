@@ -70,5 +70,12 @@ runs:
 
       # output looks like: 'Highest semver bump: <patch|minor|major|<none>>'
       semver_bump=$(echo "${output}" | cut -d' ' -f4)
+
+      # jam reports "<none>" when nothing was updated. Normalize that to an empty
+      # value so callers can test for a missing bump with `semver_bump == ''`.
+      if [[ "${semver_bump}" == "<none>" ]]; then
+        semver_bump=""
+      fi
+
       echo "semver_bump=${semver_bump}"
       echo "semver_bump=${semver_bump}" >> "$GITHUB_OUTPUT"
