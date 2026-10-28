@@ -65,7 +65,7 @@ bootstrap.sh --target <target> --repo-type <repo-type> [OPTIONS]
 Bootstraps a repository with github configuration and scripts.
 
 OPTIONS
-  --repo-type <repo-type>  type of repo (implementation|language-family|builder)
+  --repo-type <repo-type>  type of repo (implementation|language-family|multi-implementation|builder)
   --help  -h               prints the command usage
   --target <target>        path to a buildpack repository
 USAGE
@@ -80,7 +80,7 @@ function bootstrap() {
     util::print::error "cannot bootstrap: \"${target}\" does not exist"
   fi
 
-  if [[ "${repo_type}" != "implementation" && "${repo_type}" != "language-family" && "${repo_type}" != "builder" ]]; then
+  if [[ "${repo_type}" != "implementation" && "${repo_type}" != "language-family" && "${repo_type}" != "multi-implementation" && "${repo_type}" != "builder" ]]; then
     util::print::error "cannot bootstrap: \"${repo_type}\" is not a valid repo type"
   fi
 

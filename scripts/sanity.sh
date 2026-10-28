@@ -38,8 +38,8 @@ function usage() {
   cat <<-USAGE
 sanity.sh [OPTIONS]
 
-Checks if the contents of builder/ implementation/ language-family/ and stack/
-follow rules.
+Checks if the contents of builder/ implementation/ language-family/
+multi-implementation/ and stack/ follow rules.
 
 OPTIONS
   --help  -h  prints the command usage
@@ -51,7 +51,7 @@ function sanity::check::rule::directories() {
   local dir
   dir="${1}"
 
-  for cnbdir in 'builder' 'implementation' 'language-family' 'stack' ; do
+  for cnbdir in 'builder' 'implementation' 'language-family' 'multi-implementation' 'stack' ; do
     if [[ ! -d "${dir}/${cnbdir}" ]]; then
       echo "${cnbdir} dir not found"
       exit  1

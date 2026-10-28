@@ -1,7 +1,13 @@
 # Github config
 
-This repository contains config files common to implementation and language-family
-CNBs.
+This repository contains config files common to implementation, language-family,
+and multi-implementation CNBs.
+
+`multi-implementation` is for repositories that package a combined buildpack plus
+one buildpack per component (for example `jvm-vendors` and `build-tools`). They
+provide a `multi-implementation.json` at the repository root describing the
+combined buildpack, its components, the image names, and the `libpak-tools`
+command used to package them.
 
 ## Rules
 
@@ -14,7 +20,7 @@ github repo has recommended settings.
 
 If you just wrote a new CNB, run [bootstrap.sh](scripts/bootstrap.sh) as follows:
 ```sh
-# type is either "implementation", "language-family", or "builder"
+# type is "implementation", "language-family", "multi-implementation", or "builder"
 ./scripts/bootstrap.sh --target <path/to/your/cnb> --repo-type <type>
 ```
 
