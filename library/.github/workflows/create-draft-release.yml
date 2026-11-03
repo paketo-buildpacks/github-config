@@ -90,6 +90,33 @@ jobs:
           -f tag_name="v${{ steps.tag.outputs.tag }}" \
           -f target_commitish="${{ github.sha }}" \
           --jq .body > release_notes.md
+    - name: Check for package script
+      id: package
+      run: |
+        exists=false
+        if [[ -f scripts/package.sh ]]; then
+          exists=true
+        fi
+        echo "exists=${exists}" >> "${GITHUB_OUTPUT}"
+    - name: Package
+      if: steps.package.outputs.exists == 'true'
+      env:
+        TAG: ${{ steps.tag.outputs.tag }}
+      run: ./scripts/package.sh --version "${TAG}"
+    - name: Create Release Assets
+      id: assets
+      if: steps.package.outputs.exists == 'true'
+      run: |
+        assets="$(find build -type f -printf '%P\n' | jq -R -s -c '
+          split("\n")
+          | map(select(length > 0))
+          | map({
+              path: ("build/" + .),
+              name: .,
+              content_type: "application/octet-stream"
+            })
+        ')"
+        printf 'assets=%s\n' "${assets}" >> "${GITHUB_OUTPUT}"
     - name: Create Release
       uses: paketo-buildpacks/github-config/actions/release/create@main
       with:
@@ -100,6 +127,7 @@ jobs:
         name: v${{ steps.tag.outputs.tag }}
         body_filepath: release_notes.md
         draft: true
+        assets: ${{ steps.assets.outputs.assets || '[]' }}
 
   failure:
     name: Alert on Failure
