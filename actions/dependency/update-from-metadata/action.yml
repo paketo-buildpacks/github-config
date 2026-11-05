@@ -15,6 +15,9 @@ outputs:
   new-versions:
     description: Newly added dependency versions
     value: ${{ steps.update.outputs.new_versions }}
+  semver_bump:
+    description: 'The highest semver bump across all updated dependencies'
+    value: ${{ steps.semver.outputs.semver_bump }}
 
 runs:
   using: 'composite'
@@ -45,6 +48,16 @@ runs:
         --output "${HOME}/bin/jam"
       chmod +x "${HOME}/bin/jam"
 
+  - name: Back Up buildpack.toml
+    shell: bash
+    env:
+      BUILDPACK_TOML_PATH: ${{ inputs.buildpack_toml_path }}
+    run: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      shopt -s inherit_errexit
+      cp "${BUILDPACK_TOML_PATH}" "${{ runner.temp }}/buildpack.toml.before"
+
   - name: Update Dependencies From Metadata
     shell: bash
     id: update
@@ -60,3 +73,19 @@ runs:
       versions="$(echo ${versions} | cut -d'[' -f2- | cut -d']' -f-1 | sed 's/ /, /g')"
       echo "new_versions=${versions}" >> "$GITHUB_OUTPUT"
       echo "Added versions ${versions}"
+
+  # Compare buildpack.toml before and after the update so the pull request can
+  # be labeled with the highest semver bump across the updated dependencies.
+  - name: Calculate Semver Bump
+    id: semver
+    shell: bash
+    env:
+      BEFORE_BUILDPACK_TOML_PATH: ${{ runner.temp }}/buildpack.toml.before
+      AFTER_BUILDPACK_TOML_PATH: ${{ inputs.buildpack_toml_path }}
+    run: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      shopt -s inherit_errexit
+      semver_bump="$(python3 "${GITHUB_ACTION_PATH}/calculate-semver-bump.py" "${BEFORE_BUILDPACK_TOML_PATH}" "${AFTER_BUILDPACK_TOML_PATH}")"
+      echo "semver_bump=${semver_bump}" >> "$GITHUB_OUTPUT"
+      echo "Semver bump: ${semver_bump}"
