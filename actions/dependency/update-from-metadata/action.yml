@@ -23,30 +23,8 @@ runs:
   using: 'composite'
   steps:
 
-  - name: Choose Jam Version
-    id: version
-    shell: bash
-    run: |
-      #!/usr/bin/env bash
-      set -euo pipefail
-      shopt -s inherit_errexit
-      version=$(jq -r .jam "scripts/.util/tools.json")
-      echo "version=${version#v}" >> "$GITHUB_OUTPUT"
-
-  - name: Install Jam
-    shell: bash
-    run: |
-      #!/usr/bin/env bash
-      set -euo pipefail
-      shopt -s inherit_errexit
-      mkdir -p "${HOME}"/bin
-      echo "PATH=${HOME}/bin:${PATH}" >> "${GITHUB_ENV}"
-      mkdir -p "${HOME}/bin"
-      curl "https://github.com/paketo-buildpacks/jam/releases/download/v${{ steps.version.outputs.version }}/jam-linux" \
-        --silent \
-        --location \
-        --output "${HOME}/bin/jam"
-      chmod +x "${HOME}/bin/jam"
+  - name: Setup Tools
+    uses: paketo-buildpacks/github-config/actions/tools/setup@main
 
   - name: Back Up buildpack.toml
     shell: bash
@@ -74,8 +52,6 @@ runs:
       echo "new_versions=${versions}" >> "$GITHUB_OUTPUT"
       echo "Added versions ${versions}"
 
-  # Compare buildpack.toml before and after the update so the pull request can
-  # be labeled with the highest semver bump across the updated dependencies.
   - name: Calculate Semver Bump
     id: semver
     shell: bash
@@ -86,6 +62,9 @@ runs:
       #!/usr/bin/env bash
       set -euo pipefail
       shopt -s inherit_errexit
-      semver_bump="$(python3 "${GITHUB_ACTION_PATH}/calculate-semver-bump.py" "${BEFORE_BUILDPACK_TOML_PATH}" "${AFTER_BUILDPACK_TOML_PATH}")"
+      semver_bump="$(libpak-tools ci calculate-semver-bump --before "${BEFORE_BUILDPACK_TOML_PATH}" --after "${AFTER_BUILDPACK_TOML_PATH}")"
+      if [[ "${semver_bump}" == "none" ]]; then
+        semver_bump=""
+      fi
       echo "semver_bump=${semver_bump}" >> "$GITHUB_OUTPUT"
-      echo "Semver bump: ${semver_bump}"
+      echo "Semver bump: ${semver_bump:-none}"
