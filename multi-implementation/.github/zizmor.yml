@@ -1,6 +1,0 @@
-rules:
-  unpinned-uses:
-    config:
-      policies:
-        "paketo-buildpacks/*": ref-pin
-        "*": hash-pin
