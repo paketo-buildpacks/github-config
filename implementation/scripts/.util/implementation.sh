@@ -3,6 +3,9 @@
 set -eu
 set -o pipefail
 
+# shellcheck source=SCRIPTDIR/tools.sh
+source "$(dirname "${BASH_SOURCE[0]}")/tools.sh"
+
 # Shared helpers for implementation repositories.
 #
 # A repository that packages a combined buildpack plus one buildpack per
@@ -16,21 +19,10 @@ function util::implementation::config-path() {
   printf '%s/multi-implementation.json' "${root}"
 }
 
-function util::implementation::repo-name() {
-  local root
-  root="${1}"
-
-  if [[ -n "${GITHUB_REPOSITORY:-}" ]]; then
-    printf '%s' "${GITHUB_REPOSITORY#*/}"
-  else
-    basename "${root}"
-  fi
-}
-
 function util::implementation::default-config() {
   local root name
   root="${1}"
-  name="$(util::implementation::repo-name "${root}")"
+  name="$(util::tools::repo-name "${root}")"
 
   jq --null-input --compact-output --arg name "${name}" '{
     multi: false,
@@ -51,7 +43,7 @@ function util::implementation::config() {
     return
   fi
 
-  name="$(util::implementation::repo-name "${root}")"
+  name="$(util::tools::repo-name "${root}")"
   jq --compact-output --arg name "${name}" '{
     multi: true,
     combined: (.combined // $name),
