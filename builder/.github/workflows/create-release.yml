@@ -181,7 +181,7 @@ jobs:
           | grep -v 'Warning' > "${{ matrix.builders.name }}-info.md"
 
     - name: Upload info for ${{ matrix.builders.name }}
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: "${{ matrix.builders.name }}-info.md"
         path: "${{ matrix.builders.name }}-info.md"
@@ -197,7 +197,7 @@ jobs:
         fetch-depth: 0  # gets full history
 
     - name: Download Release Note File(s)
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         path: info
         pattern: "*info.md"
@@ -263,8 +263,7 @@ jobs:
       with:
         config-name: release-drafter-config.yml
         publish: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
 
     - name: Update Release Notes
       run: |
@@ -306,6 +305,8 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [ smoke, release, get_builders_info, preparation ]
     if: ${{ always() && needs.smoke.result == 'failure' ||  needs.release.result == 'failure' || needs.get_builders_info.result == 'failure' || needs.preparation.result == 'failure' }}
+    permissions:
+      issues: write
     steps:
     - name: File Failure Alert Issue
       uses: paketo-buildpacks/github-config/actions/issue/file@main

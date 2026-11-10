@@ -7,6 +7,9 @@ inputs:
   branch:
     description: 'Name of the branch to push'
     required: true
+  token:
+    description: 'GitHub token used to authenticate the push. Must have write access to the repository contents.'
+    required: true
   force:
     description: 'Push using --force-with-lease'
     required: false
@@ -18,5 +21,7 @@ runs:
   args:
   - "--branch"
   - ${{ inputs.branch }}
+  - "--token"
+  - ${{ inputs.token }}
   - "--force"
   - ${{ inputs.force }}

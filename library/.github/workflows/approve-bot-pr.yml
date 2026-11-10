@@ -66,13 +66,15 @@ jobs:
       run: |
         gh pr merge ${{ needs.download.outputs.pr-number }} --auto --rebase
       env:
-        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_REVIEWER_GITHUB_TOKEN }}
 
   failure:
     name: Alert on Failure
     runs-on: ubuntu-24.04
     needs: [download, approve]
     if: ${{ always() && needs.download.result == 'failure' || needs.approve.result == 'failure' }}
+    permissions:
+      issues: write
     steps:
     - name: File Failure Alert Issue
       uses: paketo-buildpacks/github-config/actions/issue/file@main

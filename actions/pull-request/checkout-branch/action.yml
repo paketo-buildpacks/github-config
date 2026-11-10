@@ -9,6 +9,10 @@ inputs:
   branch:
     description: 'Name of the branch to checkout'
     required: true
+  token:
+    description: 'GitHub token used to authenticate the git fetch/pull. Read access to the repository contents is sufficient. When omitted, git runs unauthenticated.'
+    required: false
+    default: ""
   start-point:
     description: 'Reference to checkout the branch at. If not provided, will default to the upstream if it exists or HEAD if there is no equivalent upstream branch.'
     required: false
@@ -20,5 +24,7 @@ runs:
   args:
   - "--branch"
   - ${{ inputs.branch }}
+  - "--token"
+  - ${{ inputs.token }}
   - "--start-point"
   - ${{ inputs.start-point }}

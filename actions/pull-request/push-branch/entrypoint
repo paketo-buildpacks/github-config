@@ -3,11 +3,19 @@ set -euo pipefail
 shopt -s inherit_errexit
 
 function main() {
-  local branch force
+  local branch force token
+  branch=""
+  force=""
+  token=""
   while [ "${#}" != 0 ]; do
     case "${1}" in
       --branch)
         branch="${2}"
+        shift 2
+        ;;
+
+      --token)
+        token="${2}"
         shift 2
         ;;
 
@@ -26,12 +34,21 @@ function main() {
     esac
   done
 
+  if [[ -z "${token}" ]]; then
+    echo "a token is required to push a branch, but none was provided."
+    echo "please set the 'token' input on the push-branch action."
+    exit 1
+  fi
+
   git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
+  local auth_header
+  auth_header="AUTHORIZATION: basic $(printf '%s' "x-access-token:${token}" | base64 | tr -d '\n')"
+
   if [[ "${force}" == "true" ]]; then
-    git push origin "${branch}" --force-with-lease
+    git -c "http.https://github.com/.extraheader=${auth_header}" push origin "${branch}" --force-with-lease
   else
-    git push origin "${branch}"
+    git -c "http.https://github.com/.extraheader=${auth_header}" push origin "${branch}"
   fi
 }
 
