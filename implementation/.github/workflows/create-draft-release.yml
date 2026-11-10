@@ -43,7 +43,7 @@ jobs:
       run: |
         source "${GITHUB_WORKSPACE}/scripts/.util/implementation.sh"
         echo "integration=$(util::implementation::integration "${GITHUB_WORKSPACE}")" >> "$GITHUB_OUTPUT"
-        echo "multi=$(util::implementation::multi "${GITHUB_WORKSPACE}")" >> "$GITHUB_OUTPUT"
+        echo "multi=$(util::implementation::is_multi "${GITHUB_WORKSPACE}")" >> "$GITHUB_OUTPUT"
     - name: Get builders from integration.json
       id: builders
       run: |

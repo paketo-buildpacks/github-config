@@ -72,7 +72,7 @@ function main {
     buildpack_type=extension
   fi
 
-  if [[ "$(util::implementation::multi "${ROOT_DIR}")" == "true" ]]; then
+  if [[ "$(util::implementation::is_multi "${ROOT_DIR}")" == "true" ]]; then
     buildpackage::create::individual "${version}" "${buildpack_type}"
     buildpackage::create::combined "${version}" "${buildpack_type}"
   else
@@ -121,7 +121,7 @@ function tools::install() {
   if [[ -f "${ROOT_DIR}/.libbuildpack" ]]; then
     util::tools::packager::install \
       --directory "${BIN_DIR}"
-  elif [[ "$(util::implementation::multi "${ROOT_DIR}")" == "true" ]]; then
+  elif [[ "$(util::implementation::is_multi "${ROOT_DIR}")" == "true" ]]; then
     util::tools::libpak-tools::install \
       --directory "${BIN_DIR}" \
       --token "${token}"
@@ -178,8 +178,8 @@ function buildpackage::create::individual() {
   config="$(util::implementation::config "${ROOT_DIR}")"
 
   combined="$(util::implementation::combined "${ROOT_DIR}")"
-  command="$(jq -r '."libpak-tools".command' "${config}")"
-  artifact_flag="$(jq -r '."libpak-tools"."artifact-flag"' "${config}")"
+  command="$(jq -r '."libpak-tools".command' <<< "${config}")"
+  artifact_flag="$(jq -r '."libpak-tools"."artifact-flag"' <<< "${config}")"
 
   util::print::title "Packaging ${buildpack_type}..."
 
@@ -189,10 +189,10 @@ function buildpackage::create::individual() {
       --buildpack-id "paketo-buildpacks/${name}@${version}"
       "--${artifact_flag}" "${name}"
     )
-  done < <(jq -r --arg combined "${combined}" '.buildpacks[].name | select(. != $combined)' "${config}")
+  done < <(jq -r --arg combined "${combined}" '.buildpacks[].name | select(. != $combined)' <<< "${config}")
 
   if [[ ${#args[@]} -eq 0 ]]; then
-    util::print::error "no component buildpacks configured in ${config}"
+    util::print::error "no component buildpacks configured in $(util::implementation::config-path "${ROOT_DIR}")"
   fi
 
   libpak-tools "${command}" "${args[@]}" \
@@ -208,8 +208,8 @@ function buildpackage::create::combined() {
   config="$(util::implementation::config "${ROOT_DIR}")"
 
   combined="$(util::implementation::combined "${ROOT_DIR}")"
-  command="$(jq -r '."libpak-tools".command' "${config}")"
-  include_all_flag="$(jq -r '."libpak-tools"."include-all-flag"' "${config}")"
+  command="$(jq -r '."libpak-tools".command' <<< "${config}")"
+  include_all_flag="$(jq -r '."libpak-tools"."include-all-flag"' <<< "${config}")"
 
   util::print::title "Packaging ${buildpack_type}..."
 
