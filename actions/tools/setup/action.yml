@@ -1,0 +1,45 @@
+name: 'Setup Paketo Tools'
+
+description: |
+  Installs jam and libpak-tools and adds them to PATH. Versions are read from
+  scripts/.util/tools.json by default and can be overridden with inputs.
+
+inputs:
+  jam-version:
+    description: 'Version of jam to install. Overrides the tools config file.'
+    required: false
+    default: ''
+  libpak-tools-version:
+    description: 'Version of libpak-tools to install. Overrides the tools config file.'
+    required: false
+    default: ''
+  tools-config:
+    description: 'Path to a JSON file containing tool versions.'
+    required: false
+    default: 'scripts/.util/tools.json'
+  directory:
+    description: 'Directory to install the tools into.'
+    required: false
+    default: ''
+
+outputs:
+  directory:
+    description: 'Directory containing the installed tools.'
+    value: ${{ steps.setup.outputs.directory }}
+
+runs:
+  using: 'composite'
+  steps:
+  - name: Install Tools
+    id: setup
+    shell: bash
+    env:
+      JAM_VERSION: ${{ inputs.jam-version }}
+      LIBPAK_TOOLS_VERSION: ${{ inputs.libpak-tools-version }}
+      TOOLS_CONFIG: ${{ inputs.tools-config }}
+      TOOLS_DIRECTORY: ${{ inputs.directory }}
+    run: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      shopt -s inherit_errexit
+      bash "${GITHUB_ACTION_PATH}/setup.sh"
