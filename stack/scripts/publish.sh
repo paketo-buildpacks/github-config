@@ -24,6 +24,7 @@ function main() {
   local build_archive=""
   local run_archive=""
   local image_archive=""
+  local receipts_dir=""
 
   while [[ "${#}" != 0 ]]; do
     case "${1}" in
@@ -60,6 +61,11 @@ function main() {
 
       --image-archive)
         image_archive=${2}
+        shift 2
+        ;;
+
+      --receipts-dir)
+        receipts_dir=${2}
         shift 2
         ;;
 
@@ -108,6 +114,7 @@ function main() {
   if [[ ${#image_ref[@]} != 0 || -n "$image_archive" ]]; then
     stack::publish::image \
       "$image_archive" \
+      "$receipts_dir" \
       "${#image_ref[@]}" \
       "${image_ref[@]}"
   else
@@ -134,6 +141,8 @@ OPTIONS
   --run-archive        path to the run OCI archive file [Required if --image-ref is not provided]
   --image-ref          list of image references to publish to [Required if --build-ref and --run-ref are not provided]
   --image-archive      path to the image OCI archive file [Required if --build-ref and --run-ref are not provided]
+  --receipts-dir       directory of package receipts; the ones of the image are attached to it as SBOM
+                       attestations [Optional, with --image-archive]
   --help          -h   prints the command usage
 USAGE
 }
@@ -173,11 +182,25 @@ function stack::publish() {
 
 function stack::publish::image() {
   local image_archive="$1"
+  local receipts_dir="$2"
 
   # bash can't easily pass arrays, they all get merged into one list of arguments
   #  so we pass the lengths & extract the arrays from the single argument list
-  local image_ref_len="$2"                    # length of image ref array
-  local image_ref=("${@:3:$image_ref_len}")   # pull out image_ref array
+  local image_ref_len="$3"                    # length of image ref array
+  local image_ref=("${@:4:$image_ref_len}")   # pull out image_ref array
+
+  local sboms=()
+  if [[ -n "$receipts_dir" ]]; then
+    if jam publish-image --help 2>&1 | grep -q -- "--sbom"; then
+      local sbom
+      while IFS= read -r sbom; do
+        sboms+=("--sbom" "$sbom")
+      done < <(stack::receipts::of::image "$image_archive" "$receipts_dir")
+    else
+      # not util::print::warn, which exits
+      util::print::info "WARNING: this version of jam cannot attach SBOMs to an image, publishing without them"
+    fi
+  fi
 
   # iterate over image_ref
   local len=${#image_ref[@]}
@@ -186,8 +209,33 @@ function stack::publish::image() {
     args=(
       "--image-ref" "$ir"
       "--image-archive" "$image_archive"
+      "${sboms[@]}"
     )
     jam publish-image "${args[@]}"
+  done
+}
+
+# Prints <architecture>=<path> for each receipt of the image: <archive name>-receipt.cyclonedx.json for amd64,
+# the same with -<architecture> in the name for the others.
+function stack::receipts::of::image() {
+  local image_archive="$1"
+  local receipts_dir="$2"
+  local name arch receipt base
+
+  name="$(basename "${image_archive}" .oci)"
+
+  for arch in $(tar -xOf "${image_archive}" index.json | jq -r '.manifests[].platform.architecture // empty' | sort -u); do
+    for receipt in "${receipts_dir}"/*-receipt.cyclonedx.json; do
+      [[ -e "${receipt}" ]] || continue
+      base="$(basename "${receipt}" -receipt.cyclonedx.json)"
+
+      if [[ "${arch}" == "amd64" && "${base}" == "${name}" ]] || [[ "${arch}" != "amd64" && "${base}" != "${name}" && "${base/-${arch}/}" == "${name}" ]]; then
+        echo "${arch}=${receipt}"
+        continue 2
+      fi
+    done
+
+    util::print::info "WARNING: no receipt found in ${receipts_dir} for the ${arch} image of ${name}, it gets no SBOM"
   done
 }
 
