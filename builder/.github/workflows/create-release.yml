@@ -162,7 +162,7 @@ jobs:
         echo "version=${version#v}" >> "$GITHUB_OUTPUT"
 
     - name: Install Global Pack
-      uses: buildpacks/github-actions/setup-pack@91cb4574e7b781941b4e3fa950e541e4b8754b3a # main
+      uses: buildpacks/github-actions/setup-tools@91cb4574e7b781941b4e3fa950e541e4b8754b3a # v6.2.2
       with:
         pack-version: ${{ steps.pack-version.outputs.version }}
 
