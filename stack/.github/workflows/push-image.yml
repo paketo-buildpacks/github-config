@@ -214,8 +214,18 @@ jobs:
       uses: paketo-buildpacks/github-config/actions/release/download-asset@main
       with:
         url: "${{ matrix.oci_image.oci_asset_url }}"
-        output: "./saved_image.oci"
+        output: "./${{ matrix.oci_image.name }}.oci"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+
+    # publish.sh finds the receipts of an image by the name of its archive.
+    - name: Download Package Receipts
+      env:
+        GH_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+      run: |
+        gh release download "v${{ needs.preparation.outputs.tag }}" \
+          --repo "${{ github.repository }}" \
+          --pattern '*-receipt.cyclonedx.json' \
+          --dir ./receipts
 
     - name: Docker login docker.io
       uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
@@ -249,7 +259,8 @@ jobs:
         ./scripts/publish.sh \
           --image-ref "docker.io/${DOCKERHUB_ORG}/${image_name_registry}:${{ needs.preparation.outputs.tag }}" \
           --image-ref "docker.io/${DOCKERHUB_ORG}/${image_name_registry}:latest" \
-          --image-archive "./saved_image.oci"
+          --image-archive "./${{ matrix.oci_image.name }}.oci" \
+          --receipts-dir ./receipts
 
         if [ "${{ needs.preparation.outputs.push_to_gcr }}" = "true" ]; then
 
