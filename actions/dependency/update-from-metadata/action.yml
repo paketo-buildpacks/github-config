@@ -15,35 +15,26 @@ outputs:
   new-versions:
     description: Newly added dependency versions
     value: ${{ steps.update.outputs.new_versions }}
+  semver_bump:
+    description: 'The highest semver bump across all updated dependencies'
+    value: ${{ steps.semver.outputs.semver_bump }}
 
 runs:
   using: 'composite'
   steps:
 
-  - name: Choose Jam Version
-    id: version
-    shell: bash
-    run: |
-      #!/usr/bin/env bash
-      set -euo pipefail
-      shopt -s inherit_errexit
-      version=$(jq -r .jam "scripts/.util/tools.json")
-      echo "version=${version#v}" >> "$GITHUB_OUTPUT"
+  - name: Setup Tools
+    uses: paketo-buildpacks/github-config/actions/tools/setup@main
 
-  - name: Install Jam
+  - name: Back Up buildpack.toml
     shell: bash
+    env:
+      BUILDPACK_TOML_PATH: ${{ inputs.buildpack_toml_path }}
     run: |
       #!/usr/bin/env bash
       set -euo pipefail
       shopt -s inherit_errexit
-      mkdir -p "${HOME}"/bin
-      echo "PATH=${HOME}/bin:${PATH}" >> "${GITHUB_ENV}"
-      mkdir -p "${HOME}/bin"
-      curl "https://github.com/paketo-buildpacks/jam/releases/download/v${{ steps.version.outputs.version }}/jam-linux" \
-        --silent \
-        --location \
-        --output "${HOME}/bin/jam"
-      chmod +x "${HOME}/bin/jam"
+      cp "${BUILDPACK_TOML_PATH}" "${{ runner.temp }}/buildpack.toml.before"
 
   - name: Update Dependencies From Metadata
     shell: bash
@@ -60,3 +51,20 @@ runs:
       versions="$(echo ${versions} | cut -d'[' -f2- | cut -d']' -f-1 | sed 's/ /, /g')"
       echo "new_versions=${versions}" >> "$GITHUB_OUTPUT"
       echo "Added versions ${versions}"
+
+  - name: Calculate Semver Bump
+    id: semver
+    shell: bash
+    env:
+      BEFORE_BUILDPACK_TOML_PATH: ${{ runner.temp }}/buildpack.toml.before
+      AFTER_BUILDPACK_TOML_PATH: ${{ inputs.buildpack_toml_path }}
+    run: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      shopt -s inherit_errexit
+      semver_bump="$(libpak-tools ci calculate-semver-bump --before "${BEFORE_BUILDPACK_TOML_PATH}" --after "${AFTER_BUILDPACK_TOML_PATH}")"
+      if [[ "${semver_bump}" == "none" ]]; then
+        semver_bump=""
+      fi
+      echo "semver_bump=${semver_bump}" >> "$GITHUB_OUTPUT"
+      echo "Semver bump: ${semver_bump:-none}"
