@@ -73,7 +73,7 @@ jobs:
         echo "push_to_gcr=${push_to_gcr}" >> "$GITHUB_OUTPUT"
 
     - name: Install yj and crane
-      uses: buildpacks/github-actions/setup-tools@af8c06ccd592e27001cbf78083dcc9b47aa6652a # v6.1.1
+      uses: buildpacks/github-actions/setup-tools@91cb4574e7b781941b4e3fa950e541e4b8754b3a # v6.2.2
 
     - name: Validate version
       env:
