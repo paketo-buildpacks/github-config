@@ -4,7 +4,7 @@ This repository contains config files common to implementation and language-fami
 CNBs.
 
 Implementation repositories that package a combined buildpack plus one buildpack
-per component (for example `jvm-vendors` and `build-tools`) opt into the
+per component (for example `jvm-vendors` and `jvm-build-tools`) opt into the
 additional behavior by providing a `multi-implementation.json` at the repository
 root. It describes the combined buildpack, its components, the image names, and
 the `libpak-tools` command used to package them. Repositories without that file
