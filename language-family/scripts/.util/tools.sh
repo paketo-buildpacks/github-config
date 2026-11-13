@@ -9,11 +9,19 @@ source "$(dirname "${BASH_SOURCE[0]}")/print.sh"
 function util::tools::os() {
   case "$(uname)" in
     "Darwin")
-      echo "${1:-darwin}"
+      if [[ "${1:-}" == "--capitalized" ]]; then
+        echo "Darwin"
+      else
+        echo "${1:-darwin}"
+      fi
       ;;
 
     "Linux")
-      echo "linux"
+      if [[ "${1:-}" == "--capitalized" ]]; then
+        echo "Linux"
+      else
+        echo "linux"
+      fi
       ;;
 
     *)
@@ -297,7 +305,7 @@ function util::tools::libpak-tools::install () {
 
     util::print::title "Installing libpak-tools ${version}"
 
-    os=$(util::tools::os)
+    os=$(util::tools::os --capitalized)
     arch=$(util::tools::arch --format-amd64-x86_64)
 
     curl "https://github.com/paketo-buildpacks/libpak-tools/releases/download/${version}/libpak-tools_${os}_${arch}.tar.gz" \
