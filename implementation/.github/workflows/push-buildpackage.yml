@@ -154,7 +154,7 @@ jobs:
         password: ${{ env.GCR_PASSWORD }}
         registry: ${{ env.GCR_REGISTRY }}
 
-    - uses: buildpacks/github-actions/setup-tools@50b58314ff7858c48496a3fee25308c8a18eae79 # v6.2.3
+    - uses: buildpacks/github-actions/setup-tools@0f33674a6e9aaddbdce74e58983bc1812871453e # v6.2.4
     - name: Push to DockerHub
       if: ${{  steps.parse_configs.outputs.push_to_dockerhub == 'true' }}
       id: push
