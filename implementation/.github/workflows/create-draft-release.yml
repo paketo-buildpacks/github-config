@@ -22,7 +22,7 @@ permissions:
 jobs:
   unit:
     name: Unit Tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       builders: ${{ steps.builders.outputs.builders }}
       integration: ${{ steps.config.outputs.integration }}
@@ -54,7 +54,7 @@ jobs:
 
   integration:
     name: Integration Tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: unit
     if: ${{ needs.unit.outputs.integration == 'true' }}
     permissions:
@@ -101,7 +101,7 @@ jobs:
   # Standard implementation: one buildpack, packaged with jam/pack.
   release:
     name: Release
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [unit, integration]
     if: ${{ needs.unit.outputs.multi != 'true' }}
     permissions:
@@ -271,7 +271,7 @@ jobs:
   # Multi-implementation: a combined buildpack plus one per component.
   release-prep:
     name: Release Prep (multi)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [unit, integration]
     if: ${{ always() && needs.unit.outputs.multi == 'true' && needs.unit.result == 'success' && (needs.integration.result == 'success' || needs.integration.result == 'skipped') }}
     permissions:
@@ -353,7 +353,7 @@ jobs:
 
   generate-notes:
     name: Generate Release Notes (${{ matrix.buildpack }})
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [unit, release-prep]
     if: ${{ needs.unit.outputs.multi == 'true' }}
     services:
@@ -459,7 +459,7 @@ jobs:
 
   release-multi:
     name: Release (multi)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [unit, release-prep, generate-notes]
     if: ${{ needs.unit.outputs.multi == 'true' }}
     permissions:
@@ -548,7 +548,7 @@ jobs:
 
   failure:
     name: Alert on Failure
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [unit, integration, release, release-prep, generate-notes, release-multi]
     if: ${{ always() && (needs.unit.result == 'failure' || needs.integration.result == 'failure' || needs.release.result == 'failure' || needs.release-prep.result == 'failure' || needs.generate-notes.result == 'failure' || needs.release-multi.result == 'failure') }}
     permissions:
