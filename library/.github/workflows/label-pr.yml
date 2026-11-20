@@ -19,7 +19,7 @@ permissions:
 jobs:
   autolabel:
     name: Ensure Minimal Semver Labels
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read # check out the repository to determine which files changed
       issues: write # add the semver label

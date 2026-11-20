@@ -18,7 +18,7 @@ permissions:
 jobs:
   prepare:
     name: Read Buildpack List
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       buildpacks: ${{ steps.config.outputs.buildpacks }}
       multi: ${{ steps.config.outputs.multi }}
@@ -38,7 +38,7 @@ jobs:
 
   push:
     name: Push
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: prepare
     strategy:
       matrix:
@@ -221,7 +221,7 @@ jobs:
 
   failure:
     name: Alert on Failure
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [prepare, push]
     if: ${{ always() && (needs.prepare.result == 'failure' || needs.push.result == 'failure') }}
     permissions:

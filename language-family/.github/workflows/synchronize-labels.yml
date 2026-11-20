@@ -14,7 +14,7 @@ permissions:
 jobs:
     synchronize:
         name: Synchronize Labels
-        runs-on: ubuntu-24.04
+        runs-on: ubuntu-26.04
         permissions:
             contents: read
             issues: write # create, update, and delete labels
