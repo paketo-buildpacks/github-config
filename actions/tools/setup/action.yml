@@ -34,12 +34,13 @@ runs:
     id: setup
     shell: bash
     env:
-      JAM_VERSION: ${{ inputs.jam-version }}
-      LIBPAK_TOOLS_VERSION: ${{ inputs.libpak-tools-version }}
-      TOOLS_CONFIG: ${{ inputs.tools-config }}
-      TOOLS_DIRECTORY: ${{ inputs.directory }}
+      GITHUB_TOKEN: ${{ github.token }}
     run: |
       #!/usr/bin/env bash
       set -euo pipefail
       shopt -s inherit_errexit
-      bash "${GITHUB_ACTION_PATH}/setup.sh"
+      bash "${GITHUB_ACTION_PATH}/setup.sh" \
+        --directory "${{ inputs.directory }}" \
+        --jam-version "${{ inputs.jam-version }}" \
+        --libpak-tools-version "${{ inputs.libpak-tools-version }}" \
+        --tools-config "${{ inputs.tools-config }}"

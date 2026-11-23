@@ -9,11 +9,19 @@ source "$(dirname "${BASH_SOURCE[0]}")/print.sh"
 function util::tools::os() {
   case "$(uname)" in
     "Darwin")
-      echo "${1:-darwin}"
+      if [[ "${1:-}" == "--capitalized" ]]; then
+        echo "Darwin"
+      else
+        echo "${1:-darwin}"
+      fi
       ;;
 
     "Linux")
-      echo "linux"
+      if [[ "${1:-}" == "--capitalized" ]]; then
+        echo "Linux"
+      else
+        echo "linux"
+      fi
       ;;
 
     *)
@@ -228,11 +236,11 @@ function util::tools::crane::install() {
 
     util::print::title "Installing crane ${version}"
 
-    os=$(util::tools::os)
+    os=$(util::tools::os --capitalized)
     arch=$(util::tools::arch --uname-format-amd64)
 
 
-    curl "https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_Linux_${arch}.tar.gz" \
+    curl "https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_${os}_${arch}.tar.gz" \
       "${curl_args[@]}" | tar -C "${dir}" -xz crane
 
     chmod +x "${dir}/crane"
