@@ -85,10 +85,11 @@ jobs:
           shopt -s inherit_errexit
 
           has_warnings="false"
-          if grep -iqE "warning|error" /tmp/retrieve-output.log; then
+          warnerr=$(grep -iE "warning|error" /tmp/retrieve-output.log | grep -v "go: downloading")
+          if [ -n "$warnerr" ]; then
             has_warnings="true"
             echo "Warnings or errors detected in retrieve output:"
-            grep -iE "warning|error" /tmp/retrieve-output.log || true
+            echo "$warnerr"
           fi
           echo "has-warnings=${has_warnings}" >> "$GITHUB_OUTPUT"
 
